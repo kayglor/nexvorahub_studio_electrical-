@@ -220,7 +220,8 @@ if (!S || S.v !== 1) S = exampleProject();
 function upgrade(o) { const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; return o; }
 upgrade(S);
 let saveT;
-function persist() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { } }, 300); }
+let saveWarned = false;
+function persist() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); saveWarned = false; } catch (e) { if (!saveWarned) { saveWarned = true; try { toast('Could not save in this browser (storage full or blocked). Use "Save project file" to keep your work.'); } catch (e2) { } } } }, 300); }
 
 /* ---------- core calculations ---------- */
 function ctx() {
@@ -1036,7 +1037,7 @@ const VIEWS = [
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view)) view = 'project';
 let R = calcAll();
 function opt(list, sel, map = x => x) { return list.map(x => { const v = typeof x === 'object' ? x.v : x, t = typeof x === 'object' ? x.t : map(x); return `<option value="${esc(v)}"${String(v) === String(sel) ? ' selected' : ''}>${esc(t)}</option>`; }).join(''); }
-function fld(label, html, hint) { return `<div class="field"><label>${label}</label>${html}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`; }
+function fld(label, html, hint) { const id = (String(html).match(/\sid="([^"]+)"/) || [])[1]; return `<div class="field"><label${id ? ` for="${id}"` : ''}>${label}</label>${html}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`; }
 function inp(path, val, type = 'text', extra = '') { return `<input id="${path.replace(/\./g, '_')}" data-p="${path}" type="${type}" value="${esc(val ?? '')}" ${type === 'number' ? 'step="any"' : ''} ${extra}>`; }
 function sel(path, list, val, map) { return `<select id="${path.replace(/\./g, '_')}" data-p="${path}">${opt(list, val, map)}</select>`; }
 function der(v) { return `<div class="derived">${v}</div>`; }
@@ -1337,7 +1338,8 @@ table.r{border-collapse:collapse;width:100%;margin:6px 0 10px;font-size:12px}tab
 .s{font-size:11.5px;color:#4c5652}@media print{body{margin:0}h2{break-after:avoid}table{break-inside:auto}}`;
 function reportDoc() { return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(S.project.ref)} – Electrical load design report</title><style>${REPORT_CSS}</style></head><body>${reportBody()}</body></html>`; }
 function csvSchedules() {
-  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, L = [];
+  // Text from imported drawings can start with = + - @: prefix with an apostrophe so spreadsheets never run it as a formula
+  const q = v => { let t = String(v ?? ''); if (/^[=+@\t\r]/.test(t) || /^-(?![\d.])/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; }, L = [];
   L.push(['Project', S.project.name, 'Ref', S.project.ref, 'Rev', S.project.rev, 'Region', S.project.country].map(q).join(','));
   L.push(''); L.push(['AREA LOAD SCHEDULE'].map(q).join(',')); L.push(['Zone', 'Type', 'Area m2', 'Base VA/m2', 'Regional factor', 'Design VA/m2', 'Demand kVA'].map(q).join(','));
   R.Z.rows.forEach(r => L.push([r.z.desc, r.z.type, r.z.area, r.base, r.mult, r.dens.toFixed(1), r.kva.toFixed(1)].map(q).join(',')));
@@ -1383,6 +1385,16 @@ function render(keepFocus) {
   renderBand(); renderRail();
   const a = document.activeElement, id = a && a.id, pos = a && a.selectionStart, ds = a && a.dataset ? { ...a.dataset } : null;
   $('#main').innerHTML = V[view]();
+  // accessibility: inputs inside tables are named after their column heading (and the row's first cell)
+  const main = $('#main');
+  if (main.querySelectorAll) main.querySelectorAll('table').forEach(t => {
+    const hs = [...t.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    t.querySelectorAll('tbody tr').forEach(tr => [...tr.children].forEach((td, i) => td.querySelectorAll('input,select').forEach(el => {
+      if (el.getAttribute('aria-label') || !hs[i]) return;
+      const first = tr.children[0], rowName = first && first !== td ? (first.querySelector('input') ? first.querySelector('input').value : first.textContent.trim()) : '';
+      el.setAttribute('aria-label', rowName ? `${hs[i]} – ${rowName}` : hs[i]);
+    })));
+  });
   if (keepFocus && ds) {
     let el = id ? document.getElementById(id) : null;
     if (!el && ds.arr) el = document.querySelector(`[data-arr="${ds.arr}"][data-i="${ds.i}"][data-k="${ds.k}"]`);

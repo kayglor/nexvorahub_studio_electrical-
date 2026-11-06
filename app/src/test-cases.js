@@ -278,4 +278,17 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.review = JSON.parse(pvSave); R = calcAll(); pchk('default basis unchanged', R.PB == null && near(R.md, mdArea));
   out.panels = ps.panels.map(q => [q.name, q.conn, q.dem, q.trip, q.vll]);
   out.panelChecks = pFail.length ? pFail : 'all passed'; }
+// ---- hardening: CSV formula injection, labelled form fields ----
+{ const hFail = [], nm = S.project.name, ld = S.loads.length ? S.loads[0].desc : null;
+  S.project.name = '=HYPERLINK("http://x","click")'; if (S.loads.length) S.loads[0].desc = '@SUM(A1)'; R = calcAll();
+  const csv = csvSchedules();
+  if (!csv.includes(`"'=HYPERLINK(""http://x"",""click"")"`)) hFail.push('formula not neutralised');
+  if (S.loads.length && !csv.includes(`"'@SUM(A1)"`)) hFail.push('@ not neutralised');
+  if (/(^|,)"=/m.test(csv) || /(^|,)"@/m.test(csv) || /(^|,)"\+/m.test(csv)) hFail.push('a cell still starts with = @ +');
+  if (!/"-?\d/.test(csv)) hFail.push('numbers changed');
+  S.project.name = nm; if (ld != null) S.loads[0].desc = ld; R = calcAll();
+  view = 'project'; render(); if (!/<label for="project_name">/.test(document.querySelector('#main').innerHTML)) hFail.push('labels not linked to inputs');
+  out.hardeningChecks = hFail.length ? hFail : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
+// make failures visible to scripts and CI (test-app.js sets the exit code)
+globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);

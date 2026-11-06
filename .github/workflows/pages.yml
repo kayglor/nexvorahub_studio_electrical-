@@ -1,25 +1,41 @@
-# Publishes the standalone app (site/index.html) to GitHub Pages on every push to main.
+# Tests the app, then publishes the standalone build (site/index.html) to GitHub Pages on every push to main.
 # One-time setup on GitHub: Settings → Pages → Build and deployment → Source: "GitHub Actions".
-name: Deploy NexvoraHub Studio to GitHub Pages
+name: Test and deploy NexvoraHub Studio
 
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths: ['site/**', 'app/**', '.github/workflows/pages.yml']
+  pull_request:
+    paths: ['site/**', 'app/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Headless tests (94 countries, all stages, drawing tools)
+        run: node app/src/test-app.js
+      - name: Published files match the source
+        run: |
+          cd app/src && node build-app.js designdata.json
+          git diff --exit-code -- ../load-designer.html ../../site/index.html || { echo "::error::site/index.html is out of date – run node build-app.js designdata.json and commit"; exit 1; }
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -10,3 +10,5 @@ const document = { getElementById: (id) => id === 'dd' ? { textContent: data } :
 const sandbox = { document, window: {}, location: { hash: '' }, localStorage: { getItem: () => null, setItem() {} }, addEventListener() {}, scrollTo() {}, getSelection: () => ({ removeAllRanges() {}, addRange() {} }), navigator: {}, setTimeout, clearTimeout, console };
 const test = fs.readFileSync(__dirname + '/test-cases.js', 'utf8');
 new Function(...Object.keys(sandbox), code + '\n' + test)(...Object.values(sandbox));
+const failed = globalThis.__TEST_FAILURES || ['test cases did not finish'];
+if (failed.length) { console.error('TESTS FAILED:', failed.join(', ')); process.exitCode = 1; } else console.log('ALL TESTS PASSED');
