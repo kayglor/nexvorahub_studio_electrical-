@@ -1,5 +1,5 @@
 # Tests the app, then publishes the standalone build (site/index.html) to GitHub Pages on every push to main.
-# One-time setup on GitHub: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# One-time setup on GitHub: Settings → Pages → Build and deployment → Source: "GitHub Actions" (enabled 2026-11-07).
 name: Test and deploy NexvoraHub Studio
 
 on:
