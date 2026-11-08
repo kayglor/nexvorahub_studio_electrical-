@@ -190,6 +190,43 @@ tr.total td{font-weight:600;background:var(--sunk)}
 const DD = JSON.parse(document.getElementById('dd').textContent);
 const AIDC = JSON.parse(document.getElementById('aidc').textContent);
 const COV = JSON.parse(document.getElementById('coverage').textContent);
+/* ---------- cable data: built-in BS 7671 tables, or a user-imported licensed table pack ---------- */
+// AWG / kcmil conductor areas (mm²) – a metric size is shown with the smallest AWG of at least the same area
+const AWG = [['14 AWG', 2.08], ['12 AWG', 3.31], ['10 AWG', 5.26], ['8 AWG', 8.37], ['6 AWG', 13.3], ['4 AWG', 21.2], ['3 AWG', 26.7], ['2 AWG', 33.6], ['1 AWG', 42.4], ['1/0 AWG', 53.5], ['2/0 AWG', 67.4], ['3/0 AWG', 85.0], ['4/0 AWG', 107.2], ['250 kcmil', 126.7], ['300 kcmil', 152.0], ['350 kcmil', 177.3], ['400 kcmil', 202.7], ['500 kcmil', 253.4], ['600 kcmil', 304.0], ['750 kcmil', 380.0], ['1000 kcmil', 506.7]];
+const awgOf = mm2 => mm2 > 0 ? (AWG.find(a => a[1] >= mm2 - 1e-9) || ['> 1000 kcmil'])[0] : '';
+const usesAWG = X => X.fam === 'NEC' || X.fam === 'CEC';
+const csaLabel = (csa, X) => csa == null ? '–' : usesAWG(X) ? `${csa} (≈ ${awgOf(csa)})` : String(csa);
+// NEC 240.6(A) standard overcurrent device ratings (used for NEC / CEC regions when the device rating is chosen from the load)
+const NEC_STD = [15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 1000, 1200, 1600, 2000, 2500, 3000, 4000, 5000, 6000];
+const packOn = () => !!(S && S.cablePack && Array.isArray(S.cablePack.combos) && S.cablePack.combos.length);
+const combosList = () => packOn() ? S.cablePack.combos : DD.COMBOS;
+const cableFactor = key => packOn() && Array.isArray(S.cablePack[key]) && S.cablePack[key].length ? S.cablePack[key] : DD[key];
+const cableSource = () => packOn() ? `${S.cablePack.source || 'Imported cable table pack'} (imported${S.cablePack.licence ? ' – licence: ' + S.cablePack.licence : ''})` : 'BS 7671 Appendix 4 (built-in)';
+// A pack holds licensed values on the app's 17 metric sizes (1–300 mm²), e.g. IEC 60364-5-52, AS/NZS 3008.1 or a national IEC table.
+function validatePack(p) {
+  // a table may stop before 300 mm² (e.g. twin & earth to 16 mm²): 1..17 values, always starting at 1 mm²
+  const err = [], n = CSA.length, arr = (a, need) => Array.isArray(a) && a.length >= 1 && a.length <= n && a.every(v => typeof v === 'number' && v >= 0) || (!need && (a == null || (Array.isArray(a) && a.length === 0)));
+  if (!p || typeof p !== 'object') return ['Not a JSON object'];
+  if (!p.source) err.push('"source" (table name and edition) is required');
+  if (!Array.isArray(p.combos) || !p.combos.length) err.push('"combos" must list at least one cable / installation method');
+  (p.combos || []).forEach((c, i) => {
+    if (!c.name) err.push(`combos[${i}]: "name" missing`);
+    if (c.temp !== 70 && c.temp !== 90) err.push(`combos[${i}]: "temp" must be 70 or 90`);
+    if (!arr(c.it1, true) || !arr(c.mv1, true)) err.push(`combos[${i}]: "it1" and "mv1" need 1–${n} numbers, from ${CSA[0]} mm² upwards (sizes ${CSA.join(', ')} mm²; 0 = not available)`);
+    else if (c.it1.length !== c.mv1.length) err.push(`combos[${i}]: "it1" and "mv1" must have the same number of sizes`);
+    if (Array.isArray(c.it3) && c.it3.length && (!Array.isArray(c.mv3) || c.it3.length !== c.mv3.length)) err.push(`combos[${i}]: "it3" and "mv3" must have the same number of sizes`);
+    if (!arr(c.it3, false) || !arr(c.mv3, false)) err.push(`combos[${i}]: "it3" and "mv3" need 1–${n} numbers or must be left empty`);
+  });
+  ['CA70', 'CA90'].forEach(k => { if (p[k] != null && (!Array.isArray(p[k]) || p[k].length !== DD.CAA.length)) err.push(`"${k}" needs ${DD.CAA.length} factors (ambient ${DD.CAA.join(', ')} °C)`); });
+  ['CGB', 'CGS'].forEach(k => { if (p[k] != null && (!Array.isArray(p[k]) || p[k].length !== DD.CGN.length)) err.push(`"${k}" needs ${DD.CGN.length} factors (groups ${DD.CGN.join(', ')})`); });
+  return err;
+}
+function packTemplate() {
+  const z = () => CSA.map(() => 0);
+  return { source: 'e.g. IEC 60364-5-52:2009 Table B.52.4, copper, PVC – enter the table name and edition', licence: 'e.g. licence reference from the standards publisher', family: 'IEC', sizes_mm2: CSA, ambient_C: DD.CAA, groups: DD.CGN,
+    combos: [{ name: 'Multicore PVC 70 °C – Method C (clipped direct)', temp: 70, it1: z(), it3: z(), mv1: z(), mv3: z() }],
+    CA70: null, CA90: null, CGB: null, CGS: null, notes: 'Fill it1/it3 (current-carrying capacity, A, single-/three-phase) and mv1/mv3 (voltage drop, mV/A/m) for each size; 0 = size not available. Leave CA70/CA90/CGB/CGS null to keep the built-in correction factors.' };
+}
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const f0 = (v) => isFinite(v) ? Math.round(v).toLocaleString('en-GB') : '–';
@@ -397,12 +434,12 @@ function calcCircuit(k, X) {
   const pf = +k.pf || X.pf, ph = +k.ph === 1 ? 1 : 3, vsys = ph === 1 ? X.vln : X.vll;
   const ib = +k.kw ? (ph === 1 ? k.kw * 1000 / (X.vln * pf) : k.kw * 1000 / (SQ3 * X.vll * pf)) : 0;
   const dev = DD.DEV.find(d => d.n === k.dev) || DD.DEV[0];
-  const inr = +k.inFix || nextStd(dev.r, ib);
-  const cmb = DD.COMBOS[+k.cable] || DD.COMBOS[0];
+  const inr = +k.inFix || (usesAWG(X) ? nextStd(NEC_STD.filter(a => a <= Math.max(...dev.r)), ib) : nextStd(dev.r, ib));
+  const CMB = combosList(), cmb = CMB[+k.cable] || CMB[0];
   const ai = Math.min(DD.CAA.filter(a => a < (+k.amb || 30)).length, DD.CAA.length - 1);
-  const ca = (cmb.temp === 70 ? DD.CA70 : DD.CA90)[ai];
+  const ca = (cmb.temp === 70 ? cableFactor('CA70') : cableFactor('CA90'))[ai];
   const gi = Math.min(DD.CGN.filter(n => n < Math.max(1, +k.grp || 1)).length, DD.CGN.length - 1);
-  const cg = (k.arr === 'Single layer' ? DD.CGS : DD.CGB)[gi];
+  const cg = (k.arr === 'Single layer' ? cableFactor('CGS') : cableFactor('CGB'))[gi];
   const ci = +k.ci || 1;
   const r = { k, ib, inr, dev, cmb, ca, cg, ci, vsys, pf, ph, status: '', fail: null };
   if (!ib || !inr) { r.status = inr === null && ib ? 'Device range exceeded' : ''; r.fail = ib ? 'REVIEW' : null; return r; }
@@ -416,12 +453,12 @@ function calcCircuit(k, X) {
   if (idx > n) { r.status = 'Exceeds table – use parallel / larger cables'; r.fail = 'REVIEW'; return r; }
   const csa = CSA[idx - 1], It = it[idx - 1], Iz = It * ca * cg * ci, vd = mv[idx - 1] * ib * (+k.len || 0) / 1000 / vsys * 100;
   const s547 = nextStd(CSA, csa <= 16 ? csa : csa <= 35 ? 16 : csa / 2);
-  const r12 = cmb.temp && +k.cable === 0 ? DD.R12TE[idx - 1] : DD.RCU[idx - 1] + DD.RCU[CSA.indexOf(s547)];
+  const r12 = cmb.temp && +k.cable === 0 && !packOn() ? DD.R12TE[idx - 1] : DD.RCU[idx - 1] + DD.RCU[CSA.indexOf(s547)];
   const zs = (k.zdb !== '' && k.zdb != null ? +k.zdb : +S.sizing.ze) + r12 * (+k.len || 0) * (cmb.temp === 70 ? 1.2 : 1.28) / 1000;
   const zsMax = dev.m ? 0.95 * X.vln / (dev.m * inr) : null;
   const ifault = 0.95 * X.vln / zs, tdis = /ACB/.test(dev.n) ? 1 : /MCCB/.test(dev.n) ? 0.4 : 0.1;
   const adiab = Math.sqrt(ifault * ifault * tdis) / (cmb.temp === 70 ? 115 : 143);
-  const cpc = +k.cable === 0 ? DD.CPCTE[idx - 1] : nextStd(CSA, Math.max(s547, adiab)) ?? CSA[CSA.length - 1];
+  const cpc = +k.cable === 0 && !packOn() ? DD.CPCTE[idx - 1] : nextStd(CSA, Math.max(s547, adiab)) ?? CSA[CSA.length - 1];
   Object.assign(r, { idx, csa, It, Iz, vd, s547, zs, zsMax, ifault, adiab, cpc });
   const rcd = k.rcd && k.rcd !== 'None' && +k.idn > 0;
   if (Iz < inr) r.fail = 'Iz < In';
@@ -431,7 +468,8 @@ function calcCircuit(k, X) {
   else if (+k.pfc && +k.icn && +k.icn < +k.pfc) r.fail = 'Breaking capacity';
   r.status = r.fail ? 'FAIL – ' + r.fail : (zsMax != null && zs > zsMax ? 'PASS – ADS by RCD' : 'PASS');
   const poles = ph === 1 ? (rcd || /RCBO/.test(dev.n) ? 'SP&N' : 'SP') : (/MCCB|ACB/.test(dev.n) ? 'TP&N' : 'TP');
-  r.spec = (+k.cable === 0 ? `Twin & earth ${csa}/${cpc} mm² Cu (6242Y)` : `${ph === 1 ? 3 : 4}-core ${csa} mm² Cu ${cmb.temp === 70 ? 'PVC/SWA/PVC (BS 6346)' : 'XLPE/SWA/LSZH (BS 6724)'} + ${cpc} mm² cpc`) + ` · ${dev.n} ${inr} A ${poles}` + (+k.icn ? `, ${k.icn} kA` : '') + (rcd ? ` · RCD ${k.rcd} ${k.idn} mA` : '');
+  r.awg = usesAWG(X) ? awgOf(csa) : '';
+  r.spec = (+k.cable === 0 && !packOn() ? `Twin & earth ${csa}/${cpc} mm² Cu (6242Y)` : `${ph === 1 ? 3 : 4}-core ${csa} mm² Cu ${cmb.temp === 70 ? 'PVC/SWA/PVC (BS 6346)' : 'XLPE/SWA/LSZH (BS 6724)'} + ${cpc} mm² cpc`) + ` · ${dev.n} ${inr} A ${poles}` + (+k.icn ? `, ${k.icn} kA` : '') + (rcd ? ` · RCD ${k.rcd} ${k.idn} mA` : '');
   return r;
 }
 /* ---------- electrical drawing generator (final circuits, layout, parameter checks) ---------- */
@@ -692,7 +730,7 @@ function dwgGeom(W) {
   const cols = [['Ref', 1000], ['Description', 9000], ['Device', 2600], ['In A', 900], ['Cable mm²', 1500], ['Points', 1000], ['Load W', 1300], ['Ib A', 1000], ['Length m', 1200], ['VD %', 1000], ['Zs Ω', 1000], ['Zs max Ω', 1200], ['Result', 3200]];
   const tw = cols.reduce((a, c) => a + c[1], 0), rh = 450, ty = sy - 12000;
   T(0, ty + 400, 300, `${g.board} – final circuit schedule`, 'E-TEXT');
-  const rowsT = [cols.map(c => c[0]), ...C.map(c => [c.ref, c.desc.slice(0, 70), `${c.cc.dev.n}${c.rcd ? ' 30mA' : ''}${c.afdd ? ' +AFDD' : ''}`, c.cc.inr ?? '–', c.cc.csa != null ? `${c.cc.csa}/${c.cc.cpc}` : '–', c.pts, f0(c.w), f1(c.ib), f1(c.len), c.cc.vd != null ? f2(c.cc.vd) : '–', c.cc.zs != null ? f2(c.cc.zs) : '–', c.cc.zsMax != null ? f2(c.cc.zsMax) : '–', c.cc.status])];
+  const rowsT = [cols.map(c => c[0]), ...C.map(c => [c.ref, c.desc.slice(0, 70), `${c.cc.dev.n}${c.rcd ? ' 30mA' : ''}${c.afdd ? ' +AFDD' : ''}`, c.cc.inr ?? '–', c.cc.csa != null ? `${c.cc.csa}/${c.cc.cpc}${usesAWG(R.X) ? ` (≈ ${awgOf(c.cc.csa)})` : ''}` : '–', c.pts, f0(c.w), f1(c.ib), f1(c.len), c.cc.vd != null ? f2(c.cc.vd) : '–', c.cc.zs != null ? f2(c.cc.zs) : '–', c.cc.zsMax != null ? f2(c.cc.zsMax) : '–', c.cc.status])];
   rowsT.forEach((r, i) => { let cx = 0; const yy = ty - i * rh; r.forEach((v, j) => { T(cx + 80, yy - rh + 130, 180, v, 'E-TABLE'); cx += cols[j][1]; }); L(0, yy - rh, tw, yy - rh, 'E-TABLE'); });
   L(0, ty, tw, ty, 'E-TABLE'); let cx = 0; cols.forEach(c => { L(cx, ty, cx, ty - rowsT.length * rh, 'E-TABLE'); cx += c[1]; }); L(tw, ty, tw, ty - rowsT.length * rh, 'E-TABLE');
   // legend + title block
@@ -1282,12 +1320,14 @@ V.circuits = () => {
     const k = r.k, s = (key, list, map) => `<select data-arr="circuits" data-i="${i}" data-k="${key}">${opt(list, k[key], map)}</select>`, n = (key, w = 70) => `<input type="number" step="any" style="width:${w}px" data-arr="circuits" data-i="${i}" data-k="${key}" value="${esc(k[key])}">`;
     const st = r.fail ? (r.fail === 'REVIEW' ? 'warn' : 'bad') : r.status ? 'ok' : 'na';
     return `<tr><td><input style="width:60px" data-arr="circuits" data-i="${i}" data-k="ref" value="${esc(k.ref)}"></td><td><input style="width:90px" data-arr="circuits" data-i="${i}" data-k="from" value="${esc(k.from)}"></td><td><input data-arr="circuits" data-i="${i}" data-k="desc" value="${esc(k.desc)}"></td>
-     <td>${s('type', ['Lighting', 'Other'])}</td><td>${n('kw')}</td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td><td class="wide">${s('cable', DD.COMBOS.map((c, j) => ({ v: j, t: c.name })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td>${n('pfc', 55)}</td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
-     <td class="n">${f1(r.ib)}</td><td class="n">${r.inr ?? '–'}</td><td class="n">${r.csa ?? '–'}</td><td class="n">${r.Iz ? f1(r.Iz) : '–'}</td><td class="n">${r.vd != null ? f2(r.vd) + '%' : '–'}</td><td class="n">${r.zs != null ? f2(r.zs) : '–'}</td><td class="n">${r.zsMax != null ? f2(r.zsMax) : 'mfr'}</td><td class="n">${r.cpc ?? '–'}</td><td>${pill(st, r.status || '—')}</td><td><button class="btn small ghost" data-del="circuits" data-i="${i}">Remove</button></td></tr>`;
+     <td>${s('type', ['Lighting', 'Other'])}</td><td>${n('kw')}</td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td><td class="wide">${s('cable', combosList().map((c, j) => ({ v: j, t: c.name || c.n })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td>${n('pfc', 55)}</td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
+     <td class="n">${f1(r.ib)}</td><td class="n">${r.inr ?? '–'}</td><td class="n">${esc(csaLabel(r.csa, R.X))}</td><td class="n">${r.Iz ? f1(r.Iz) : '–'}</td><td class="n">${r.vd != null ? f2(r.vd) + '%' : '–'}</td><td class="n">${r.zs != null ? f2(r.zs) : '–'}</td><td class="n">${r.zsMax != null ? f2(r.zsMax) : 'mfr'}</td><td class="n">${r.cpc ?? '–'}</td><td>${pill(st, r.status || '—')}</td><td><button class="btn small ghost" data-del="circuits" data-i="${i}">Remove</button></td></tr>`;
   }).join('');
   const specs = R.C.filter(r => r.spec).map(r => `<li><b>${esc(r.k.ref)}</b> ${esc(r.k.desc)} — ${esc(r.spec)}</li>`).join('');
   return `<section class="sheet">${head('Stage 7', 'Cables & protection', `BS 7671 Appendix 4 copper ratings: Ib ≤ In ≤ Iz with Ca/Cg/Ci, voltage drop to ${R.X.c.vdl}% / ${R.X.c.vdo}%, Zs to Table 41.3, cpc to Table 54.7 with adiabatic check.`, `<button class="btn" data-add="circuits">Add circuit</button>`)}
-  ${R.X.fam !== 'IEC' ? `<p class="callout">Cable ratings here are BS 7671 / IEC 60364-5-52 values. For ${esc(FAMILY_NAME[R.X.fam])} projects, size conductors from the local tables (NEC 310.16, CEC Table 2, AS/NZS 3008.1).</p>` : ''}
+  <div class="callout"><b>Cable data:</b> ${esc(cableSource())}. ${packOn() ? '' : (R.X.fam !== 'IEC' ? `For ${esc(FAMILY_NAME[R.X.fam])} projects these are proxy values – size conductors from the local tables (NEC 310.16, CEC Table 2, AS/NZS 3008.1).${usesAWG(R.X) ? ' Sizes are shown with their AWG / kcmil equivalent and devices use NEC 240.6(A) standard ratings.' : ''}` : 'Metric IEC tables (e.g. IEC 60364-5-52, national annexes) can be imported as a licensed table pack.')}
+   <div class="row" style="margin-top:6px"><button class="btn small" data-act="load-pack">Import cable table pack (.json)</button><button class="btn small ghost" data-act="dl-packtpl">Download template</button>${packOn() ? '<button class="btn small ghost" data-act="rm-pack">Use built-in BS 7671 data</button>' : ''}</div></div>
+  <input type="file" id="packIn" accept=".json" hidden>
   <div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>From</th><th>Description</th><th>Type</th><th>kW</th><th>Ph</th><th>Device</th><th>Cable &amp; method</th><th>Length m</th><th>Amb °C</th><th>Grouped</th><th>Arrangement</th><th>Zdb Ω</th><th>PFC kA</th><th>Icn kA</th><th>RCD</th><th>IΔn mA</th><th>Ib A</th><th>In A</th><th>mm²</th><th>Iz A</th><th>VD</th><th>Zs Ω</th><th>Zs max</th><th>cpc</th><th>Result</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
   <h3>Specification</h3><ul class="note">${specs || '<li>Add circuits to generate cable and device specifications.</li>'}</ul></section>`;
 };
@@ -1314,7 +1354,7 @@ V.drawings = () => {
     <td class="wide"><select data-arr="dwgRooms" data-i="${i}" data-k="lum">${opt([{ v: '', t: `${DWG_LUM[o.t.lum].n} (default)` }, ...DWG_LUM.map(l => ({ v: l.n, t: l.n }))], o.r.lum)}</select></td>
     <td>${n(i, 'lux', o.r.lux, o.t.lux, 60)}</td><td>${n(i, 'nLum', o.r.nLum, o.nAuto, 60)}</td><td class="n">${f0(o.Eavg)}</td><td>${n(i, 'nSock', o.r.nSock, o.sAuto, 60)}</td><td>${n(i, 'nEm', o.r.nEm, o.emAuto, 60)}</td><td>${n(i, 'dist', o.r.dist, 15, 60)}</td>
     <td class="n">${f0(o.wl)}</td><td class="n">${f1(o.lpd)}</td><td><button class="btn small ghost" data-del="dwgRooms" data-i="${i}" aria-label="Remove room">✕</button></td></tr>`).join('');
-  const crow = W.C.map(c => `<tr><td>${esc(c.ref)}</td><td>${esc(c.desc)}</td><td>${esc(c.cc.dev.n)}${c.rcd ? ' 30 mA' : ''}${c.afdd ? ' + AFDD' : ''}</td><td class="n">${c.cc.inr ?? '–'}</td><td class="n">${c.cc.csa != null ? `${c.cc.csa}/${c.cc.cpc}` : '–'}</td><td class="n">${c.pts}</td><td class="n">${f0(c.w)}</td><td class="n">${f1(c.ib)}</td><td class="n">${f1(c.len)}</td><td class="n">${c.cc.vd != null ? f2(c.cc.vd) : '–'}</td><td class="n">${c.cc.zs != null ? f2(c.cc.zs) : '–'}</td><td>${pill(c.cc.fail === 'REVIEW' ? 'warn' : c.cc.fail ? 'bad' : 'ok', c.cc.status || 'Review')}</td></tr>`).join('');
+  const crow = W.C.map(c => `<tr><td>${esc(c.ref)}</td><td>${esc(c.desc)}</td><td>${esc(c.cc.dev.n)}${c.rcd ? ' 30 mA' : ''}${c.afdd ? ' + AFDD' : ''}</td><td class="n">${c.cc.inr ?? '–'}</td><td class="n">${c.cc.csa != null ? `${c.cc.csa}/${c.cc.cpc}${usesAWG(R.X) ? ` (≈ ${awgOf(c.cc.csa)})` : ''}` : '–'}</td><td class="n">${c.pts}</td><td class="n">${f0(c.w)}</td><td class="n">${f1(c.ib)}</td><td class="n">${f1(c.len)}</td><td class="n">${c.cc.vd != null ? f2(c.cc.vd) : '–'}</td><td class="n">${c.cc.zs != null ? f2(c.cc.zs) : '–'}</td><td>${pill(c.cc.fail === 'REVIEW' ? 'warn' : c.cc.fail ? 'bad' : 'ok', c.cc.status || 'Review')}</td></tr>`).join('');
   const chk = W.chk.map(c => `<tr><td>${esc(c.scope)}</td><td>${esc(c.item)}</td><td>${esc(c.res)}</td><td>${pill(c.st, { ok: 'Pass', warn: 'Check', bad: 'Fail' }[c.st])}</td><td class="note">${esc(c.ref)}</td></tr>`).join('');
   const sockOpts = [{ v: '', t: `${W.sockDef.n} (regional default)` }, ...SOCK.map(s => ({ v: s.n, t: s.n }))];
   return `<section class="sheet">${head('Stage 10', 'Electrical drawings', 'Generate a lighting and small-power layout, board schedule and single-line diagram from basic room parameters, check them, and save as DXF to open in AutoCAD.', `<button class="btn" data-act="load-layout">Import layout (DXF)</button><button class="btn primary" data-act="dl-dxf">Save drawing (.dxf)</button><button class="btn" data-act="dl-svg">Save preview (.svg)</button>`)}
@@ -1330,7 +1370,7 @@ V.drawings = () => {
    ${fld('Max lighting points per circuit', inp('dwg.maxLightPts', g.maxLightPts, 'number', `placeholder="${W.lightPts}"`), esc(W.lpRef))}
    ${fld('Lighting circuit max loading', inp('dwg.lightFill', g.lightFill, 'number'), '0.8 = 80% of In (NEC continuous-load rule)')}
    ${fld('Utilisation factor', inp('dwg.uf', g.uf, 'number'), '0.4–0.75')}${fld('Maintenance factor', inp('dwg.mf', g.mf, 'number'), '0.7–0.9')}
-   ${fld('Cable table', sel('dwg.cable', DD.COMBOS.map((c, i) => ({ v: i, t: c.n })), g.cable), 'BS 7671 Appendix 4 ratings')}
+   ${fld('Cable table', sel('dwg.cable', combosList().map((c, i) => ({ v: i, t: c.name || c.n })), g.cable), esc(cableSource()))}
    ${fld('Grouped circuits', inp('dwg.grp', g.grp, 'number'))}${fld('Zdb at board (Ω)', inp('dwg.zdb', g.zdb, 'number', `placeholder="${S.sizing.ze}"`), 'Blank = Ze from Stage 1')}
    <label class="row" style="gap:8px"><input type="checkbox" id="dwg_rcd" data-p="dwg.rcd" ${g.rcd ? 'checked' : ''} style="width:auto"> 30 mA RCD / GFCI on final circuits</label>
    <label class="row" style="gap:8px"><input type="checkbox" id="dwg_afdd" data-p="dwg.afdd" ${g.afdd ? 'checked' : ''} style="width:auto"> AFDD / AFCI on socket circuits</label></div>
@@ -1408,7 +1448,7 @@ function reportBody() {
   ${sec('Summary')}<table class="r kv"><tbody>${[['Design region', `${esc(p.country)} (${esc(X.dreg)})`], ['Wiring regulations', esc(c.regs)], ['Supply', `${X.vln}/${X.vll} V, ${c.hz} Hz, ${esc(c.earthing)}`], ['Total maximum demand', `<b>${f0(R.md)} kVA</b> (${f0(R.kw)} kW, ${f0(R.amps)} A per phase) including ${pct(+p.spare)} spare`], ['Supply arrangement', esc(R.supply)], ['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA ${esc(S.sizing.txType)}, ${S.sizing.resilience}` : 'Exceeds standard sizes – review'], ['Main LV incomer', R.incomer ? `${f0(R.incomer)} A, Icw ${R.icw ?? '> 120'} kA` : '–'], ['Standby generation', R.gen ? `${f0(R.gen)} kVA` : 'Multiple sets'], ['Annual electricity (net)', `${f0(R.E.imp / 1000)} MWh/yr, ${f0(R.E.eui)} kWh/m²/yr, ${f1(R.E.tco2)} tCO₂e/yr`]].map(([a, b]) => `<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</tbody></table>
   ${sec('Design basis and standards')}<p>${esc(method)}</p>
   ${tbl(['Item', 'Basis'], [['Wiring regulations', esc(c.regs)], ['Load calculation method', esc(c.method)], ['Demand / diversity factor set', esc(c.set)], ['Lighting design', esc(c.lighting)], ['Emergency lighting', esc(c.emergency)], ['LV assemblies', esc(c.assemblies)], ['Protective devices', esc(c.devices)], ['Voltage-drop limits', `${c.vdl}% lighting, ${c.vdo}% other`], ['Utility / authority', esc(c.authority)], ['Power factor / spare', `${p.pf} / ${pct(+p.spare)}`]])}
-  ${(() => { const cv = coverageOf(c); return `<p class="s"><b>Regional coverage for ${esc(p.country)}: ${esc(cv.label)}${cv.verified ? ` – verified against ${esc(cv.verified.edition)} (${esc(cv.verified.date)})` : ' – not yet verified against the edition in force'}.</b> ${cv.notes.map(esc).join(' ')} Cable data: ${esc(cv.cable)}.</p>`; })()}
+  ${(() => { const cv = coverageOf(c); return `<p class="s"><b>Regional coverage for ${esc(p.country)}: ${esc(cv.label)}${cv.verified ? ` – verified against ${esc(cv.verified.edition)} (${esc(cv.verified.date)})` : ' – not yet verified against the edition in force'}.</b> ${cv.notes.map(esc).join(' ')} Cable data: ${esc(packOn() ? cableSource() : cv.cable)}.</p>`; })()}
   ${sec('Area load schedule')}${tbl(['Zone', 'Building / space type', 'Area m²', 'Design VA/m²', 'Demand kVA'], R.Z.rows.map(r => [esc(r.z.desc), esc(r.z.type), f0(+r.z.area), f1(r.dens), f1(r.kva)]), ['Total', '', f0(R.Z.area), f1(R.Z.area ? R.Z.kva * 1000 / R.Z.area : 0), f1(R.Z.kva)])}
   <p class="s">Design density = base (${esc(p.basis)}) density × regional factor for ${esc(X.dreg)}, unless overridden.</p>
   ${R.Lo.rows.length ? sec('Equipment loads') + tbl(['Board', 'Item', 'Category', 'Connected kW', 'Demand f.', 'Diversity', 'Demand kVA'], R.Lo.rows.map(r => [esc(r.l.db), esc(r.l.desc), esc(r.l.cat), f1(r.conn), f2(r.ku), f2(r.df), f1(r.kva)])) + tbl(['Board', 'Items', 'Ks', 'Demand kVA', 'Current A'], R.Lo.dbs.map(d => [esc(d.name), d.n, f2(d.ks), f1(d.dem), f0(d.amps)]), ['Equipment MD', '', `× ${S.mainSF}`, f1(R.Lo.kva), '']) : ''}
@@ -1417,10 +1457,10 @@ function reportBody() {
   ${sec('Maximum demand')}${R.PB != null ? `<p>Maximum demand is based on the imported panel schedules (${R.RV.panels.map(p => esc(p.name)).join(', ')}); the area and equipment schedules are not added.</p>` + tbl(['Source', 'kVA'], [...R.RV.panels.map(p => [`Panel ${esc(p.name)} (demand)`, f1(p.dem)]), ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)]) : tbl(['Source', 'kVA'], [['Area loads', f1(R.Z.kva)], ['Equipment loads', f1(R.Lo.kva)], ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)])}
   ${sec('Supply, transformers and switchgear')}${tbl(['Item', 'Value'], [['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA, Uk ${S.sizing.uk}%, ${esc(S.sizing.txType)}` : 'Review'], ['Full-load current', R.flc ? `${f0(R.flc)} A` : '–'], ['LV fault level', R.flP ? `${f1(R.flP)} kA (infinite source)` : '–'], ['Main incomer / busbar', R.incomer ? `${f0(R.incomer)} A` : '–'], ['Short-circuit rating', R.icw ? `${R.icw} kA, 1 s` : '–'], ['Transformer room', R.room ? `${f1(R.room.L)} × ${f1(R.room.W)} m, ${f1(R.room.H)} m clear` : '–'], ['LV switchroom', R.room ? `${f1(R.room.swA)} m²` : '–'], ['Ventilation', R.room ? `${f2(R.room.vent)} m³/s for ${f1(R.room.loss)} kW losses` : '–'], ['Standby generator', R.gen ? `${f0(R.gen)} kVA (${pct(S.sizing.essential)} essential × ${S.sizing.genMargin})` : '–']])}
   ${sec('Earthing and bonding')}${tbl(['Item', 'Value'], [['Earthing system', esc(c.earthing)], ['Main earthing conductor', `${R.met} mm² Cu (Table 54.7)`], ['Main protective bonding', `${R.bond} mm² Cu`], ['Transformer neutral–earth', R.nEarth ? `${R.nEarth} mm² Cu` : '–']])}
-  ${R.C.length ? sec('Cable and protection schedule') + tbl(['Ref', 'From', 'Description', 'Ib A', 'In A', 'mm²', 'Iz A', 'VD %', 'Zs Ω', 'Result'], R.C.map(r => [esc(r.k.ref), esc(r.k.from), esc(r.k.desc), f1(r.ib), r.inr ?? '–', r.csa ?? '–', r.Iz ? f1(r.Iz) : '–', r.vd != null ? f2(r.vd) : '–', r.zs != null ? f2(r.zs) : '–', esc(r.status)])) + `<ul class="s">${R.C.filter(r => r.spec).map(r => `<li>${esc(r.k.ref)}: ${esc(r.spec)}</li>`).join('')}</ul>` : ''}
+  ${R.C.length ? sec('Cable and protection schedule') + `<p class="s">Cable data: ${esc(cableSource())}${usesAWG(R.X) ? '; sizes in mm² with AWG / kcmil equivalents' : ''}.</p>` + tbl(['Ref', 'From', 'Description', 'Ib A', 'In A', 'mm²', 'Iz A', 'VD %', 'Zs Ω', 'Result'], R.C.map(r => [esc(r.k.ref), esc(r.k.from), esc(r.k.desc), f1(r.ib), r.inr ?? '–', esc(csaLabel(r.csa, R.X)), r.Iz ? f1(r.Iz) : '–', r.vd != null ? f2(r.vd) : '–', r.zs != null ? f2(r.zs) : '–', esc(r.status)])) + `<ul class="s">${R.C.filter(r => r.spec).map(r => `<li>${esc(r.k.ref)}: ${esc(r.spec)}</li>`).join('')}</ul>` : ''}
   ${R.W.rooms.length ? sec('Lighting and small power – final circuits') + `<p>Generated layout for board ${esc(S.dwg.board)} using the lumen method (UF ${R.W.uf}, MF ${R.W.mf}) and ${esc(R.W.sock.n)} socket-outlets. Parameter checks: ${R.W.nOk} pass, ${R.W.nWarn} to check, ${R.W.nBad} fail.</p>` +
     tbl(['Room', 'Type', 'Area m²', 'Luminaires', 'Target / achieved lx', 'W/m²', 'Sockets', 'Emergency', 'Circuits'], R.W.rooms.map(o => [esc(o.r.name), esc(o.t.n), f1(o.A), `${o.nLum} × ${esc(o.lum.n)}`, `${o.lux} / ${f0(o.Eavg)}`, f1(o.lpd), o.nSock, o.nEm, esc([...new Set([...o.lc, ...o.pc].map(x => x[0]))].join(', '))]), ['Total', '', f1(R.W.area), '', '', f1(R.W.area ? R.W.lightW / R.W.area : 0), R.W.sockN, '', '']) +
-    tbl(['Ref', 'Description', 'Device', 'In A', 'mm²', 'Points', 'Load W', 'Ib A', 'VD %', 'Zs Ω', 'Result'], R.W.C.map(c => [esc(c.ref), esc(c.desc), `${esc(c.cc.dev.n)}${c.rcd ? ' 30 mA' : ''}${c.afdd ? ' + AFDD' : ''}`, c.cc.inr ?? '–', c.cc.csa != null ? `${c.cc.csa}/${c.cc.cpc}` : '–', c.pts, f0(c.w), f1(c.ib), c.cc.vd != null ? f2(c.cc.vd) : '–', c.cc.zs != null ? f2(c.cc.zs) : '–', esc(c.cc.status)])) +
+    tbl(['Ref', 'Description', 'Device', 'In A', 'mm²', 'Points', 'Load W', 'Ib A', 'VD %', 'Zs Ω', 'Result'], R.W.C.map(c => [esc(c.ref), esc(c.desc), `${esc(c.cc.dev.n)}${c.rcd ? ' 30 mA' : ''}${c.afdd ? ' + AFDD' : ''}`, c.cc.inr ?? '–', c.cc.csa != null ? `${c.cc.csa}/${c.cc.cpc}${usesAWG(R.X) ? ` (≈ ${awgOf(c.cc.csa)})` : ''}` : '–', c.pts, f0(c.w), f1(c.ib), c.cc.vd != null ? f2(c.cc.vd) : '–', c.cc.zs != null ? f2(c.cc.zs) : '–', esc(c.cc.status)])) +
     tbl(['Scope', 'Check', 'Result', 'Status', 'Reference'], R.W.chk.filter(c => c.st !== 'ok').map(c => [esc(c.scope), esc(c.item), esc(c.res), { warn: 'Check', bad: 'Fail' }[c.st], esc(c.ref)])) +
     `<p class="s">Only checks needing attention are listed. Layout is schematic for design development; luminaire spacing, emergency lighting and socket positions must be verified against photometric data and the architecture. This is a design pre-check, not certification.</p>` : ''}
   ${R.RV.sheets.length ? sec('Drawing review (imported DXF)') + `<p>Drawings reviewed: ${R.RV.sheets.map(x => esc(x.file)).join(', ')}. Symbol meanings were learned from each drawing's legend and confirmed or corrected by the designer. Pre-checks: ${R.RV.nBad} fail, ${R.RV.nWarn} to check.</p>` +
@@ -1449,8 +1489,8 @@ function csvSchedules() {
   R.Z.rows.forEach(r => L.push([r.z.desc, r.z.type, r.z.area, r.base, r.mult, r.dens.toFixed(1), r.kva.toFixed(1)].map(q).join(',')));
   L.push(''); L.push(q('EQUIPMENT LOADS')); L.push(['Board', 'Item', 'Category', 'Qty', 'kW each', 'Connected kW', 'Demand factor', 'Diversity', 'Demand kVA'].map(q).join(','));
   R.Lo.rows.forEach(r => L.push([r.l.db, r.l.desc, r.l.cat, r.l.qty, r.l.kw, r.conn.toFixed(1), r.ku, r.df, r.kva.toFixed(1)].map(q).join(',')));
-  L.push(''); L.push(q('CABLE AND PROTECTION')); L.push(['Ref', 'From', 'Description', 'Ib A', 'In A', 'csa mm2', 'Iz A', 'VD %', 'Zs ohm', 'cpc mm2', 'Result', 'Specification'].map(q).join(','));
-  R.C.forEach(r => L.push([r.k.ref, r.k.from, r.k.desc, r.ib.toFixed(1), r.inr, r.csa, r.Iz?.toFixed(1), r.vd?.toFixed(2), r.zs?.toFixed(3), r.cpc, r.status, r.spec].map(q).join(',')));
+  L.push(''); L.push(q('CABLE AND PROTECTION')); L.push(['Ref', 'From', 'Description', 'Ib A', 'In A', 'csa mm2', 'AWG equivalent', 'Iz A', 'VD %', 'Zs ohm', 'cpc mm2', 'Result', 'Specification'].map(q).join(','));
+  R.C.forEach(r => L.push([r.k.ref, r.k.from, r.k.desc, r.ib.toFixed(1), r.inr, r.csa, r.awg || '', r.Iz?.toFixed(1), r.vd?.toFixed(2), r.zs?.toFixed(3), r.cpc, r.status, r.spec].map(q).join(',')));
   if (R.W.rooms.length) {
     const W = R.W;
     L.push(''); L.push(q('ROOM LOAD SHEET (generated layout)')); L.push(['Room', 'Type', 'Area m2', 'Luminaire', 'Luminaires', 'Target lx', 'Achieved lx', 'Lighting W', 'W/m2', 'Sockets', 'Emergency', 'Distance to board m'].map(q).join(','));
@@ -1544,6 +1584,9 @@ document.addEventListener('click', async e => {
   if (act === 'rv-del') { S.review.sheets.splice(+b.dataset.i, 1); persist(); render(); }
   if (act === 'rv-clear') { S.review.sheets = []; persist(); render(); toast('Drawings removed (your symbol mapping is kept)'); }
   if (act === 'dl-dxf' || act === 'dl-svg') { if (!R.W.rooms.length) { toast('Add rooms first'); return; } const G = dwgGeom(R.W), base = `${S.project.ref || 'project'}-${(S.dwg.board || 'DB').replace(/[^\w-]+/g, '_')}-electrical-layout`; if (act === 'dl-dxf') save(base + '.dxf', toDXF(G), 'Drawing'); else save(base + '.svg', toSVG(G, true), 'Preview'); }
+  if (act === 'load-pack') { const f = document.getElementById('packIn'); if (f) f.click(); }
+  if (act === 'dl-packtpl') save('cable-table-pack-template.json', JSON.stringify(packTemplate(), null, 1), 'Template');
+  if (act === 'rm-pack') { delete S.cablePack; persist(); render(); toast('Using the built-in BS 7671 Appendix 4 data'); }
   if (act === 'dl-coverage') save('nexvorahub-regional-coverage.csv', csvCoverage(), 'Coverage register');
   if (act === 'dl-csv') save(`${S.project.ref || 'project'}-load-schedules.csv`, csvSchedules(), 'Schedules');
   if (act === 'copy-report') { const t = $('#paper').innerText; try { await navigator.clipboard.writeText(t); toast('Report text copied'); } catch (err) { const r = document.createRange(); r.selectNodeContents($('#paper')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Report selected – press Ctrl+C to copy'); } }
@@ -1567,6 +1610,13 @@ $('#fileIn').addEventListener('change', e => {
   rd.readAsText(f);
 });
 // DXF import for the drawing review (read locally; nothing is uploaded)
+document.addEventListener('change', e => {
+  if (e.target.id !== 'packIn') return;
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { try { const p = JSON.parse(String(rd.result)), err = validatePack(p); if (err.length) { toast('Cable table pack not loaded: ' + err.slice(0, 2).join('; ') + (err.length > 2 ? ` (+${err.length - 2} more)` : '')); return; } S.cablePack = { source: String(p.source), licence: String(p.licence || ''), family: p.family || '', combos: p.combos.map(c => ({ name: String(c.name), temp: c.temp, it1: c.it1, mv1: c.mv1, it3: c.it3 && c.it3.length ? c.it3 : [], mv3: c.mv3 && c.mv3.length ? c.mv3 : [] })), CA70: p.CA70 || null, CA90: p.CA90 || null, CGB: p.CGB || null, CGS: p.CGS || null }; S.circuits.forEach(k => { if (+k.cable >= S.cablePack.combos.length) k.cable = 0; }); persist(); render(); toast(`Cable data: ${S.cablePack.source}`); } catch (err) { toast(`${f.name}: not a valid JSON cable table pack`); } };
+  rd.readAsText(f);
+});
 document.addEventListener('change', e => {
   if (e.target.id !== 'layoutIn') return;
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;

@@ -313,6 +313,30 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const cv = csvCoverage(); cchk('coverage CSV', cv.split('\r\n').length === 96 && /"Russia".*"Not offered"/.test(cv));
   out.coverage = [K.full, K.supported, K.indicative, K.unavailable];
   out.coverageChecks = cFail.length ? cFail : 'all passed'; }
+// ---- regional cable data: AWG equivalents, US device ratings, imported table packs ----
+{ const tFail = [], tchk = (n, ok, got) => { if (!ok) tFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const S0 = S.project.country, C0 = JSON.stringify(S.circuits);
+  tchk('AWG equivalents', awgOf(1.5) === '14 AWG' && awgOf(2.5) === '12 AWG' && awgOf(4) === '10 AWG' && awgOf(95) === '4/0 AWG' && awgOf(240) === '500 kcmil' && awgOf(600) === '> 1000 kcmil', [awgOf(2.5), awgOf(95), awgOf(240)]);
+  S.project.country = 'United States'; R = calcAll();
+  tchk('US devices use NEC 240.6(A) ratings', R.C.filter(c => c.inr).every(c => NEC_STD.includes(c.inr)), R.C.map(c => c.inr));
+  tchk('US sizes carry AWG', R.C.filter(c => c.csa).every(c => c.awg && /AWG|kcmil/.test(c.awg)) && /≈ \d+ AWG|≈ .*kcmil|≈ \d\/0 AWG/.test(reportDoc()) && /AWG equivalent/.test(csvSchedules()));
+  view = 'circuits'; render(); tchk('circuits view shows AWG + source', /AWG/.test(document.querySelector('#main').innerHTML) && /NEC 240\.6\(A\)/.test(document.querySelector('#main').innerHTML));
+  S.project.country = 'United Kingdom'; R = calcAll();
+  tchk('UK unchanged: IEC ratings, no AWG', R.C.every(c => !c.awg) && R.C.map(c => c.inr).join() === '6,20,200,80', R.C.map(c => c.inr));
+  // packs
+  tchk('template is structurally valid', validatePack(packTemplate()).length === 0, validatePack(packTemplate()));
+  tchk('bad pack rejected with reasons', validatePack({ combos: [{ name: 'x', temp: 60, it1: [1, 2] }] }).length >= 3);
+  const base = R.C.find(c => c.k.ref === 'S01');
+  const big = { source: 'Test table – doubled ratings', licence: 'TEST', combos: DD.COMBOS.map(c => ({ name: 'Pack ' + (c.name || c.n), temp: c.temp, it1: c.it1.map(v => v * 2), mv1: c.mv1, it3: c.it3.map(v => v * 2), mv3: c.mv3 })) };
+  tchk('test pack valid', validatePack(big).length === 0, validatePack(big));
+  S.cablePack = big; R = calcAll(); const withPack = R.C.find(c => c.k.ref === 'S01');
+  tchk('pack changes sizing', withPack.csa < base.csa && /Test table – doubled ratings \(imported – licence: TEST\)/.test(cableSource()), [base.csa, withPack.csa]);
+  tchk('report names the pack', /Cable data: Test table – doubled ratings/.test(reportDoc()));
+  view = 'drawings'; render(); tchk('drawing cable list uses pack names', /Pack /.test(document.querySelector('#main').innerHTML));
+  delete S.cablePack; R = calcAll(); tchk('built-in restored', R.C.find(c => c.k.ref === 'S01').csa === base.csa && cableSource() === 'BS 7671 Appendix 4 (built-in)');
+  view = 'drawings'; render(); tchk('drawing cable list has names (bug fix)', (document.querySelector('#main').innerHTML.match(/<option value="\d"[^>]*>([^<]*)<\/option>/g) || []).some(o => /Twin &amp; earth/.test(o)));
+  S.project.country = S0; S.circuits = JSON.parse(C0); R = calcAll();
+  out.cableChecks = tFail.length ? tFail : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
