@@ -374,6 +374,11 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   lchk2('every language has every string', ['fr', 'es', 'pt', 'ar'].every(l => Object.keys(I18N.fr).every(k => I18N[l][k])));
   S.project.lang = L0; R = calcAll();
   out.languages = Object.keys(I18N).length + 1; out.translationChecks = lFail.length ? lFail : 'all passed'; }
+// ---- legal links in the app ----
+{ const gFail = []; render(); const rail = document.querySelector('#rail').innerHTML;
+  if (!['terms.html', 'privacy.html', 'refunds.html'].every(u => rail.includes(`href="${u}"`))) gFail.push('rail legal links missing');
+  view = 'account'; render(); if (!/Refund policy/.test(document.querySelector('#main').innerHTML)) gFail.push('account page refund link missing');
+  out.legalLinkChecks = gFail.length ? gFail : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);

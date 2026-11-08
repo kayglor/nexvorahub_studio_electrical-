@@ -4,8 +4,9 @@
   "provider": "lemonsqueezy",
   "checkoutUrl": "",
   "supportEmail": "",
-  "termsUrl": "",
-  "privacyUrl": "",
+  "termsUrl": "terms.html",
+  "privacyUrl": "privacy.html",
+  "refundsUrl": "refunds.html",
   "plans": [
     { "name": "Free", "price": "£0", "features": "All design stages, on-screen results, regional coverage" },
     { "name": "Pro – monthly", "price": "£19 / month", "features": "Design report and CSV, DXF drawings and overlays, drawing review, layout and panel-schedule import, cable table packs" },

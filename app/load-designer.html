@@ -191,8 +191,9 @@ tr.total td{font-weight:600;background:var(--sunk)}
   "provider": "lemonsqueezy",
   "checkoutUrl": "",
   "supportEmail": "",
-  "termsUrl": "",
-  "privacyUrl": "",
+  "termsUrl": "terms.html",
+  "privacyUrl": "privacy.html",
+  "refundsUrl": "refunds.html",
   "plans": [
     { "name": "Free", "price": "£0", "features": "All design stages, on-screen results, regional coverage" },
     { "name": "Pro – monthly", "price": "£19 / month", "features": "Design report and CSV, DXF drawings and overlays, drawing review, layout and panel-schedule import, cable table packs" },
@@ -231,6 +232,8 @@ async function activateLicence(key) {
   } catch (e) { toast('Could not reach the licence server – check your connection and try again'); }
   render();
 }
+// Terms / privacy / refund links (shown in the side rail on every stage when set in access.json)
+function legalLinks() { const l = [[ACCESS.termsUrl, 'Terms'], [ACCESS.privacyUrl, 'Privacy'], [ACCESS.refundsUrl, 'Refunds']].filter(x => x[0]); return l.length ? `<span class="legal">${l.map(([u, t]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${t}</a>`).join(' · ')}</span>` : ''; }
 function removeLicence() { LIC = null; try { localStorage.removeItem(LIC_KEY); } catch (e) { } render(); toast('Licence removed from this browser'); }
 /* ---------- cable data: built-in BS 7671 tables, or a user-imported licensed table pack ---------- */
 // AWG / kcmil conductor areas (mm²) – a metric size is shown with the smallest AWG of at least the same area
@@ -1226,7 +1229,7 @@ function railStatus(id) {
 }
 function renderRail() {
   $('#rail').innerHTML = VIEWS.map(([id, t], i) => `<a href="#${id}" ${id === view ? 'aria-current="page"' : ''}><span class="k">${String(i + 1).padStart(2, '0')}</span><span>${t}</span><i class="dot ${railStatus(id)}"></i></a>`).join('') +
-    `<div class="rail-foot">${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json">Save project file</button><button class="btn small" data-act="load-json">Open project file</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
+    `<div class="rail-foot">${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json">Save project file</button><button class="btn small" data-act="load-json">Open project file</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
 }
 function head(eb, title, sub, right = '') { return `<div class="sheet-head"><div><div class="eyebrow">${eb}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div><div class="row">${right}</div></div>`; }
 
@@ -1475,7 +1478,7 @@ V.account = () => {
   ${off ? `<p class="callout">${esc(COV.notOffered[S.project.country])}</p>` : `<div class="row" style="margin:10px 0">${ACCESS.checkoutUrl ? `<a class="btn primary" href="${esc(ACCESS.checkoutUrl)}" target="_blank" rel="noopener">Buy ${esc(ACCESS.product)}</a>` : '<span class="note">Checkout link not set yet (access.json → checkoutUrl).</span>'}</div>
   <h3>Licence</h3>${ok ? `<p>${pill('ok', 'Active')} Licence ending …${esc(LIC.key.slice(-4))}${LIC.expires ? ' · renews/expires ' + esc(String(LIC.expires).slice(0, 10)) : ''} · checked ${esc(LIC.checked)}</p><button class="btn small ghost" data-act="lic-remove">Remove licence from this browser</button>`
     : `<div class="grid">${fld('Licence key (from your purchase email)', '<input id="licKey" type="text" autocomplete="off" spellcheck="false" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX">')}</div><div class="row" style="margin-top:8px"><button class="btn primary" data-act="lic-activate">Activate licence</button>${LIC && !LIC.valid ? ` ${pill('bad', 'Last check: ' + LIC.status)}` : ''}</div>`}`}` : ''}
-  <p class="note">${[ACCESS.termsUrl && `<a href="${esc(ACCESS.termsUrl)}" target="_blank" rel="noopener">Terms of service</a>`, ACCESS.privacyUrl && `<a href="${esc(ACCESS.privacyUrl)}" target="_blank" rel="noopener">Privacy policy</a>`, ACCESS.supportEmail && `Support: ${esc(ACCESS.supportEmail)}`].filter(Boolean).join(' · ') || 'Results are a design aid and pre-check, not certification; verification by a competent person remains required.'}</p></section>`;
+  <p class="note">${[ACCESS.termsUrl && `<a href="${esc(ACCESS.termsUrl)}" target="_blank" rel="noopener">Terms of service</a>`, ACCESS.privacyUrl && `<a href="${esc(ACCESS.privacyUrl)}" target="_blank" rel="noopener">Privacy policy</a>`, ACCESS.refundsUrl && `<a href="${esc(ACCESS.refundsUrl)}" target="_blank" rel="noopener">Refund policy</a>`, ACCESS.supportEmail && `Support: ${esc(ACCESS.supportEmail)}`].filter(Boolean).join(' · ') || 'Results are a design aid and pre-check, not certification; verification by a competent person remains required.'}</p></section>`;
 };
 V.report = () => `<section class="sheet">${head('Stage 13', 'Design report', 'A complete electrical load assessment and design report generated from every stage. Save it as an HTML document (opens in any browser or Word, and prints to PDF), or export the schedules as CSV.', `<label class="row" style="gap:6px">Report language ${sel('project.lang', REPORT_LANGS.map(([v, t]) => ({ v, t })), S.project.lang || 'en')}</label><button class="btn primary" data-act="dl-report">Save report (.html)</button><button class="btn" data-act="dl-csv">Save schedules (.csv)</button><button class="btn" data-act="copy-report">Copy report text</button>`)}
   <div class="paper" id="paper" lang="${rLang()}"${rLang() === 'ar' ? ' dir="rtl"' : ''}>${reportBody()}</div></section>`;

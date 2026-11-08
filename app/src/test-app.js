@@ -13,4 +13,12 @@ const sandbox = { document, window: {}, location: { hash: '' }, localStorage: { 
 const test = fs.readFileSync(__dirname + '/test-cases.js', 'utf8');
 new Function(...Object.keys(sandbox), code + '\n' + test)(...Object.values(sandbox));
 const failed = globalThis.__TEST_FAILURES || ['test cases did not finish'];
+// legal pages published with the site: present, cross-linked, marked as draft until approved, not indexed while draft
+const legal = ['terms.html', 'privacy.html', 'refunds.html'].map(f => [f, fs.existsSync(__dirname + '/../../site/' + f) ? fs.readFileSync(__dirname + '/../../site/' + f, 'utf8') : '']);
+const legalErr = legal.flatMap(([f, h]) => !h ? [f + ' missing'] : [
+  ...['terms.html', 'privacy.html', 'refunds.html', './'].filter(u => !h.includes(`href="${u}"`)).map(u => `${f}: no link to ${u}`),
+  ...(/Draft – not yet in force/.test(h) && !/name="robots" content="noindex"/.test(h) ? [f + ': draft page must be noindex'] : []),
+  ...(/<title>[^<]+<\/title>/.test(h) && /<html lang="en">/.test(h) ? [] : [f + ': title or lang missing'])]);
+console.log('legalPages =', JSON.stringify(legalErr.length ? legalErr : 'all passed'));
+if (legalErr.length) failed.push('legalPages');
 if (failed.length) { console.error('TESTS FAILED:', failed.join(', ')); process.exitCode = 1; } else console.log('ALL TESTS PASSED');
