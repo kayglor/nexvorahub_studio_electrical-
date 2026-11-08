@@ -2,6 +2,8 @@
 
 *Electrical load design studio* – load assessment, design reports, electrical drawing generation and AutoCAD (DXF) drawing review.
 
+**Live app:** https://studio.nexvorahubconnection.com
+
 Electrical load assessment and design tools for buildings, usable across 94 countries and regions (UK BS 7671 / IEC 60364, NEC, CEC, AS/NZS 3000 families).
 
 ## Contents
@@ -35,7 +37,7 @@ node test-app.js
 node serve.js
 ```
 
-`build-app.js` writes both `app/load-designer.html` (claude.ai Artifact) and `site/index.html` (website). Commit and push `site/index.html` to redeploy the live site: the GitHub Actions workflow `.github/workflows/pages.yml` publishes `site/` to GitHub Pages at https://kayglor.github.io/nexvorahub_studio_electrical-/ (one-time setup: Settings → Pages → Source: GitHub Actions).
+`build-app.js` writes both `app/load-designer.html` (claude.ai Artifact) and `site/index.html` (website). Commit and push `site/index.html` to redeploy the live site: the GitHub Actions workflow `.github/workflows/pages.yml` publishes `site/` to GitHub Pages at https://studio.nexvorahubconnection.com (custom domain on GitHub Pages; DNS: CNAME studio → kayglor.github.io, DNS only, in Cloudflare).
 
 `extract-data.js` reads the reference data (countries, densities, factors, cable tables) straight from the workbook generator, so the app and the workbook stay consistent. `serve.js` previews the app at http://localhost:5179/.
 
