@@ -1,0 +1,24 @@
+{
+  "version": "2026.11-1",
+  "asOf": "2026-11-08",
+  "note": "Regional coverage register. 'verified' records are added only after a competent engineer has checked the app's values against the edition of the code in force in that country. Until then a country is not marked ready to sell.",
+  "notOffered": {
+    "Russia": "Not offered: UK/US/EU sanctions – payment providers will not process sales and services should not be supplied."
+  },
+  "paymentNotes": {
+    "Iraq": "Check payment-provider support and sanctions screening before selling.",
+    "Lebanon": "Check payment-provider support before selling."
+  },
+  "nationalDeviations": {
+    "Germany": "DIN VDE 0100 deviations (e.g. VDE-AR-N 4100 metering, RCD rules) to be checked.",
+    "France": "NF C 15-100 prescriptive rules for dwellings (points per circuit, circuit types) to be checked.",
+    "Spain": "REBT ITC-BT rules (ITC-BT-25 circuits) to be checked.",
+    "Italy": "CEI 64-8 national annexes to be checked.",
+    "India": "IS 732 / CEA regulations and NBC 2016 to be checked.",
+    "South Africa": "SANS 10142-1 specific rules to be checked.",
+    "United Arab Emirates": "DEWA / ADDC / SEWA authority regulations to be checked.",
+    "Saudi Arabia": "Saudi Building Code SBC 401 to be checked.",
+    "Nigeria": "Nigerian Electricity Regulatory Commission and DISCO requirements to be checked."
+  },
+  "verified": {}
+}

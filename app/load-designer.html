@@ -160,10 +160,36 @@ tr.total td{font-weight:600;background:var(--sunk)}
   }
 }
 </script>
+<script type="application/json" id="coverage">{
+  "version": "2026.11-1",
+  "asOf": "2026-11-08",
+  "note": "Regional coverage register. 'verified' records are added only after a competent engineer has checked the app's values against the edition of the code in force in that country. Until then a country is not marked ready to sell.",
+  "notOffered": {
+    "Russia": "Not offered: UK/US/EU sanctions – payment providers will not process sales and services should not be supplied."
+  },
+  "paymentNotes": {
+    "Iraq": "Check payment-provider support and sanctions screening before selling.",
+    "Lebanon": "Check payment-provider support before selling."
+  },
+  "nationalDeviations": {
+    "Germany": "DIN VDE 0100 deviations (e.g. VDE-AR-N 4100 metering, RCD rules) to be checked.",
+    "France": "NF C 15-100 prescriptive rules for dwellings (points per circuit, circuit types) to be checked.",
+    "Spain": "REBT ITC-BT rules (ITC-BT-25 circuits) to be checked.",
+    "Italy": "CEI 64-8 national annexes to be checked.",
+    "India": "IS 732 / CEA regulations and NBC 2016 to be checked.",
+    "South Africa": "SANS 10142-1 specific rules to be checked.",
+    "United Arab Emirates": "DEWA / ADDC / SEWA authority regulations to be checked.",
+    "Saudi Arabia": "Saudi Building Code SBC 401 to be checked.",
+    "Nigeria": "Nigerian Electricity Regulatory Commission and DISCO requirements to be checked."
+  },
+  "verified": {}
+}
+</script>
 <script>
 "use strict";
 const DD = JSON.parse(document.getElementById('dd').textContent);
 const AIDC = JSON.parse(document.getElementById('aidc').textContent);
+const COV = JSON.parse(document.getElementById('coverage').textContent);
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const f0 = (v) => isFinite(v) ? Math.round(v).toLocaleString('en-GB') : '–';
@@ -456,6 +482,33 @@ const SOCK_BY_COUNTRY = (() => {
   set(15, 'Japan|Taiwan'); set(16, 'Thailand'); set(17, 'Vietnam|Peru|Lebanon|Rwanda');
   return m;
 })();
+/* ---------- regional coverage: how far each country's results can be relied on ---------- */
+// full: the app's data is the national code's own; supported: same code family and voltage class, national deviations to verify;
+// indicative: references only (different cable tables, units or voltage class); unavailable: not offered (sanctions).
+const COV_LEVELS = { full: ['Full', 'ok'], supported: ['Supported', 'ok'], indicative: ['Indicative', 'warn'], unavailable: ['Not offered', 'bad'] };
+function coverageOf(c) {
+  const notes = [], v = COV.verified[c.name] || null;
+  let level, cable;
+  if (COV.notOffered[c.name]) { level = 'unavailable'; notes.push(COV.notOffered[c.name]); }
+  else if (c.name === 'United Kingdom') { level = 'full'; notes.push('BS 7671 data used natively (Appendix 4 cable ratings, Table 41.3 / 54.7, OSG standard circuits).'); }
+  else if (c.fam === 'IEC' && c.vln >= 200 && c.vll >= 346) { level = 'supported'; notes.push('IEC 60364 family at 220–240 / 380–415 V; BS 7671 Appendix 4 ratings used as the IEC 60364-5-52 basis.'); }
+  else if (c.fam === 'IEC') { level = 'indicative'; notes.push(`Low-voltage system (${c.vln}/${c.vll} V) with national practice that differs from the IEC/BS 7671 data used.`); }
+  else if (c.fam === 'NEC') { level = 'indicative'; notes.push('NEC (NFPA 70): conductor sizes shown in mm² with AWG equivalents; NEC Table 310.16 ampacities not yet loaded.'); }
+  else if (c.fam === 'CEC') { level = 'indicative'; notes.push('CSA C22.1: AWG sizes and CEC Tables 1–4 not yet loaded; values use the IEC/BS 7671 data.'); }
+  else { level = 'indicative'; notes.push('AS/NZS 3000: AS/NZS 3008.1 cable tables not yet loaded; values use the IEC/BS 7671 data.'); }
+  cable = level === 'full' ? 'BS 7671 Appendix 4 (native)' : c.fam === 'IEC' ? 'BS 7671 Appendix 4 (IEC 60364-5-52 basis)' : 'BS 7671 Appendix 4 (proxy – local tables needed)';
+  if (COV.nationalDeviations[c.name]) notes.push(COV.nationalDeviations[c.name]);
+  if (COV.paymentNotes[c.name]) notes.push(COV.paymentNotes[c.name]);
+  const sockMapped = SOCK_BY_COUNTRY[c.name] != null, X0 = { c, fam: c.fam, vln: c.vln, vll: c.vll };
+  if (!sockMapped && c.fam === 'IEC') notes.push('Socket-outlet system assumed from the code family – confirm.');
+  const lr = lightPtsRule(X0);
+  const ready = (level === 'full' || level === 'supported') && !!(v && v.edition && v.date);
+  return { name: c.name, fam: c.fam, regs: c.regs, supply: `${c.vln}/${c.vll} V ${c.hz} Hz`, level, label: COV_LEVELS[level][0], pill: COV_LEVELS[level][1], cable, socket: regionalSocket(X0).n, sockMapped, lightRule: lr ? lr.ref : 'No numeric limit (load-based)', verified: v, ready, notes };
+}
+function coverageAll() {
+  const rows = COUNTRIES.map(coverageOf), n = l => rows.filter(r => r.level === l).length;
+  return { rows, full: n('full'), supported: n('supported'), indicative: n('indicative'), unavailable: n('unavailable'), ready: rows.filter(r => r.ready).length };
+}
 function regionalSocket(X) { const i = SOCK_BY_COUNTRY[X.c.name]; return SOCK[i ?? { NEC: 13, CEC: 14, ASNZS: 12 }[X.fam] ?? 1]; }
 // Lighting points per final circuit where the wiring code sets a limit (editable defaults – confirm the edition in force).
 // Where the code has no numeric limit the app applies a design-practice default and says so.
@@ -1067,7 +1120,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 /* ---------- views ---------- */
 const VIEWS = [
   ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
-  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['report', 'Design report'],
+  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['report', 'Design report'],
 ];
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view)) view = 'project';
 let R = calcAll();
@@ -1315,7 +1368,22 @@ V.review = () => {
   <div class="tbl-wrap"><table><thead><tr><th>Scope</th><th>Check</th><th>Result</th><th>Status</th><th>Reference</th></tr></thead><tbody>${ck || '<tr><td colspan="5">No issues found.</td></tr>'}</tbody></table></div>`
     : '<p class="note">No drawings imported yet. Import lighting and power plans (DXF) – several sheets can be combined.</p>'}</section>`;
 };
-V.report = () => `<section class="sheet">${head('Stage 12', 'Design report', 'A complete electrical load assessment and design report generated from every stage. Save it as an HTML document (opens in any browser or Word, and prints to PDF), or export the schedules as CSV.', `<button class="btn primary" data-act="dl-report">Save report (.html)</button><button class="btn" data-act="dl-csv">Save schedules (.csv)</button><button class="btn" data-act="copy-report">Copy report text</button>`)}
+V.coverage = () => {
+  const K = coverageAll(), cur = S.project.country;
+  const rows = K.rows.map(r => `<tr${r.name === cur ? ' class="total"' : ''}><td>${esc(r.name)}</td><td>${esc(FAMILY_NAME[r.fam] || r.fam)}</td><td class="note">${esc(r.regs)}</td><td>${esc(r.supply)}</td><td>${pill(r.pill, r.label)}</td><td class="note">${esc(r.cable)}</td><td class="note">${esc(r.socket)}${r.sockMapped ? '' : ' (assumed)'}</td><td class="note">${esc(r.lightRule)}</td><td>${r.verified ? `${esc(r.verified.edition)}<br><span class="note">${esc(r.verified.date)}${r.verified.by ? ' · ' + esc(r.verified.by) : ''}</span>` : '<span class="note">Not yet</span>'}</td><td>${r.ready ? pill('ok', 'Ready') : r.level === 'unavailable' ? pill('bad', 'No') : pill('na', 'Not yet')}</td><td class="note">${r.notes.map(esc).join(' ')}</td></tr>`).join('');
+  return `<section class="sheet">${head('Stage 12', 'Regional coverage', 'How far the results can be relied on in each of the ' + K.rows.length + ' countries and regions, which code data is used, and which markets are verified and ready for paid clients.', '<button class="btn" data-act="dl-coverage">Save coverage register (.csv)</button>')}
+  <div class="kpis">${[['Full', K.full, 'national code data used natively'], ['Supported', K.supported, 'same code family – verify national deviations'], ['Indicative', K.indicative, 'references only – local tables or units needed'], ['Not offered', K.unavailable, 'sanctions'], ['Verified & ready to sell', K.ready, 'engineer-verified against the edition in force']].map(([a, b, c]) => `<div class="kpi"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join('')}</div>
+  <p class="callout">Register v${esc(COV.version)} (as of ${esc(COV.asOf)}). A country becomes <b>ready to sell</b> only when it is Full or Supported <i>and</i> a competent engineer has verified the app's values against the edition in force there (recorded in <code>coverage.json</code> with edition, date and name). Indicative regions show code references but must not be sold as compliance software until their local cable tables, units and rules are loaded.</p>
+  <div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th>Country / region</th><th>Code family</th><th>Wiring regulations</th><th>Supply</th><th>Status</th><th>Cable data</th><th>Socket system</th><th>Lighting points rule</th><th>Verified</th><th>Ready to sell</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="note">Your project's region (${esc(cur)}) is highlighted. Standards tables are the copyright of their publishers (IET/BSI, IEC, NFPA, CSA, Standards Australia); commercial use of their values requires the appropriate licence.</p></section>`;
+};
+function csvCoverage() {
+  const q = v => { let t = String(v ?? ''); if (/^[=+@\t\r]/.test(t) || /^-(?![\d.])/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
+  const L = [['NexvoraHub Studio – regional coverage register', 'v' + COV.version, 'as of ' + COV.asOf].map(q).join(','), ['Country / region', 'Code family', 'Wiring regulations', 'Supply', 'Status', 'Cable data', 'Socket system', 'Lighting points rule', 'Verified edition', 'Verified date', 'Verified by', 'Ready to sell', 'Notes'].map(q).join(',')];
+  coverageAll().rows.forEach(r => L.push([r.name, FAMILY_NAME[r.fam] || r.fam, r.regs, r.supply, r.label, r.cable, r.socket + (r.sockMapped ? '' : ' (assumed)'), r.lightRule, r.verified?.edition, r.verified?.date, r.verified?.by, r.ready ? 'Yes' : 'No', r.notes.join(' ')].map(q).join(',')));
+  return L.join('\r\n');
+}
+V.report = () => `<section class="sheet">${head('Stage 13', 'Design report', 'A complete electrical load assessment and design report generated from every stage. Save it as an HTML document (opens in any browser or Word, and prints to PDF), or export the schedules as CSV.', `<button class="btn primary" data-act="dl-report">Save report (.html)</button><button class="btn" data-act="dl-csv">Save schedules (.csv)</button><button class="btn" data-act="copy-report">Copy report text</button>`)}
   <div class="paper" id="paper">${reportBody()}</div></section>`;
 
 /* ---------- report ---------- */
@@ -1340,6 +1408,7 @@ function reportBody() {
   ${sec('Summary')}<table class="r kv"><tbody>${[['Design region', `${esc(p.country)} (${esc(X.dreg)})`], ['Wiring regulations', esc(c.regs)], ['Supply', `${X.vln}/${X.vll} V, ${c.hz} Hz, ${esc(c.earthing)}`], ['Total maximum demand', `<b>${f0(R.md)} kVA</b> (${f0(R.kw)} kW, ${f0(R.amps)} A per phase) including ${pct(+p.spare)} spare`], ['Supply arrangement', esc(R.supply)], ['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA ${esc(S.sizing.txType)}, ${S.sizing.resilience}` : 'Exceeds standard sizes – review'], ['Main LV incomer', R.incomer ? `${f0(R.incomer)} A, Icw ${R.icw ?? '> 120'} kA` : '–'], ['Standby generation', R.gen ? `${f0(R.gen)} kVA` : 'Multiple sets'], ['Annual electricity (net)', `${f0(R.E.imp / 1000)} MWh/yr, ${f0(R.E.eui)} kWh/m²/yr, ${f1(R.E.tco2)} tCO₂e/yr`]].map(([a, b]) => `<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</tbody></table>
   ${sec('Design basis and standards')}<p>${esc(method)}</p>
   ${tbl(['Item', 'Basis'], [['Wiring regulations', esc(c.regs)], ['Load calculation method', esc(c.method)], ['Demand / diversity factor set', esc(c.set)], ['Lighting design', esc(c.lighting)], ['Emergency lighting', esc(c.emergency)], ['LV assemblies', esc(c.assemblies)], ['Protective devices', esc(c.devices)], ['Voltage-drop limits', `${c.vdl}% lighting, ${c.vdo}% other`], ['Utility / authority', esc(c.authority)], ['Power factor / spare', `${p.pf} / ${pct(+p.spare)}`]])}
+  ${(() => { const cv = coverageOf(c); return `<p class="s"><b>Regional coverage for ${esc(p.country)}: ${esc(cv.label)}${cv.verified ? ` – verified against ${esc(cv.verified.edition)} (${esc(cv.verified.date)})` : ' – not yet verified against the edition in force'}.</b> ${cv.notes.map(esc).join(' ')} Cable data: ${esc(cv.cable)}.</p>`; })()}
   ${sec('Area load schedule')}${tbl(['Zone', 'Building / space type', 'Area m²', 'Design VA/m²', 'Demand kVA'], R.Z.rows.map(r => [esc(r.z.desc), esc(r.z.type), f0(+r.z.area), f1(r.dens), f1(r.kva)]), ['Total', '', f0(R.Z.area), f1(R.Z.area ? R.Z.kva * 1000 / R.Z.area : 0), f1(R.Z.kva)])}
   <p class="s">Design density = base (${esc(p.basis)}) density × regional factor for ${esc(X.dreg)}, unless overridden.</p>
   ${R.Lo.rows.length ? sec('Equipment loads') + tbl(['Board', 'Item', 'Category', 'Connected kW', 'Demand f.', 'Diversity', 'Demand kVA'], R.Lo.rows.map(r => [esc(r.l.db), esc(r.l.desc), esc(r.l.cat), f1(r.conn), f2(r.ku), f2(r.df), f1(r.kva)])) + tbl(['Board', 'Items', 'Ks', 'Demand kVA', 'Current A'], R.Lo.dbs.map(d => [esc(d.name), d.n, f2(d.ks), f1(d.dem), f0(d.amps)]), ['Equipment MD', '', `× ${S.mainSF}`, f1(R.Lo.kva), '']) : ''}
@@ -1475,6 +1544,7 @@ document.addEventListener('click', async e => {
   if (act === 'rv-del') { S.review.sheets.splice(+b.dataset.i, 1); persist(); render(); }
   if (act === 'rv-clear') { S.review.sheets = []; persist(); render(); toast('Drawings removed (your symbol mapping is kept)'); }
   if (act === 'dl-dxf' || act === 'dl-svg') { if (!R.W.rooms.length) { toast('Add rooms first'); return; } const G = dwgGeom(R.W), base = `${S.project.ref || 'project'}-${(S.dwg.board || 'DB').replace(/[^\w-]+/g, '_')}-electrical-layout`; if (act === 'dl-dxf') save(base + '.dxf', toDXF(G), 'Drawing'); else save(base + '.svg', toSVG(G, true), 'Preview'); }
+  if (act === 'dl-coverage') save('nexvorahub-regional-coverage.csv', csvCoverage(), 'Coverage register');
   if (act === 'dl-csv') save(`${S.project.ref || 'project'}-load-schedules.csv`, csvSchedules(), 'Schedules');
   if (act === 'copy-report') { const t = $('#paper').innerText; try { await navigator.clipboard.writeText(t); toast('Report text copied'); } catch (err) { const r = document.createRange(); r.selectNodeContents($('#paper')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Report selected – press Ctrl+C to copy'); } }
 });

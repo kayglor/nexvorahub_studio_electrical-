@@ -289,6 +289,30 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.project.name = nm; if (ld != null) S.loads[0].desc = ld; R = calcAll();
   view = 'project'; render(); if (!/<label for="project_name">/.test(document.querySelector('#main').innerHTML)) hFail.push('labels not linked to inputs');
   out.hardeningChecks = hFail.length ? hFail : 'all passed'; }
+// ---- regional coverage register ----
+{ const cFail = [], cchk = (n, ok, got) => { if (!ok) cFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const K = coverageAll(), by = n => K.rows.find(r => r.name === n);
+  cchk('levels add up to all countries', K.full + K.supported + K.indicative + K.unavailable === COUNTRIES.length && K.rows.length === 94, [K.full, K.supported, K.indicative, K.unavailable]);
+  cchk('UK full, native BS 7671', by('United Kingdom').level === 'full' && /native/.test(by('United Kingdom').cable));
+  cchk('Germany supported with VDE deviation note', by('Germany').level === 'supported' && by('Germany').notes.some(t => /VDE/.test(t)));
+  cchk('US and Canada indicative', by('United States').level === 'indicative' && by('Canada').level === 'indicative' && /AWG/.test(by('United States').notes.join(' ')));
+  cchk('Australia indicative (AS/NZS 3008 needed)', by('Australia').level === 'indicative' && /3008/.test(by('Australia').notes.join(' ')));
+  cchk('100–127 V systems indicative', ['Brazil', 'Japan', 'Taiwan'].every(n => by(n).level === 'indicative'));
+  cchk('Russia not offered', by('Russia').level === 'unavailable' && !by('Russia').ready);
+  cchk('nothing ready until verified', K.ready === 0);
+  COV.verified.Germany = { edition: 'DIN VDE 0100 (HD 60364) – test', date: '2026-11-08', by: 'Test engineer' };
+  cchk('verification makes a supported country ready', coverageOf(COUNTRIES.find(c => c.name === 'Germany')).ready === true && coverageAll().ready === 1);
+  COV.verified['United States'] = { edition: 'NEC 2023', date: '2026-11-08' };
+  cchk('indicative stays not ready even if verified', coverageOf(COUNTRIES.find(c => c.name === 'United States')).ready === false);
+  delete COV.verified.Germany; delete COV.verified['United States'];
+  view = 'coverage'; render(); const ch = document.querySelector('#main').innerHTML;
+  cchk('coverage view', /Regional coverage/.test(ch) && /Ready to sell/.test(ch) && (ch.match(/<tr/g) || []).length >= 95);
+  const S0 = S.project.country; S.project.country = 'France'; R = calcAll();
+  cchk('report states coverage of the project country', /Regional coverage for France: Supported/.test(reportDoc()) && /NF C 15-100 prescriptive/.test(reportDoc()));
+  S.project.country = S0; R = calcAll();
+  const cv = csvCoverage(); cchk('coverage CSV', cv.split('\r\n').length === 96 && /"Russia".*"Not offered"/.test(cv));
+  out.coverage = [K.full, K.supported, K.indicative, K.unavailable];
+  out.coverageChecks = cFail.length ? cFail : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);

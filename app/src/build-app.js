@@ -10,7 +10,11 @@ const tpl = fs.readFileSync(path.join(__dirname, 'app.html'), 'utf8');
 const aidcSrc = fs.readFileSync(path.join(__dirname, 'ai-dc-data.json'), 'utf8');
 JSON.parse(aidcSrc); // fail the build on malformed data
 const aidc = aidcSrc.replace(/</g, '\\u003c');
-const page = tpl.replace('/*DATA*/', () => data).replace('/*AIDC*/', () => aidc);
+// Regional coverage register: support level, national deviations, verification records (app/src/coverage.json)
+const covSrc = fs.readFileSync(path.join(__dirname, 'coverage.json'), 'utf8');
+JSON.parse(covSrc);
+const cov = covSrc.replace(/</g, '\\u003c');
+const page = tpl.replace('/*DATA*/', () => data).replace('/*AIDC*/', () => aidc).replace('/*COVERAGE*/', () => cov);
 
 const out = path.join(__dirname, '..', 'load-designer.html');
 fs.writeFileSync(out, page);
