@@ -356,6 +356,24 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.project.country = 'Russia'; LIC = null; render(); achk('not offered in sanctioned region', projectNotOffered() && /Not offered/.test(document.querySelector('#main').innerHTML) && !/Buy NexvoraHub/.test(document.querySelector('#main').innerHTML));
   ACCESS.mode = M0; ACCESS.checkoutUrl = U0; LIC = L0; S.project.country = C0; R = calcAll();
   out.accessChecks = aFail.length ? aFail : 'all passed'; }
+// ---- report translations ----
+{ const lFail = [], lchk2 = (n, ok, got) => { if (!ok) lFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const L0 = S.project.lang; S.project.lang = 'en'; const en = reportDoc();
+  lchk2('English default unchanged', /<html lang="en">/.test(en) && /1\. Summary/.test(en) && !/TRANSLATION_NOTE|Rapport traduit/.test(en));
+  const expect = { fr: ['Synthèse', "Bilan des charges par surface", 'Hypothèses et limites', 'Rapport traduit'], es: ['Resumen', 'Demanda máxima', 'Lista de verificación de cumplimiento', 'Informe traducido'], pt: ['Resumo', 'Quadro de cabos e proteções', 'Premissas e limitações', 'Relatório traduzido'], ar: ['الملخص', 'الطلب الأقصى', 'الافتراضات والقيود', 'تقرير مترجم'] };
+  for (const [l, words] of Object.entries(expect)) {
+    S.project.lang = l; const d = reportDoc();
+    lchk2(l + ' headings and note', words.every(w => d.includes(w)), words.filter(w => !d.includes(w)));
+    lchk2(l + ' no English section titles left', !/<h2>\d+\. (Summary|Maximum demand|Compliance checklist|Assumptions and limitations)<\/h2>/.test(d));
+    lchk2(l + ' standard paragraphs translated', !d.includes('This report supports, and does not replace'));
+    lchk2(l + ' values untouched', d.includes(f0(R.md) + ' kVA'));
+  }
+  S.project.lang = 'ar'; const ar = reportDoc(); lchk2('Arabic right-to-left', /<html lang="ar" dir="rtl">/.test(ar) && /\[dir=rtl\] table\.r th/.test(ar));
+  view = 'report'; render(); lchk2('report view: selector + rtl paper', /Report language/.test(document.querySelector('#main').innerHTML) && /id="paper" lang="ar" dir="rtl"/.test(document.querySelector('#main').innerHTML));
+  S.project.lang = 'xx'; lchk2('unknown language falls back to English', rLang() === 'en');
+  lchk2('every language has every string', ['fr', 'es', 'pt', 'ar'].every(l => Object.keys(I18N.fr).every(k => I18N[l][k])));
+  S.project.lang = L0; R = calcAll();
+  out.languages = Object.keys(I18N).length + 1; out.translationChecks = lFail.length ? lFail : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
