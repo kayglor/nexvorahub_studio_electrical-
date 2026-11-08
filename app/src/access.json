@@ -1,0 +1,16 @@
+{
+  "mode": "open",
+  "product": "NexvoraHub Studio Pro",
+  "provider": "lemonsqueezy",
+  "checkoutUrl": "",
+  "supportEmail": "",
+  "termsUrl": "",
+  "privacyUrl": "",
+  "plans": [
+    { "name": "Free", "price": "£0", "features": "All design stages, on-screen results, regional coverage" },
+    { "name": "Pro – monthly", "price": "£19 / month", "features": "Design report and CSV, DXF drawings and overlays, drawing review, layout and panel-schedule import, cable table packs" },
+    { "name": "Pro – yearly", "price": "£190 / year", "features": "As monthly, two months free" }
+  ],
+  "proActions": ["dl-report", "dl-csv", "copy-report", "dl-dxf", "dl-svg", "load-dxf", "load-layout", "load-pack"],
+  "note": "mode 'open' = everything free (current site). mode 'pro' = the actions in proActions need an activated licence key. Licence keys are checked with the Lemon Squeezy licence API from the browser; this is a convenience gate, not server-side enforcement – keep the repository private and move exports to a server for strong protection."
+}

@@ -14,7 +14,11 @@ const aidc = aidcSrc.replace(/</g, '\\u003c');
 const covSrc = fs.readFileSync(path.join(__dirname, 'coverage.json'), 'utf8');
 JSON.parse(covSrc);
 const cov = covSrc.replace(/</g, '\\u003c');
-const page = tpl.replace('/*DATA*/', () => data).replace('/*AIDC*/', () => aidc).replace('/*COVERAGE*/', () => cov);
+// Paid-access settings (app/src/access.json) – mode 'open' keeps every feature free
+const accSrc = fs.readFileSync(path.join(__dirname, 'access.json'), 'utf8');
+JSON.parse(accSrc);
+const acc = accSrc.replace(/</g, '\\u003c');
+const page = tpl.replace('/*DATA*/', () => data).replace('/*AIDC*/', () => aidc).replace('/*COVERAGE*/', () => cov).replace('/*ACCESS*/', () => acc);
 
 const out = path.join(__dirname, '..', 'load-designer.html');
 fs.writeFileSync(out, page);

@@ -185,11 +185,53 @@ tr.total td{font-weight:600;background:var(--sunk)}
   "verified": {}
 }
 </script>
+<script type="application/json" id="access">{
+  "mode": "open",
+  "product": "NexvoraHub Studio Pro",
+  "provider": "lemonsqueezy",
+  "checkoutUrl": "",
+  "supportEmail": "",
+  "termsUrl": "",
+  "privacyUrl": "",
+  "plans": [
+    { "name": "Free", "price": "£0", "features": "All design stages, on-screen results, regional coverage" },
+    { "name": "Pro – monthly", "price": "£19 / month", "features": "Design report and CSV, DXF drawings and overlays, drawing review, layout and panel-schedule import, cable table packs" },
+    { "name": "Pro – yearly", "price": "£190 / year", "features": "As monthly, two months free" }
+  ],
+  "proActions": ["dl-report", "dl-csv", "copy-report", "dl-dxf", "dl-svg", "load-dxf", "load-layout", "load-pack"],
+  "note": "mode 'open' = everything free (current site). mode 'pro' = the actions in proActions need an activated licence key. Licence keys are checked with the Lemon Squeezy licence API from the browser; this is a convenience gate, not server-side enforcement – keep the repository private and move exports to a server for strong protection."
+}
+</script>
 <script>
 "use strict";
 const DD = JSON.parse(document.getElementById('dd').textContent);
 const AIDC = JSON.parse(document.getElementById('aidc').textContent);
 const COV = JSON.parse(document.getElementById('coverage').textContent);
+/* ---------- paid access (off unless access.json mode = 'pro') ---------- */
+const ACCESS = JSON.parse(document.getElementById('access').textContent);
+const LIC_KEY = 'nvh-licence-v1';
+let LIC = null; try { LIC = JSON.parse(localStorage.getItem(LIC_KEY)) || null; } catch (e) { LIC = null; }
+const proMode = () => ACCESS.mode === 'pro';
+const licenceOK = () => !!(LIC && LIC.valid && LIC.key);
+const proBlocked = act => proMode() && (ACCESS.proActions || []).includes(act) && !licenceOK();
+const projectNotOffered = () => !!(COV.notOffered && COV.notOffered[S.project.country]);
+// Lemon Squeezy licence API response → stored licence (no secret key needed; called from the browser)
+function licenceFromResponse(key, j) {
+  const ok = !!(j && j.valid && (!j.license_key || ['active', 'inactive'].includes(j.license_key.status)));
+  return { key, valid: ok, status: j && j.license_key ? j.license_key.status : (j && j.error) || 'invalid', expires: j && j.license_key ? j.license_key.expires_at : null, product: j && j.meta ? j.meta.product_name : '', checked: new Date().toISOString().slice(0, 10), instance: j && j.instance ? j.instance.id : (LIC && LIC.instance) || null };
+}
+async function activateLicence(key) {
+  key = String(key || '').trim(); if (!key) { toast('Enter your licence key'); return; }
+  try {
+    const body = new URLSearchParams({ license_key: key, instance_name: 'NexvoraHub Studio web' });
+    const r = await fetch('https://api.lemonsqueezy.com/v1/licenses/activate', { method: 'POST', headers: { Accept: 'application/json' }, body });
+    const j = await r.json(); LIC = licenceFromResponse(key, j);
+    try { localStorage.setItem(LIC_KEY, JSON.stringify(LIC)); } catch (e) { }
+    toast(LIC.valid ? 'Licence activated – Pro features unlocked' : 'Licence not valid: ' + (j.error || LIC.status));
+  } catch (e) { toast('Could not reach the licence server – check your connection and try again'); }
+  render();
+}
+function removeLicence() { LIC = null; try { localStorage.removeItem(LIC_KEY); } catch (e) { } render(); toast('Licence removed from this browser'); }
 /* ---------- cable data: built-in BS 7671 tables, or a user-imported licensed table pack ---------- */
 // AWG / kcmil conductor areas (mm²) – a metric size is shown with the smallest AWG of at least the same area
 const AWG = [['14 AWG', 2.08], ['12 AWG', 3.31], ['10 AWG', 5.26], ['8 AWG', 8.37], ['6 AWG', 13.3], ['4 AWG', 21.2], ['3 AWG', 26.7], ['2 AWG', 33.6], ['1 AWG', 42.4], ['1/0 AWG', 53.5], ['2/0 AWG', 67.4], ['3/0 AWG', 85.0], ['4/0 AWG', 107.2], ['250 kcmil', 126.7], ['300 kcmil', 152.0], ['350 kcmil', 177.3], ['400 kcmil', 202.7], ['500 kcmil', 253.4], ['600 kcmil', 304.0], ['750 kcmil', 380.0], ['1000 kcmil', 506.7]];
@@ -1160,7 +1202,8 @@ const VIEWS = [
   ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
   ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['report', 'Design report'],
 ];
-let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view)) view = 'project';
+const EXTRA_VIEWS = ['account'];
+let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'project';
 let R = calcAll();
 function opt(list, sel, map = x => x) { return list.map(x => { const v = typeof x === 'object' ? x.v : x, t = typeof x === 'object' ? x.t : map(x); return `<option value="${esc(v)}"${String(v) === String(sel) ? ' selected' : ''}>${esc(t)}</option>`; }).join(''); }
 function fld(label, html, hint) { const id = (String(html).match(/\sid="([^"]+)"/) || [])[1]; return `<div class="field"><label${id ? ` for="${id}"` : ''}>${label}</label>${html}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`; }
@@ -1183,7 +1226,7 @@ function railStatus(id) {
 }
 function renderRail() {
   $('#rail').innerHTML = VIEWS.map(([id, t], i) => `<a href="#${id}" ${id === view ? 'aria-current="page"' : ''}><span class="k">${String(i + 1).padStart(2, '0')}</span><span>${t}</span><i class="dot ${railStatus(id)}"></i></a>`).join('') +
-    `<div class="rail-foot"><button class="btn small" data-act="save-json">Save project file</button><button class="btn small" data-act="load-json">Open project file</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
+    `<div class="rail-foot">${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json">Save project file</button><button class="btn small" data-act="load-json">Open project file</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
 }
 function head(eb, title, sub, right = '') { return `<div class="sheet-head"><div><div class="eyebrow">${eb}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div><div class="row">${right}</div></div>`; }
 
@@ -1423,6 +1466,17 @@ function csvCoverage() {
   coverageAll().rows.forEach(r => L.push([r.name, FAMILY_NAME[r.fam] || r.fam, r.regs, r.supply, r.label, r.cable, r.socket + (r.sockMapped ? '' : ' (assumed)'), r.lightRule, r.verified?.edition, r.verified?.date, r.verified?.by, r.ready ? 'Yes' : 'No', r.notes.join(' ')].map(q).join(',')));
   return L.join('\r\n');
 }
+V.account = () => {
+  const off = projectNotOffered(), ok = licenceOK();
+  return `<section class="sheet">${head('Account', 'Plan & licence', proMode() ? 'NexvoraHub Studio is free to use on screen. Pro unlocks reports, drawings and imports.' : 'All features are currently free to use.')}
+  ${!proMode() ? '<p class="callout">Paid access is switched off: every feature is available to everyone.</p>' : ''}
+  <div class="kpis">${(ACCESS.plans || []).map(p => `<div class="kpi"><span>${esc(p.name)}</span><b>${esc(p.price)}</b><small>${esc(p.features)}</small></div>`).join('')}</div>
+  ${proMode() ? `<h3>Pro features</h3><ul class="note"><li>Design report (HTML/PDF) and schedules (CSV)</li><li>AutoCAD DXF drawings, overlays on submitted layouts, SVG previews</li><li>Drawing review with legend learning, layout and panel-schedule import</li><li>Licensed cable table packs</li></ul>
+  ${off ? `<p class="callout">${esc(COV.notOffered[S.project.country])}</p>` : `<div class="row" style="margin:10px 0">${ACCESS.checkoutUrl ? `<a class="btn primary" href="${esc(ACCESS.checkoutUrl)}" target="_blank" rel="noopener">Buy ${esc(ACCESS.product)}</a>` : '<span class="note">Checkout link not set yet (access.json → checkoutUrl).</span>'}</div>
+  <h3>Licence</h3>${ok ? `<p>${pill('ok', 'Active')} Licence ending …${esc(LIC.key.slice(-4))}${LIC.expires ? ' · renews/expires ' + esc(String(LIC.expires).slice(0, 10)) : ''} · checked ${esc(LIC.checked)}</p><button class="btn small ghost" data-act="lic-remove">Remove licence from this browser</button>`
+    : `<div class="grid">${fld('Licence key (from your purchase email)', '<input id="licKey" type="text" autocomplete="off" spellcheck="false" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX">')}</div><div class="row" style="margin-top:8px"><button class="btn primary" data-act="lic-activate">Activate licence</button>${LIC && !LIC.valid ? ` ${pill('bad', 'Last check: ' + LIC.status)}` : ''}</div>`}`}` : ''}
+  <p class="note">${[ACCESS.termsUrl && `<a href="${esc(ACCESS.termsUrl)}" target="_blank" rel="noopener">Terms of service</a>`, ACCESS.privacyUrl && `<a href="${esc(ACCESS.privacyUrl)}" target="_blank" rel="noopener">Privacy policy</a>`, ACCESS.supportEmail && `Support: ${esc(ACCESS.supportEmail)}`].filter(Boolean).join(' · ') || 'Results are a design aid and pre-check, not certification; verification by a competent person remains required.'}</p></section>`;
+};
 V.report = () => `<section class="sheet">${head('Stage 13', 'Design report', 'A complete electrical load assessment and design report generated from every stage. Save it as an HTML document (opens in any browser or Word, and prints to PDF), or export the schedules as CSV.', `<button class="btn primary" data-act="dl-report">Save report (.html)</button><button class="btn" data-act="dl-csv">Save schedules (.csv)</button><button class="btn" data-act="copy-report">Copy report text</button>`)}
   <div class="paper" id="paper">${reportBody()}</div></section>`;
 
@@ -1574,6 +1628,9 @@ document.addEventListener('click', async e => {
   if (b.dataset.add) { S[b.dataset.add].push(BLANK[b.dataset.add]()); persist(); render(); return; }
   if (b.dataset.del) { S[b.dataset.del].splice(+b.dataset.i, 1); persist(); render(); return; }
   const act = b.dataset.act;
+  if (proBlocked(act)) { toast(projectNotOffered() ? 'Pro is not offered in this region' : 'This is a Pro feature – see Plan & licence'); location.hash = '#account'; return; }
+  if (act === 'lic-activate') { const i = document.getElementById('licKey'); activateLicence(i ? i.value : ''); return; }
+  if (act === 'lic-remove') { removeLicence(); return; }
   if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {} }; persist(); render(); toast('Started a blank project'); }
   if (act === 'save-json') save(`${S.project.ref || 'project'}-load-design.json`, JSON.stringify(S, null, 1), 'Project file');
   if (act === 'load-json') $('#fileIn').click();
@@ -1636,7 +1693,7 @@ document.addEventListener('change', e => {
   });
 });
 let tT; function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => t.hidden = true, 3200); }
-addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS.some(v => v[0] === h)) { view = h; render(); scrollTo(0, 0); } });
+addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS.some(v => v[0] === h) || EXTRA_VIEWS.includes(h)) { view = h; render(); scrollTo(0, 0); } });
 render();
 </script>
 <style>

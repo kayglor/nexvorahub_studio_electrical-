@@ -337,6 +337,25 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   view = 'drawings'; render(); tchk('drawing cable list has names (bug fix)', (document.querySelector('#main').innerHTML.match(/<option value="\d"[^>]*>([^<]*)<\/option>/g) || []).some(o => /Twin &amp; earth/.test(o)));
   S.project.country = S0; S.circuits = JSON.parse(C0); R = calcAll();
   out.cableChecks = tFail.length ? tFail : 'all passed'; }
+// ---- paid access groundwork (open by default) ----
+{ const aFail = [], achk = (n, ok, got) => { if (!ok) aFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const M0 = ACCESS.mode, U0 = ACCESS.checkoutUrl, L0 = LIC, C0 = S.project.country;
+  achk('shipped open: nothing gated', ACCESS.mode === 'open' && ACCESS.proActions.every(a => !proBlocked(a)));
+  view = 'account'; render(); achk('account view (open)', /All features are currently free/.test(document.querySelector('#main').innerHTML));
+  ACCESS.mode = 'pro'; LIC = null;
+  achk('pro mode gates Pro actions only', ['dl-report', 'dl-dxf', 'load-dxf', 'load-pack', 'dl-csv'].every(proBlocked) && !proBlocked('save-json') && !proBlocked('dl-coverage') && !proBlocked('new'));
+  ACCESS.checkoutUrl = 'https://example.lemonsqueezy.com/buy/test'; render();
+  achk('account view (pro) shows plans, checkout and key field', /Buy NexvoraHub Studio Pro/.test(document.querySelector('#main').innerHTML) && /licKey/.test(document.querySelector('#main').innerHTML) && /£19/.test(document.querySelector('#main').innerHTML));
+  achk('rail offers Get Pro', /Get Pro/.test(document.querySelector('#rail').innerHTML));
+  LIC = licenceFromResponse('ABCD-1234', { valid: true, license_key: { status: 'active', expires_at: '2027-11-08T00:00:00Z' }, meta: { product_name: 'NexvoraHub Studio Pro' }, instance: { id: 'i1' } });
+  achk('valid licence unlocks', licenceOK() && !proBlocked('dl-report') && LIC.instance === 'i1');
+  render(); achk('account shows active licence', /Active/.test(document.querySelector('#main').innerHTML) && /…1234/.test(document.querySelector('#main').innerHTML));
+  LIC = licenceFromResponse('BAD', { valid: false, error: 'license_key not found.' });
+  achk('invalid licence stays locked', !licenceOK() && proBlocked('dl-report') && /not found/.test(LIC.status));
+  LIC = licenceFromResponse('EXP', { valid: true, license_key: { status: 'expired' } }); achk('expired licence locked', !licenceOK());
+  S.project.country = 'Russia'; LIC = null; render(); achk('not offered in sanctioned region', projectNotOffered() && /Not offered/.test(document.querySelector('#main').innerHTML) && !/Buy NexvoraHub/.test(document.querySelector('#main').innerHTML));
+  ACCESS.mode = M0; ACCESS.checkoutUrl = U0; LIC = L0; S.project.country = C0; R = calcAll();
+  out.accessChecks = aFail.length ? aFail : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
