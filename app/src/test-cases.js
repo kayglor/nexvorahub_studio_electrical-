@@ -388,6 +388,19 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const L0 = S.project.lang; S.project.lang = 'fr'; if (!/Annexe – plan d’implantation électrique/.test(reportDoc())) pFail.push('appendix heading not translated'); S.project.lang = L0;
   view = 'report'; render(); if (!/data-act="dl-pdf"/.test(document.querySelector('#main').innerHTML)) pFail.push('Save as PDF button missing');
   out.pdfChecks = pFail.length ? pFail : 'all passed'; }
+// ---- Save project = .json + PDF ----
+{ const sFail = [], saved = []; let printedNote = null; const save0 = save, pr0 = window.print;
+  save = async (name, data, what) => { saved.push({ name, data, what }); };
+  window.print = () => { printedNote = document.title; };
+  saveProjectFiles().then(() => {
+    if (saved.length !== 1 || !/-load-design\.json$/.test(saved[0].name)) sFail.push('json not saved: ' + JSON.stringify(saved.map(x => x.name)));
+    else { const o = JSON.parse(saved[0].data); if (o.v !== 1 || o.project.name !== S.project.name || !Array.isArray(o.zones)) sFail.push('saved json does not reopen'); }
+    if (!printedNote || !/-electrical-load-design-report$/.test(printedNote)) sFail.push('PDF print not started after the json');
+    render(); if (!/Save project \(\.json \+ PDF\)/.test(document.querySelector('#rail').innerHTML) || !/Open project \(\.json\)/.test(document.querySelector('#rail').innerHTML)) sFail.push('rail buttons not updated');
+    save = save0; window.print = pr0;
+    console.log('saveBothChecks =', JSON.stringify(sFail.length ? sFail : 'all passed'));
+    if (sFail.length) (globalThis.__TEST_FAILURES = globalThis.__TEST_FAILURES || []).push('saveBothChecks');
+  }); }
 // ---- legal links in the app ----
 { const gFail = []; render(); const rail = document.querySelector('#rail').innerHTML;
   if (!['terms.html', 'privacy.html', 'refunds.html'].every(u => rail.includes(`href="${u}"`))) gFail.push('rail legal links missing');

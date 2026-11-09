@@ -161,14 +161,20 @@ async function activateLicence(key) {
 }
 // Terms / privacy / refund links (shown in the side rail on every stage when set in access.json)
 function legalLinks() { const l = [[ACCESS.termsUrl, 'Terms'], [ACCESS.privacyUrl, 'Privacy'], [ACCESS.refundsUrl, 'Refunds']].filter(x => x[0]); return l.length ? `<span class="legal">${l.map(([u, t]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${t}</a>`).join(' · ')}</span>` : ''; }
+// Save project = the editable project file (.json, re-opens with "Open project file") + the report as PDF (for reading and issue)
+const projectFileName = ext => `${(S.project.ref || 'project').replace(/[\\/:*?"<>|]+/g, '_')}-load-design.${ext}`;
+async function saveProjectFiles() {
+  await save(projectFileName('json'), JSON.stringify(S, null, 1), 'Project file');
+  printReport('Project file (.json) saved. Now choose "Save as PDF" in the print window for the report.');
+}
 // Save as PDF: print only the report (A4) through the browser's print dialog – choose "Save as PDF" as the printer.
-function printReport() {
+function printReport(note) {
   if (view !== 'report') { view = 'report'; render(); }
   const title = document.title, done = () => { document.body.classList.remove('print-report'); document.title = title; window.removeEventListener('afterprint', done); };
   document.title = `${(S.project.ref || 'project').replace(/[\\/:*?"<>|]+/g, '_')}-electrical-load-design-report`;
   document.body.classList.add('print-report');
   window.addEventListener('afterprint', done);
-  toast('In the print window, choose "Save as PDF" as the printer');
+  toast(note || 'In the print window, choose "Save as PDF" as the printer');
   try { window.print(); } catch (e) { done(); toast('Printing is not available here – use Save report (.html), open it and print to PDF'); }
 }
 function removeLicence() { LIC = null; try { localStorage.removeItem(LIC_KEY); } catch (e) { } render(); toast('Licence removed from this browser'); }
@@ -1166,7 +1172,7 @@ function railStatus(id) {
 }
 function renderRail() {
   $('#rail').innerHTML = VIEWS.map(([id, t], i) => `<a href="#${id}" ${id === view ? 'aria-current="page"' : ''}><span class="k">${String(i + 1).padStart(2, '0')}</span><span>${t}</span><i class="dot ${railStatus(id)}"></i></a>`).join('') +
-    `<div class="rail-foot">${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json">Save project file</button><button class="btn small" data-act="load-json">Open project file</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
+    `<div class="rail-foot">${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json" title="Saves the project (.json) and the report as PDF">Save project (.json + PDF)</button><button class="btn small ghost" data-act="save-json-only" title="Project file only">Save .json only</button><button class="btn small" data-act="load-json" title="Open a saved .json project file to continue editing">Open project (.json)</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
 }
 function head(eb, title, sub, right = '') { return `<div class="sheet-head"><div><div class="eyebrow">${eb}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div><div class="row">${right}</div></div>`; }
 
@@ -1578,7 +1584,8 @@ document.addEventListener('click', async e => {
   if (act === 'lic-activate') { const i = document.getElementById('licKey'); activateLicence(i ? i.value : ''); return; }
   if (act === 'lic-remove') { removeLicence(); return; }
   if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {} }; persist(); render(); toast('Started a blank project'); }
-  if (act === 'save-json') save(`${S.project.ref || 'project'}-load-design.json`, JSON.stringify(S, null, 1), 'Project file');
+  if (act === 'save-json') await saveProjectFiles();
+  if (act === 'save-json-only') save(projectFileName('json'), JSON.stringify(S, null, 1), 'Project file');
   if (act === 'load-json') $('#fileIn').click();
   if (act === 'dl-report') save(`${S.project.ref || 'project'}-electrical-load-design-report.html`, reportDoc(), 'Report');
   if (act === 'load-layout') { const f = document.getElementById('layoutIn'); if (f) f.click(); }

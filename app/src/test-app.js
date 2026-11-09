@@ -21,4 +21,5 @@ const legalErr = legal.flatMap(([f, h]) => !h ? [f + ' missing'] : [
   ...(/<title>[^<]+<\/title>/.test(h) && /<html lang="en">/.test(h) ? [] : [f + ': title or lang missing'])]);
 console.log('legalPages =', JSON.stringify(legalErr.length ? legalErr : 'all passed'));
 if (legalErr.length) failed.push('legalPages');
-if (failed.length) { console.error('TESTS FAILED:', failed.join(', ')); process.exitCode = 1; } else console.log('ALL TESTS PASSED');
+// verdict after any asynchronous checks (e.g. saving files) have finished
+setTimeout(() => { if (failed.length) { console.error('TESTS FAILED:', failed.join(', ')); process.exitCode = 1; } else console.log('ALL TESTS PASSED'); }, 50);
