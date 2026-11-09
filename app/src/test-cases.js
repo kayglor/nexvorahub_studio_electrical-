@@ -374,6 +374,20 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   lchk2('every language has every string', ['fr', 'es', 'pt', 'ar'].every(l => Object.keys(I18N.fr).every(k => I18N[l][k])));
   S.project.lang = L0; R = calcAll();
   out.languages = Object.keys(I18N).length + 1; out.translationChecks = lFail.length ? lFail : 'all passed'; }
+// ---- Save as PDF + layout appendix ----
+{ const pFail = []; let printed = null, after = null; const cls = new Set();
+  document.body = document.body || { classList: { add: c => cls.add(c), remove: c => cls.delete(c) } };
+  window.print = () => { printed = { title: document.title, printing: cls.has('print-report') }; };
+  window.addEventListener = (ev, fn) => { if (ev === 'afterprint') after = fn; }; window.removeEventListener = () => {};
+  document.title = 'NexvoraHub Studio'; view = 'project'; printReport();
+  if (!printed) pFail.push('print not called');
+  else { if (!printed.printing) pFail.push('report-only print mode not set'); if (!/-electrical-load-design-report$/.test(printed.title)) pFail.push('PDF file name not set: ' + printed.title); }
+  if (view !== 'report') pFail.push('did not switch to the report');
+  if (after) after(); if (cls.has('print-report') || document.title !== 'NexvoraHub Studio') pFail.push('not restored after printing');
+  const d = reportDoc(); if (!(R.W.rooms.length && /class="dwg-appendix"/.test(d) && /<svg/.test(d) && /Appendix – electrical layout drawing/.test(d))) pFail.push('layout appendix missing');
+  const L0 = S.project.lang; S.project.lang = 'fr'; if (!/Annexe – plan d’implantation électrique/.test(reportDoc())) pFail.push('appendix heading not translated'); S.project.lang = L0;
+  view = 'report'; render(); if (!/data-act="dl-pdf"/.test(document.querySelector('#main').innerHTML)) pFail.push('Save as PDF button missing');
+  out.pdfChecks = pFail.length ? pFail : 'all passed'; }
 // ---- legal links in the app ----
 { const gFail = []; render(); const rail = document.querySelector('#rail').innerHTML;
   if (!['terms.html', 'privacy.html', 'refunds.html'].every(u => rail.includes(`href="${u}"`))) gFail.push('rail legal links missing');
