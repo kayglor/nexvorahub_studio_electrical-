@@ -505,6 +505,49 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.circuits = JSON.parse(CI0); S.boards = JSON.parse(B0); S.sizing = JSON.parse(SZ0); S.project = JSON.parse(P0); S.project.country = C0; S.dc.include = DC0; R = calcAll();
   out.boards = R.BD.boards.map(b => [b.name, b.faultKA != null ? +b.faultKA.toFixed(2) : null, b.rdf, b.incSt]);
   out.boardChecks = bFail.length ? bFail : 'all passed'; }
+// ---- generator sets, bill of quantities, design review sign-off ----
+{ const gF = [], gchk = (n, ok, got) => { if (!ok) gF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SZ0 = JSON.stringify(S.sizing), SO0 = JSON.stringify(S.signoff || {}), DC0 = S.dc.include, C0 = S.project.country;
+  S.project.country = 'United Kingdom'; S.dc.include = false; R = calcAll();
+  gchk('auto: one set when it fits (unchanged)', R.genCfg.duty === 1 && R.genCfg.installed === 1 && R.genCfg.unit === R.gen, R.genCfg);
+  S.sizing.essential = 1; S.sizing.genMargin = 5; R = calcAll();
+  gchk('auto: fewest sets that fit the largest standard rating', R.genCfg.duty > 1 && R.genCfg.unit === nextStd(GEN, R.ess / R.genCfg.duty) && !nextStd(GEN, R.ess / (R.genCfg.duty - 1)), [R.ess, R.genCfg]);
+  S.sizing.genRed = 'N+1'; R = calcAll(); gchk('N+1 adds a standby set', R.genCfg.installed === R.genCfg.duty + 1 && R.genCfg.parallel);
+  S.sizing.genSets = 6; R = calcAll(); gchk('chosen number of duty sets', R.genCfg.duty === 6 && R.genCfg.unit === nextStd(GEN, R.ess / 6) && /7 × .* kVA prime \(N\+1, 6 duty\)/.test(genText()), genText());
+  gchk('motor start compared with duty capacity', R.genInfo.bigStart ? near(R.genInfo.startRatio, R.genInfo.bigStart.kva / R.genCfg.dutyKva) : true);
+  view = 'sizing'; render(); gchk('sizing view: duty sets + redundancy', /Duty sets/.test(document.querySelector('#main').innerHTML) && /Redundancy/.test(document.querySelector('#main').innerHTML));
+  // BOQ
+  const items = boqItems(), q = re => items.filter(i => re.test(i.desc)).reduce((a, i) => a + i.qty, 0);
+  gchk('BOQ generators = installed sets, paralleling panel', q(/^Diesel generator set/) === 7 && q(/paralleling switchboard/) === 1);
+  S.sizing = JSON.parse(SZ0); R = calcAll(); const it2 = boqItems(), q2 = re => it2.filter(i => re.test(i.desc)).reduce((a, i) => a + i.qty, 0);
+  gchk('BOQ transformers', q2(/^Transformer /) === R.nTx);
+  const devCount = R.C.filter(c => c.inr).length + R.W.C.filter(c => c.cc.inr).length;
+  gchk('BOQ device count = all circuits', it2.filter(i => i.sec === 'D').reduce((a, i) => a + i.qty, 0) === devCount, devCount);
+  const cabTotal = it2.filter(i => i.sec === 'E').reduce((a, i) => a + i.qty, 0), lenTotal = R.C.filter(c => c.spec).reduce((a, c) => a + (+c.k.len || 0), 0) + R.W.C.filter(c => c.cc.csa).reduce((a, c) => a + c.len, 0);
+  gchk('BOQ cable metres ≈ lengths + 10%', cabTotal >= lenTotal * 1.1 && cabTotal <= lenTotal * 1.1 + it2.filter(i => i.sec === 'E').length, [cabTotal, lenTotal]);
+  gchk('BOQ luminaires and sockets from the drawings', q2(/^Luminaire:/) === R.W.rooms.reduce((a, o) => a + o.nLum, 0) && q2(/^Socket-outlet/) === R.W.sockN && q2(/^Emergency luminaire/) === R.W.rooms.reduce((a, o) => a + o.nEm, 0));
+  gchk('BOQ always has earthing and testing', it2.some(i => i.sec === 'J' && /earthing/.test(i.desc)) && it2.some(i => /Inspection, testing/.test(i.desc)));
+  view = 'boq'; render(); const bh = document.querySelector('#main').innerHTML;
+  gchk('BOQ view with PDF and CSV buttons', /Bill of quantities – electrical services/.test(bh) && /data-act="dl-boq-pdf"/.test(bh) && /data-act="dl-boq-csv"/.test(bh) && /<th>Rate<\/th>/.test(bh));
+  const cb = csvBoq(); gchk('BOQ CSV: one line per item, no HTML entities', cb.split('\r\n').length === it2.length + 2 && !/&amp;/.test(cb) && /Twin & earth/.test(cb));
+  let printedTitle = null; const pr0 = window.print; window.print = () => { printedTitle = document.title; }; view = 'project'; printReport(null, 'boq'); window.print = pr0;
+  gchk('BOQ PDF: switches to the BOQ and names the file', view === 'boq' && /-bill-of-quantities$/.test(printedTitle), printedTitle);
+  // sign-off
+  S.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' };
+  gchk('sign-off starts not approved', !signoffState().approved && signoffState().reviewed === 0 && signoffState().pill === 'warn');
+  SIGNOFF_ITEMS.forEach(([k]) => { S.signoff.items[k] = { status: 'Reviewed – no comments', by: 'K. Akintayo', date: '2026-11-10' }; });
+  gchk('all reviewed but no approver: not approved', !signoffState().approved);
+  Object.assign(S.signoff, { approver: 'Kayode Akintayo', approverQual: 'CEng MIET', approverDate: '2026-11-10' });
+  gchk('approved when all reviewed + approver + date', signoffState().approved && signoffState().label === 'Design approved for issue');
+  S.signoff.items.cables.status = 'Action required'; gchk('action required overrides', !signoffState().approved && signoffState().pill === 'bad');
+  S.signoff.items.cables.status = 'Reviewed – comments addressed';
+  view = 'compliance'; render(); gchk('compliance view sign-off panel', /Design review and sign-off/.test(document.querySelector('#main').innerHTML) && /Qualifications \/ registration/.test(document.querySelector('#main').innerHTML));
+  const rd = reportDoc(); gchk('report sign-off section', /Design review and sign-off/.test(rd) && /Design approved for issue/.test(rd) && /Kayode Akintayo, CEng MIET – 2026-11-10/.test(rd));
+  view = 'boq'; render(); gchk('BOQ shows the approver', /Kayode Akintayo, CEng MIET – 2026-11-10/.test(document.querySelector('#main').innerHTML));
+  gchk('sign-off in CSV', /DESIGN REVIEW AND SIGN-OFF – Design approved for issue/.test(csvSchedules()));
+  gchk('old projects get a sign-off record', (() => { const o = upgrade({ v: 1 }); return o.signoff && typeof o.signoff.items === 'object'; })());
+  S.sizing = JSON.parse(SZ0); S.signoff = JSON.parse(SO0); S.dc.include = DC0; S.project.country = C0; R = calcAll();
+  out.genBoqSignoffChecks = gF.length ? gF : 'all passed'; }
 // ---- Save project = .json + PDF ----
 { const sFail = [], saved = []; let printedNote = null; const save0 = save, pr0 = window.print;
   save = async (name, data, what) => { saved.push({ name, data, what }); };
