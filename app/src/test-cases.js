@@ -388,6 +388,39 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const L0 = S.project.lang; S.project.lang = 'fr'; if (!/Annexe – plan d’implantation électrique/.test(reportDoc())) pFail.push('appendix heading not translated'); S.project.lang = L0;
   view = 'report'; render(); if (!/data-act="dl-pdf"/.test(document.querySelector('#main').innerHTML)) pFail.push('Save as PDF button missing');
   out.pdfChecks = pFail.length ? pFail : 'all passed'; }
+// ---- NEC Article 220 general lighting demand factors (NEC countries) ----
+{ const nFail = [], nchk = (n, ok, got) => { if (!ok) nFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const T23 = NEC_LIGHT_DF['2023'].classes, T20 = NEC_LIGHT_DF['2020'].classes;
+  // the user's worked examples
+  nchk('office (all other occupancies): 70,000 VA at 100%', tieredDemand(70000, T23.other[1]).demand === 70000);
+  const wh = tieredDemand(30000, T23.warehouse[1]); nchk('storage warehouse: 30,000 VA → 21,250 VA', wh.demand === 21250 && wh.parts[0][0] === 12500 && wh.parts[1][0] === 17500, wh);
+  // other bands
+  nchk('dwelling 150,000 VA → 51,450 VA', near(tieredDemand(150000, T23.dwelling[1]).demand, 3000 + 117000 * 0.35 + 30000 * 0.25));
+  nchk('dwelling below 3,000 VA at 100%', tieredDemand(2500, T23.dwelling[1]).demand === 2500);
+  nchk('hotel 2023 (50/40/30) 150,000 VA → 57,000 VA', near(tieredDemand(150000, T23.hotel[1]).demand, 57000));
+  nchk('hotel 2020 (60/50/35) 150,000 VA → 69,500 VA', near(tieredDemand(150000, T20.hotel[1]).demand, 69500));
+  nchk('hospital 2020 (40/20) 80,000 VA → 26,000 VA; no hospital row in 2023', near(tieredDemand(80000, T20.hospital[1]).demand, 26000) && !T23.hospital);
+  // in a project: United States, office 20,000 ft² + storage warehouse 25,000 ft²
+  const Z0 = JSON.stringify(S.zones), C0 = S.project.country, M0 = S.project.mdMethod, E0 = S.project.necEdition, U0 = OCC.Office.nec;
+  S.project.country = 'United States'; S.project.necEdition = '2023';
+  S.zones = [{ id: 'n1', desc: 'Offices', type: 'Office – fully air-conditioned', area: 20000 / 10.7639, ovr: '' }, { id: 'n2', desc: 'Storage', type: 'Warehouse – unheated', area: 25000 / 10.7639, ovr: '' }];
+  OCC.Office.nec = 3.5; R = calcAll();
+  const off = R.NL.classes.find(c => c.k === 'other'), whc = R.NL.classes.find(c => c.k === 'warehouse');
+  nchk('project: office 20,000 ft² × 3.5 VA/ft² = 70,000 VA at 100%', near(off.va, 70000) && near(off.demand, 70000), off);
+  nchk('project: warehouse 25,000 ft² × 1.2 VA/ft² = 30,000 VA → 21,250 VA', near(whc.va, 30000) && near(whc.demand, 21250), whc);
+  nchk('area-density method is still the default', R.NB == null && near(R.sub, R.Z.kva + R.Lo.kva + R.Li.kva + R.P.kva + (R.D ? R.D.md : 0)));
+  S.project.mdMethod = 'nec220'; R = calcAll();
+  nchk('NEC Article 220 basis used for maximum demand', near(R.NB, 91.25) && near(R.sub, 91.25 + R.Lo.kva + R.Li.kva + R.P.kva + (R.D ? R.D.md : 0)), [R.NB, R.sub]);
+  view = 'area'; render(); const ah = document.querySelector('#main').innerHTML;
+  nchk('Stage 2 shows the NEC panel', /NEC Article 220 – general lighting load/.test(ah) && /first 12,500 VA × 100%; next 17,500 VA × 50%/.test(ah) && /NEC 2023 Table 220.45/.test(ah));
+  view = 'sizing'; render(); nchk('supply sizing shows the NEC basis', /NEC general lighting \(Art\. 220\)/.test(document.querySelector('#main').innerHTML));
+  const rd = reportDoc(), cv = csvSchedules();
+  nchk('report + csv', /NEC general lighting load \(Article 220\)/.test(rd) && /Maximum demand by NEC Article 220/.test(rd) && /NEC ARTICLE 220 GENERAL LIGHTING \(NEC 2023 Table 220\.45\) – used for maximum demand/.test(cv));
+  S.project.necEdition = '2020'; R = calcAll(); nchk('2020 edition selectable', R.NL.ref === 'NEC 2020 Table 220.42');
+  S.project.country = 'United Kingdom'; R = calcAll(); nchk('not applied outside NEC countries', R.NL === null && R.NB === null);
+  S.project.country = 'Canada'; R = calcAll(); nchk('not applied to CEC (Canada)', R.NL === null);
+  OCC.Office.nec = U0; S.zones = JSON.parse(Z0); S.project.country = C0; S.project.mdMethod = M0; S.project.necEdition = E0; R = calcAll();
+  out.necLightingChecks = nFail.length ? nFail : 'all passed'; }
 // ---- Save project = .json + PDF ----
 { const sFail = [], saved = []; let printedNote = null; const save0 = save, pr0 = window.print;
   save = async (name, data, what) => { saved.push({ name, data, what }); };
