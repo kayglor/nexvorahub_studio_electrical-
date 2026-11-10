@@ -372,9 +372,9 @@ function exampleProject() {
       { id: uid(), desc: 'IT / comms and security', kw: 20, ks: 0.9, motor: false },
     ],
     circuits: [
-      { id: uid(), ref: 'C01', from: 'DB-GF', desc: 'Lighting – retail', type: 'Lighting', kw: 1.2, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 25, amb: 30, grp: 2, arr: 'Bunched / enclosed', ci: 1, zdb: 0.45, pfc: '', icn: 10, rcd: 'None', idn: '' },
-      { id: uid(), ref: 'C02', from: 'DB-GF', desc: 'Socket radial – retail', type: 'Other', kw: 4, pf: '', ph: 1, dev: 'RCBO Type B', cable: 0, len: 30, amb: 30, grp: 2, arr: 'Bunched / enclosed', ci: 1, zdb: 0.45, pfc: '', icn: 10, rcd: 'Type A', idn: 30 },
-      { id: uid(), ref: 'S01', from: 'MSB', desc: 'Sub-main to DB-GF', type: 'Other', kw: 120, pf: '', ph: 3, dev: 'MCCB', cable: 4, len: 40, amb: 30, grp: 3, arr: 'Single layer', ci: 1, zdb: 0.02, pfc: 25, icn: 36, rcd: 'None', idn: '' },
+      { id: uid(), ref: 'C01', from: 'DB-GF', desc: 'Lighting – retail', type: 'Lighting', kw: 1.1, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 25, amb: 30, grp: 2, arr: 'Bunched / enclosed', ci: 1, zdb: 0.45, pfc: '', icn: 15, rcd: 'None', idn: '' },
+      { id: uid(), ref: 'C02', from: 'DB-GF', desc: 'Socket radial – retail', type: 'Other', kw: 3.6, pf: '', ph: 1, dev: 'RCBO Type B', cable: 0, len: 30, amb: 30, grp: 2, arr: 'Bunched / enclosed', ci: 1, zdb: 0.45, pfc: '', icn: 15, rcd: 'Type A', idn: 30 },
+      { id: uid(), ref: 'S01', from: 'MSB', to: 'DB-GF', desc: 'Sub-main to DB-GF', type: 'Other', kw: 120, pf: '', ph: 3, dev: 'MCCB', cable: 4, len: 60, amb: 30, grp: 3, arr: 'Single layer', ci: 1, zdb: 0.02, pfc: 25, icn: 36, rcd: 'None', idn: '' },
       { id: uid(), ref: 'M01', from: 'MCC-ROOF', desc: 'ASHP-01', type: 'Other', kw: 45, pf: 0.92, ph: 3, dev: 'MCCB', cable: 3, len: 15, amb: 35, grp: 1, arr: 'Single layer', ci: 1, zdb: 0.2, pfc: 10, icn: 25, rcd: 'None', idn: '' },
     ],
     energy: { currency: 'GBP', tariff: 0.25, demand: 3, lf: 0.4, benchmark: 95, co2: '', pvYield: '', pv: 100, batt: 50, shed: 0.05, pfUn: 0.85, pfTg: 0.95, shares: { lighting: 0.2, hvac: 0.4, pumps: 0.15, other: 0.25 }, m: { led: true, pir: true, bms: true, hrv: false, vsd: true, mt: true } },
@@ -394,7 +394,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { S = null; }
 if (!S || S.v !== 1) S = exampleProject();
 // Projects saved before the AI data centre fields existed: fill in the new defaults.
-function upgrade(o) { const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; return o; }
+function upgrade(o) { if (!o.boards || typeof o.boards !== 'object') o.boards = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; return o; }
 upgrade(S);
 let saveT;
 let saveWarned = false;
@@ -585,7 +585,7 @@ function calcCircuit(k, X) {
   const ifault = 0.95 * X.vln / zs, tdis = /ACB/.test(dev.n) ? 1 : /MCCB/.test(dev.n) ? 0.4 : 0.1;
   const adiab = Math.sqrt(ifault * ifault * tdis) / (cmb.temp === 70 ? 115 : 143);
   const cpc = +k.cable === 0 && !packOn() ? DD.CPCTE[idx - 1] : nextStd(CSA, Math.max(s547, adiab)) ?? CSA[CSA.length - 1];
-  Object.assign(r, { idx, csa, It, Iz, vd, s547, zs, zsMax, ifault, adiab, cpc });
+  Object.assign(r, { idx, csa, It, Iz, vd, s547, zs, zsMax, ifault, adiab, cpc, mvSel: mv[idx - 1] });
   const rcd = k.rcd && k.rcd !== 'None' && +k.idn > 0;
   if (Iz < inr) r.fail = 'Iz < In';
   else if (vd > vdLim) r.fail = 'Voltage drop';
@@ -1215,6 +1215,55 @@ function calcReview(X) {
   return { panels, panelDem: panels.reduce((a, p) => a + p.dem, 0), panelConn: panels.reduce((a, p) => a + p.conn, 0), sheets, eff: Object.values(eff).sort((a, b) => b.n - a.n), rooms: R2, chk, tot, vaSock, sockVA: tot.sock * vaSock, nOk: cnt('ok'), nWarn: cnt('warn'), nBad: cnt('bad') };
 }
 
+/* ---------- distribution boards: fault level at each board and IEC 61439 assembly checks ---------- */
+// IEC 61439-2 Table 101 – assumed loading (rated diversity factor) by number of main outgoing circuits; editable per board
+const rdfDefault = n => n <= 1 ? 1 : n <= 3 ? 0.9 : n <= 5 ? 0.8 : n <= 9 ? 0.7 : 0.6;
+const CABLE_X = 0.08e-3; // typical cable reactance, Ω/m per phase
+const feedsOf = k => String(k.to || (String(k.desc || '').match(/sub-?\s?main\s+to\s+([\w.\-\/]+)/i) || [])[1] || '').trim();
+function calcBoards(X, C, src) {
+  const names = [...new Set([...C.map(c => (c.k.from || '').trim()), ...C.map(c => feedsOf(c.k))].filter(Boolean))];
+  // source: transformer LV busbar fault level (infinite upstream source), split into R and X with an X/R ratio
+  const xr = +S.sizing.xr || 6, Zs = src.flP ? X.vll / (SQ3 * src.flP * 1000) : null, Rs = Zs != null ? Zs / Math.sqrt(1 + xr * xr) : null, Xs = Rs != null ? Rs * xr : null;
+  const feeder = name => C.find(c => feedsOf(c.k) === name && c.csa);
+  const cableZ = c => { const z = c.mvSel ? (c.ph === 1 ? c.mvSel / 2000 : c.mvSel / 1000 / SQ3) : 0, L = +c.k.len || 0; return [z * L, CABLE_X * L]; };
+  const memo = {};
+  const imp = (name, seen = new Set()) => {
+    if (memo[name]) return memo[name];
+    if (Rs == null) return null;
+    const fc = feeder(name);
+    if (!fc || seen.has(name)) return (memo[name] = { R: Rs, X: Xs, path: ['LV busbar'] });
+    seen.add(name);
+    const up = imp((fc.k.from || '').trim(), seen); if (!up) return null;
+    const [rc, xc] = cableZ(fc);
+    return (memo[name] = { R: up.R + rc, X: up.X + xc, path: [...up.path, `${fc.k.ref} ${fc.csa} mm² × ${+fc.k.len || 0} m`] });
+  };
+  const ovr = S.boards || {};
+  const boards = names.map(name => {
+    const o = ovr[name] || {}, out = C.filter(c => (c.k.from || '').trim() === name), fc = feeder(name), z = imp(name);
+    const faultKA = z ? X.vll / (SQ3 * Math.hypot(z.R, z.X)) / 1000 : null;
+    const isMain = !fc && /MSB|MDB|LVSB|MAIN|LV ?BOARD|SWITCHBOARD/i.test(name);
+    const rdfAuto = rdfDefault(out.length), rdf = !isBlank(o.rdf) && +o.rdf > 0 ? +o.rdf : rdfAuto;
+    const incAuto = fc ? fc.inr : isMain ? src.incomer : null, incomer = !isBlank(o.incomer) && +o.incomer > 0 ? +o.incomer : incAuto;
+    const ratAuto = isMain ? src.icw : null, rating = !isBlank(o.icw) && +o.icw > 0 ? +o.icw : ratAuto;
+    // per-phase demand: three-phase currents + single-phase currents shared over three phases (balanced allocation assumed)
+    const demandA = out.reduce((a, c) => a + (c.ib || 0) / (c.ph === 1 ? 3 : 1), 0);
+    const rdfApplies = X.fam === 'IEC' || X.fam === 'ASNZS';
+    const overRdf = rdfApplies ? out.filter(c => c.ib && c.inr && c.ib > rdf * c.inr + 1e-9) : [];
+    const incSt = incomer ? (demandA <= incomer ? 'ok' : 'bad') : 'na', faultSt = faultKA == null || !rating ? 'na' : faultKA <= rating ? 'ok' : 'bad';
+    return { name, out, n: out.length, fc, isMain, rdf, rdfAuto, rdfApplies, overRdf, incomer, incAuto, demandA, loading: incomer ? demandA / incomer : null, incSt, faultKA, rating, ratAuto, faultSt, path: z ? z.path : [], source: fc ? `${fc.k.ref} from ${fc.k.from}` : isMain ? 'Transformer LV' : 'Not defined – assumed at LV busbar' };
+  });
+  return { boards, faultAt: name => (boards.find(b => b.name === (name || '').trim()) || {}).faultKA ?? null, xr, autoPfc: S.sizing.autoPfc !== false };
+}
+const BOARD_REF = { IEC: 'IEC / BS EN 61439-1, -2 (RDF Table 101); BS 7671 434, 536', ASNZS: 'AS/NZS 61439; AS/NZS 3000 Cl. 2.5', NEC: 'NEC 408.36 (panelboard OCPD), 110.9/110.10 (interrupting rating, SCCR); UL 67 / UL 891', CEC: 'CEC Rule 14-012; CSA C22.2 No. 29/31' };
+// Load growth: demand × (1 + g)^t against the installed capacities; "adequate until" = last year the demand stays within each capacity
+function calcGrowth(X, base) {
+  const g = (+S.project.growthPct || 0) / 100, yrs = Math.max(0, Math.round(+S.project.growthYears || 0)), y0 = +String(S.project.date || '').slice(0, 4) || new Date().getFullYear();
+  if (!(g > 0 && yrs > 0)) return null;
+  const at = t => base.sub * Math.pow(1 + g, t), until = cap => cap ? (base.sub >= cap ? y0 : y0 + Math.floor(Math.log(cap / base.sub) / Math.log(1 + g))) : null;
+  const caps = [['Design maximum demand (incl. spare)', base.md], ['Transformer firm capacity', base.firmTx], ['Main incomer', base.incKva], ['Standby generator (essential share)', base.genCap]].filter(c => c[1]).map(([name, cap]) => ({ name, cap, until: until(cap), within: at(yrs) <= cap }));
+  const steps = [...new Set([0, 5, 10, 15, 20, yrs].filter(t => t <= yrs))].map(t => ({ year: y0 + t, t, kva: at(t), pctTx: base.firmTx ? at(t) / base.firmTx : null }));
+  return { g, yrs, y0, steps, caps, endKva: at(yrs) };
+}
 function calcAll() {
   const X = ctx();
   const Z = calcZones(X), Lo = calcLoads(X), Li = calcLifts(X), P = calcPumps(X), D = S.dc.include ? calcDC(X) : null, Dfull = calcDC(X);
@@ -1255,11 +1304,16 @@ function calcAll() {
   const td = txKva ? TXD[txKva] : null;
   const room = td ? { L: nTx * td[0] + (nTx + 1) * z.clearance, W: td[1] + 2 * z.clearance, H: Math.max(3, td[2] + 0.8), loss: nTx * td[4], oil: z.txType === 'Oil-immersed (ONAN)' ? nTx * td[5] * 1.1 : 0, wt: td[3] } : null;
   if (room) { room.A = room.L * room.W; room.swL = (Math.ceil(z.ways / 4) + nTx + (nTx > 1 ? 1 : 0)) * 0.8; room.swA = (room.swL + 1.6) * (1.0 + 1.5 + 0.8); room.vent = room.loss / (1.2 * 1.005 * 10); }
-  const C = S.circuits.map(k => calcCircuit(k, X));
+  const C1 = S.circuits.map(k => calcCircuit(k, X));
+  const BD = calcBoards(X, C1, { flP, incomer, icw });
+  // second pass: circuits without an entered prospective fault current use the calculated fault level at their board
+  const C = S.circuits.map((k, i) => { const fa = BD.autoPfc && (k.pfc === '' || k.pfc == null) ? BD.faultAt(k.from) : null; if (fa == null) return C1[i]; const r = calcCircuit({ ...k, pfc: +fa.toFixed(1) }, X); r.k = k; r.pfcAuto = +fa.toFixed(1); return r; });
   const W = calcDwg(X);
+  const firmTx = txKva ? txKva * (z.resilience === 'N+1' ? Math.max(nTx - 1, 1) : nTx) : null;
+  const GR = calcGrowth(X, { sub, md, firmTx, incKva: incomer ? incomer * SQ3 * X.vll / 1000 : null, genCap: gen && z.genMethod !== 'schedule' && z.essential > 0 ? gen / (z.essential * z.genMargin) : null });
   // floor area for energy intensity: area schedule (+ data hall); if there is none, the rooms on the electrical drawing
   const E = calcEnergy(X, md, kw, (Z.area + (D ? D.white : 0)) || W.area || 0);
-  return { X, Z, Lo, Li, P, D, Dfull, sub, spare, md, kw, amps, swb: nextStd(SWB, amps), txKva, nTx, reqTx, flc, fl1, flP, incomer, icw, supply, ess, gen, met, bond, pme, nEarth, room, C, W, RV, PB, NL, NB, NR, LoN, genInfo, CMP, E };
+  return { X, Z, Lo, Li, P, D, Dfull, sub, spare, md, kw, amps, swb: nextStd(SWB, amps), txKva, nTx, reqTx, flc, fl1, flP, incomer, icw, supply, ess, gen, met, bond, pme, nEarth, room, C, BD, GR, W, RV, PB, NL, NB, NR, LoN, genInfo, CMP, E };
 }
 function calcEnergy(X, md, kw, area) {
   const e = S.energy, sh = e.shares;
@@ -1465,6 +1519,10 @@ V.sizing = () => {
   <div class="bar" aria-hidden="true">${parts.map((p, i) => `<i style="width:${R.md ? p[1] / R.md * 100 : 0}%;background:${colors[i]}"></i>`).join('')}</div>
   <div class="tbl-wrap" style="margin-top:10px"><table><tbody>${parts.map((p, i) => `<tr><td><span class="dot" style="display:inline-block;background:${colors[i]}"></span> ${p[0]}</td><td class="n">${f1(p[1])} kVA</td></tr>`).join('')}<tr class="total"><td>Total maximum demand (${pct(+S.project.spare)} spare)</td><td class="n">${f1(R.md)} kVA · ${f1(R.kw)} kW · ${f0(R.amps)} A</td></tr></tbody></table></div>
   ${R.CMP.length > 1 ? `<h3>Maximum demand – method comparison</h3><div class="tbl-wrap"><table><thead><tr><th>Method</th><th>Before spare kVA</th><th>With ${pct(+S.project.spare)} spare kVA</th><th>vs design</th><th>Basis</th><th></th></tr></thead><tbody>${R.CMP.map(m => `<tr${m.used ? ' class="total"' : ''}><td>${esc(m.name)}</td><td class="n">${f1(m.sub)}</td><td class="n">${f1(m.md)}</td><td class="n">${m.used ? '—' : (m.md >= R.md ? '+' : '') + pct(R.md ? m.md / R.md - 1 : 0, 0)}</td><td class="note">${esc(m.note)}</td><td>${m.used ? pill('ok', 'Used') : ''}</td></tr>`).join('')}</tbody></table></div><p class="note">A large spread between methods is worth investigating before fixing the supply capacity. Change the method in Stage 2 (NEC countries) or Stage 11 (panel schedules).</p>` : ''}
+  <h3>Load growth</h3><div class="grid">${fld('Annual growth (%/year)', inp('project.growthPct', S.project.growthPct ?? '', 'number', 'min="0" placeholder="e.g. 3"'), 'Blank = no projection')}${fld('Design horizon (years)', inp('project.growthYears', S.project.growthYears ?? '', 'number', 'min="1" placeholder="e.g. 10"'))}</div>
+  ${R.GR ? `<div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Year</th><th>Demand kVA (before spare)</th><th>% of transformer firm capacity</th></tr></thead><tbody>${R.GR.steps.map(st => `<tr><td>${st.year}</td><td class="n">${f1(st.kva)}</td><td class="n">${st.pctTx != null ? pct(st.pctTx) : '–'}</td></tr>`).join('')}</tbody></table></div>
+  <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Capacity</th><th>kVA</th><th>Adequate until</th><th>At ${R.GR.y0 + R.GR.yrs}</th></tr></thead><tbody>${R.GR.caps.map(c => `<tr><td>${esc(c.name)}</td><td class="n">${f0(c.cap)}</td><td class="n">${c.until}</td><td>${pill(c.within ? 'ok' : 'bad', c.within ? 'Within' : 'Exceeded')}</td></tr>`).join('')}</tbody></table></div>
+  <p class="note">Demand grows at ${pct(R.GR.g, 1)} a year from ${R.GR.y0}: ${f1(R.GR.steps[0].kva)} kVA today → ${f1(R.GR.endKva)} kVA in ${R.GR.y0 + R.GR.yrs}. Spare capacity (${pct(+S.project.spare)}) is included in the design maximum demand; generator check applies when sized as a share of maximum demand.</p>` : ''}
   <h3>Transformer and switchboard</h3><div class="grid">
    ${fld('Number of transformers', inp('sizing.txCount', z.txCount, 'number'))}${fld('Resilience', sel('sizing.resilience', ['N', 'N+1'], z.resilience), 'N+1 = full load with one unit out')}
    ${fld('Target loading', inp('sizing.txLoading', z.txLoading, 'number'), '0.75–0.85')}${fld('Impedance Uk %', inp('sizing.uk', z.uk, 'number'), '4–4.75% ≤ 630 kVA; 6% above')}
@@ -1486,12 +1544,25 @@ V.sizing = () => {
    ${r ? fld('Transformer room', der(`${f1(r.L)} × ${f1(r.W)} m, ${f1(r.H)} m high (${f1(r.A)} m²)`)) + fld('LV switchroom', der(`${f1(r.swL + 1.6)} × 3.3 m (${f1(r.swA)} m²)`)) + fld('Heat loss / ventilation', der(`${f1(r.loss)} kW · ${f2(r.vent)} m³/s at ΔT 10 K`)) + fld('Unit weight / oil bund', der(`${f1(r.wt)} t${r.oil ? ` · bund ${f0(r.oil)} l` : ''}`)) : ''}</div>
   <p class="note">Fault level assumes an infinite source; ask the utility for the network fault level. Transformer dimensions are typical envelopes – confirm with the manufacturer.</p></section>`;
 };
+function boardsPanel() {
+  const B = R.BD; if (!B.boards.length) return '';
+  const ov = (b, k) => (S.boards && S.boards[b.name] && S.boards[b.name][k]) ?? '';
+  const inp2 = (b, k, ph, w = 70) => `<input type="number" step="any" style="width:${w}px" data-board="${esc(b.name)}" data-k="${k}" value="${esc(ov(b, k))}" placeholder="${ph ?? ''}">`;
+  const rows = B.boards.map(b => `<tr><td><b>${esc(b.name)}</b><br><span class="note">${esc(b.source)}</span></td><td class="n">${b.n}</td><td>${b.rdfApplies ? inp2(b, 'rdf', b.rdfAuto, 55) : '<span class="note">n/a</span>'}</td><td>${inp2(b, 'incomer', b.incAuto ?? 'A')}</td><td class="n">${f1(b.demandA)}</td><td class="n">${b.loading != null ? pct(b.loading) : '–'}</td><td class="n">${b.faultKA != null ? f1(b.faultKA) : '–'}</td><td>${inp2(b, 'icw', b.ratAuto ?? 'kA', 60)}</td>
+    <td>${pill(b.incSt, b.incSt === 'ok' ? 'Incomer OK' : b.incSt === 'bad' ? 'Incomer overloaded' : 'Enter incomer')} ${pill(b.faultSt, b.faultSt === 'ok' ? 'Rating OK' : b.faultSt === 'bad' ? 'Fault > rating' : 'Enter rating')} ${b.rdfApplies ? (b.overRdf.length ? pill('warn', `${b.overRdf.length} above RDF`) : pill('ok', 'RDF OK')) : ''}</td></tr>`).join('');
+  const rdfList = B.boards.flatMap(b => b.overRdf.map(c => `<li><b>${esc(b.name)}</b> ${esc(c.k.ref)}: Ib ${f1(c.ib)} A > RDF ${f2(b.rdf)} × In ${c.inr} A = ${f1(b.rdf * c.inr)} A – choose a larger device or confirm the continuous rating with the assembly manufacturer</li>`)).join('');
+  return `<h3>Distribution boards – fault level and assembly checks</h3>
+  <div class="grid">${fld('Calculated fault level for circuits', sel('sizing.autoPfc', [{ v: 'true', t: 'Use it where PFC kA is blank' }, { v: 'false', t: 'Off – enter PFC per circuit' }], String(S.sizing.autoPfc !== false)), 'Breaking capacity (Icn) is checked against it')}${fld('Source X/R ratio', inp('sizing.xr', S.sizing.xr ?? '', 'number', 'placeholder="6"'), 'Transformer impedance split into R and X')}</div>
+  <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Board</th><th>Outgoing</th><th>RDF</th><th>Incomer A</th><th>Demand A/phase</th><th>Loading</th><th>Fault level kA</th><th>Rated Icw / SCCR kA</th><th>Checks</th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${rdfList ? `<ul class="note">${rdfList}</ul>` : ''}
+  <p class="note">Fault level: three-phase symmetrical, from the transformer LV fault level (infinite upstream source, X/R ${B.xr}) plus each sub-main's impedance (cable mV/A/m and ${CABLE_X * 1000} Ω/km reactance) along the supply path; boards whose supply is not defined are taken at the LV busbar (conservative). Name the supplied board in “Feeds board” for each sub-main. Demand per phase assumes single-phase circuits are spread evenly over the three phases. ${R.X.fam === 'IEC' || R.X.fam === 'ASNZS' ? 'RDF: IEC 61439-2 Table 101 assumed loading by number of outgoing circuits (1: 1.0; 2–3: 0.9; 4–5: 0.8; 6–9: 0.7; 10+: 0.6) unless the manufacturer states otherwise – an RDF limits continuous loading of outgoing units, it is not a reduction applied to the load.' : ''} References: ${esc(BOARD_REF[R.X.fam] || BOARD_REF.IEC)}.</p>`;
+}
 V.circuits = () => {
   const rows = R.C.map((r, i) => {
     const k = r.k, s = (key, list, map) => `<select data-arr="circuits" data-i="${i}" data-k="${key}">${opt(list, k[key], map)}</select>`, n = (key, w = 70) => `<input type="number" step="any" style="width:${w}px" data-arr="circuits" data-i="${i}" data-k="${key}" value="${esc(k[key])}">`;
     const st = r.fail ? (r.fail === 'REVIEW' ? 'warn' : 'bad') : r.status ? 'ok' : 'na';
-    return `<tr><td><input style="width:60px" data-arr="circuits" data-i="${i}" data-k="ref" value="${esc(k.ref)}"></td><td><input style="width:90px" data-arr="circuits" data-i="${i}" data-k="from" value="${esc(k.from)}"></td><td><input data-arr="circuits" data-i="${i}" data-k="desc" value="${esc(k.desc)}"></td>
-     <td>${s('type', ['Lighting', 'Other'])}</td><td>${n('kw')}</td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td>${usesAWG(R.X) ? `<td>${s('cont', ['No', 'Yes'])}</td>` : ''}<td class="wide">${s('cable', combosList().map((c, j) => ({ v: j, t: c.name || c.n })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td>${n('pfc', 55)}</td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
+    return `<tr><td><input style="width:60px" data-arr="circuits" data-i="${i}" data-k="ref" value="${esc(k.ref)}"></td><td><input style="width:90px" data-arr="circuits" data-i="${i}" data-k="from" value="${esc(k.from)}"></td><td><input style="width:90px" data-arr="circuits" data-i="${i}" data-k="to" value="${esc(k.to || '')}" placeholder="${esc(feedsOf(k) || '–')}" title="For sub-mains: the board this circuit supplies"></td><td><input data-arr="circuits" data-i="${i}" data-k="desc" value="${esc(k.desc)}"></td>
+     <td>${s('type', ['Lighting', 'Other'])}</td><td>${n('kw')}</td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td>${usesAWG(R.X) ? `<td>${s('cont', ['No', 'Yes'])}</td>` : ''}<td class="wide">${s('cable', combosList().map((c, j) => ({ v: j, t: c.name || c.n })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td><input type="number" step="any" style="width:60px" data-arr="circuits" data-i="${i}" data-k="pfc" value="${esc(k.pfc)}" placeholder="${r.pfcAuto ?? ''}" title="Blank = calculated at the board"></td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
      <td class="n">${f1(r.ib)}</td><td class="n">${r.inr ?? '–'}</td><td class="n">${esc(csaLabel(r.csa, R.X))}</td><td class="n">${r.Iz ? f1(r.Iz) : '–'}</td><td class="n">${r.vd != null ? f2(r.vd) + '%' : '–'}</td><td class="n">${r.zs != null ? f2(r.zs) : '–'}</td><td class="n">${r.zsMax != null ? f2(r.zsMax) : 'mfr'}</td><td class="n">${r.cpc ?? '–'}</td><td>${pill(st, r.status || '—')}</td><td><button class="btn small ghost" data-del="circuits" data-i="${i}">Remove</button></td></tr>`;
   }).join('');
   const specs = R.C.filter(r => r.spec).map(r => `<li><b>${esc(r.k.ref)}</b> ${esc(r.k.desc)} — ${esc(r.spec)}</li>`).join('');
@@ -1499,7 +1570,8 @@ V.circuits = () => {
   <div class="callout"><b>Cable data:</b> ${esc(cableSource())}. ${packOn() ? '' : (R.X.fam !== 'IEC' ? `For ${esc(FAMILY_NAME[R.X.fam])} projects these are proxy values – size conductors from the local tables (NEC 310.16, CEC Table 2, AS/NZS 3008.1).${usesAWG(R.X) ? ' Sizes are shown with their AWG / kcmil equivalent and devices use NEC 240.6(A) standard ratings.' : ''}` : 'Metric IEC tables (e.g. IEC 60364-5-52, national annexes) can be imported as a licensed table pack.')}
    <div class="row" style="margin-top:6px"><button class="btn small" data-act="load-pack">Import cable table pack (.json)</button><button class="btn small ghost" data-act="dl-packtpl">Download template</button>${packOn() ? '<button class="btn small ghost" data-act="rm-pack">Use built-in BS 7671 data</button>' : ''}</div></div>
   <input type="file" id="packIn" accept=".json" hidden>
-  <div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>From</th><th>Description</th><th>Type</th><th>kW</th><th>Ph</th><th>Device</th>${usesAWG(R.X) ? '<th>Continuous (125%)</th>' : ''}<th>Cable &amp; method</th><th>Length m</th><th>Amb °C</th><th>Grouped</th><th>Arrangement</th><th>Zdb Ω</th><th>PFC kA</th><th>Icn kA</th><th>RCD</th><th>IΔn mA</th><th>Ib A</th><th>In A</th><th>mm²</th><th>Iz A</th><th>VD</th><th>Zs Ω</th><th>Zs max</th><th>cpc</th><th>Result</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>From</th><th>Feeds board</th><th>Description</th><th>Type</th><th>kW</th><th>Ph</th><th>Device</th>${usesAWG(R.X) ? '<th>Continuous (125%)</th>' : ''}<th>Cable &amp; method</th><th>Length m</th><th>Amb °C</th><th>Grouped</th><th>Arrangement</th><th>Zdb Ω</th><th>PFC kA</th><th>Icn kA</th><th>RCD</th><th>IΔn mA</th><th>Ib A</th><th>In A</th><th>mm²</th><th>Iz A</th><th>VD</th><th>Zs Ω</th><th>Zs max</th><th>cpc</th><th>Result</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${boardsPanel()}
   <h3>Specification</h3><ul class="note">${specs || '<li>Add circuits to generate cable and device specifications.</li>'}</ul></section>`;
 };
 V.energy = () => {
@@ -1646,6 +1718,8 @@ function reportBody() {
   ${R.CMP.length > 1 ? tbl(['Method', 'Before spare kVA', 'With spare kVA', 'Used'], R.CMP.map(m => [esc(m.name), f1(m.sub), f1(m.md), m.used ? 'Yes' : ''])) + `<p class="s">Method comparison: the same building assessed by each available method; the design uses the method marked “Yes”.</p>` : ''}
   ${R.genInfo.method === 'schedule' && R.genInfo.rows.length ? sec('Essential loads (standby generator)') + tbl(['Essential load', 'kW', 'ks', 'kVA'], [...R.genInfo.rows.map(r => [esc(r.e.desc), f1(r.kw), f2(r.ks), f1(r.kva)]), ...(R.genInfo.fireKva ? [['Fire pumps (Stage 4)', '', '', f1(R.genInfo.fireKva)]] : [])], ['Total × margin ' + S.sizing.genMargin, '', '', f1(R.ess)]) : ''}
   ${sec('Supply, transformers and switchgear')}${tbl(['Item', 'Value'], [['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA, Uk ${S.sizing.uk}%, ${esc(S.sizing.txType)}` : 'Review'], ['Full-load current', R.flc ? `${f0(R.flc)} A` : '–'], ['LV fault level', R.flP ? `${f1(R.flP)} kA (infinite source)` : '–'], ['Main incomer / busbar', R.incomer ? `${f0(R.incomer)} A` : '–'], ['Short-circuit rating', R.icw ? `${R.icw} kA, 1 s` : '–'], ['Transformer room', R.room ? `${f1(R.room.L)} × ${f1(R.room.W)} m, ${f1(R.room.H)} m clear` : '–'], ['LV switchroom', R.room ? `${f1(R.room.swA)} m²` : '–'], ['Ventilation', R.room ? `${f2(R.room.vent)} m³/s for ${f1(R.room.loss)} kW losses` : '–'], ['Standby generator', R.gen ? (R.genInfo.method === 'schedule' ? `${f0(R.gen)} kVA (essential-load schedule ${f1(R.genInfo.schedKva)} kVA at pf ${R.genInfo.pf}, × ${S.sizing.genMargin})` : `${f0(R.gen)} kVA (${pct(S.sizing.essential)} essential × ${S.sizing.genMargin})`) + (R.genInfo.bigStart ? `; largest motor start ${f1(R.genInfo.bigStart.kva)} kVA = ${f2(R.genInfo.startRatio)} × generator` : '') : '–']])}
+  ${R.GR ? sec('Load growth') + tbl(['Year', 'Demand kVA', '% of transformer firm capacity'], R.GR.steps.map(st => [st.year, f1(st.kva), st.pctTx != null ? pct(st.pctTx) : '–'])) + tbl(['Capacity', 'kVA', 'Adequate until', 'At horizon'], R.GR.caps.map(c => [esc(c.name), f0(c.cap), c.until, c.within ? 'Within' : 'Exceeded'])) + `<p class="s">${pct(R.GR.g, 1)} per year over ${R.GR.yrs} years from ${R.GR.y0}.</p>` : ''}
+  ${R.BD.boards.length ? sec('Distribution boards and fault levels') + tbl(['Board', 'Supply', 'Outgoing', 'RDF', 'Incomer A', 'Demand A/phase', 'Fault kA', 'Rated kA', 'Result'], R.BD.boards.map(b => [esc(b.name), esc(b.source), b.n, b.rdfApplies ? f2(b.rdf) : 'n/a', b.incomer ?? '–', f1(b.demandA), b.faultKA != null ? f1(b.faultKA) : '–', b.rating ?? '–', [b.incSt === 'bad' ? 'Incomer overloaded' : '', b.faultSt === 'bad' ? 'Fault > rating' : '', b.overRdf.length ? b.overRdf.length + ' above RDF' : ''].filter(Boolean).join('; ') || 'OK'])) + `<p class="s">Fault levels from the transformer (infinite source, X/R ${R.BD.xr}) plus sub-main impedances; used for breaking-capacity checks where no PFC was entered. ${esc(BOARD_REF[R.X.fam] || BOARD_REF.IEC)}.</p>` : ''}
   ${sec('Earthing and bonding')}${tbl(['Item', 'Value'], [['Earthing system', esc(c.earthing)], ['Main earthing conductor', `${R.met} mm² Cu (Table 54.7)`], ['Main protective bonding', `${R.bond} mm² Cu`], ['Transformer neutral–earth', R.nEarth ? `${R.nEarth} mm² Cu` : '–']])}
   ${R.C.length ? sec('Cable and protection schedule') + `<p class="s">Cable data: ${esc(cableSource())}${usesAWG(R.X) ? '; sizes in mm² with AWG / kcmil equivalents' : ''}.</p>` + tbl(['Ref', 'From', 'Description', 'Ib A', 'In A', 'mm²', 'Iz A', 'VD %', 'Zs Ω', 'Result'], R.C.map(r => [esc(r.k.ref), esc(r.k.from), esc(r.k.desc), f1(r.ib), r.inr ?? '–', esc(csaLabel(r.csa, R.X)), r.Iz ? f1(r.Iz) : '–', r.vd != null ? f2(r.vd) : '–', r.zs != null ? f2(r.zs) : '–', esc(r.status)])) + `<ul class="s">${R.C.filter(r => r.spec).map(r => `<li>${esc(r.k.ref)}: ${esc(r.spec)}</li>`).join('')}</ul>` : ''}
   ${R.W.rooms.length ? sec('Lighting and small power – final circuits') + `<p>Generated layout for board ${esc(S.dwg.board)} using the lumen method (UF ${R.W.uf}, MF ${R.W.mf}) and ${esc(R.W.sock.n)} socket-outlets. Parameter checks: ${R.W.nOk} pass, ${R.W.nWarn} to check, ${R.W.nBad} fail.</p>` +
@@ -1718,6 +1792,8 @@ function csvSchedules() {
      ['Power architecture', d.arch, '', ''], ['Current per rack (LV AC)', a.rackAac.toFixed(1), 'A', `per phase at ${R.X.vll} V`], ['Current per rack (800 V DC)', a.rackAdc.toFixed(1), 'A', ''], ['Conversion losses AC', a.convAC.toFixed(0), 'kW', `efficiency ${(a.effAC * 100).toFixed(1)}%`], ['Conversion losses 800 V DC', a.convDC.toFixed(0), 'kW', `efficiency ${(a.effDC * 100).toFixed(1)}%`], ['800 V DC loss saving', a.convSave.toFixed(0), 'kW', `${a.convSaveMWh.toFixed(0)} MWh/yr; ${a.isDC ? 'applied' : 'not applied'}`],
      ['Facility peak', D.fac.toFixed(0), 'kW', ''], ['Data centre maximum demand', D.md.toFixed(0), 'kVA', ''], ['Training swing', a.swingMW.toFixed(2), 'MW', `ramp ${a.rampMWs.toFixed(2)} MW/s`], ['Grid-forming BESS power', a.bessMW.toFixed(2), 'MW', `${(a.bessRed * 100).toFixed(0)}% reduction (reported ${AI_DYN.bessReduction.map(x => x * 100).join('–')}%)`], ['Grid-forming BESS energy', a.bessMWh.toFixed(2), 'MWh', `${d.bessMin} min`], ['Grid-visible swing', a.residMW.toFixed(2), 'MW', 'estimate – confirm by dynamic study']].forEach(r => L.push(r.map(q).join(',')));
   }
+  if (R.BD.boards.length) { L.push(''); L.push(q('DISTRIBUTION BOARDS – FAULT LEVEL AND ASSEMBLY CHECKS')); L.push(['Board', 'Supply', 'Outgoing', 'RDF', 'Incomer A', 'Demand A/phase', 'Fault kA', 'Rated kA', 'Above RDF'].map(q).join(',')); R.BD.boards.forEach(b => L.push([b.name, b.source, b.n, b.rdfApplies ? b.rdf : 'n/a', b.incomer, b.demandA.toFixed(1), b.faultKA?.toFixed(1), b.rating, b.overRdf.map(c => c.k.ref).join(' ')].map(q).join(','))); }
+  if (R.GR) { L.push(''); L.push(q('LOAD GROWTH (' + (R.GR.g * 100).toFixed(1) + '%/yr)')); L.push(['Year', 'Demand kVA', '% transformer firm'].map(q).join(',')); R.GR.steps.forEach(st => L.push([st.year, st.kva.toFixed(1), st.pctTx != null ? (st.pctTx * 100).toFixed(0) + '%' : ''].map(q).join(','))); R.GR.caps.forEach(c => L.push([c.name, c.cap.toFixed(0), 'adequate until ' + c.until].map(q).join(','))); }
   if (R.CMP.length > 1) { L.push(''); L.push(q('MAXIMUM DEMAND – METHOD COMPARISON')); L.push(['Method', 'Before spare kVA', 'With spare kVA', 'Used', 'Basis'].map(q).join(',')); R.CMP.forEach(m => L.push([m.name, m.sub.toFixed(1), m.md.toFixed(1), m.used ? 'Yes' : '', m.note].map(q).join(','))); }
   if (R.genInfo.method === 'schedule') { L.push(''); L.push(q('ESSENTIAL LOADS – STANDBY GENERATOR')); L.push(['Load', 'kW', 'ks', 'Motor', 'kVA'].map(q).join(',')); R.genInfo.rows.forEach(r => L.push([r.e.desc, r.kw, r.ks, r.e.motor ? 'Yes' : '', r.kva.toFixed(1)].map(q).join(','))); if (R.genInfo.fireKva) L.push(['Fire pumps (Stage 4)', '', '', '', R.genInfo.fireKva.toFixed(1)].map(q).join(',')); L.push(['Generator', R.gen, 'kVA', '', R.ess.toFixed(1)].map(q).join(',')); }
   L.push(''); L.push(['TOTAL MAXIMUM DEMAND kVA', R.md.toFixed(1), 'kW', R.kw.toFixed(1), 'A', R.amps.toFixed(0)].map(q).join(','));
@@ -1757,6 +1833,7 @@ function onEdit(e, immediate) {
   const el = e.target;
   if (el.dataset.p) { let v = castVal(el); if (NUM_PATHS.test(el.dataset.p) && v === '') return; setPath(el.dataset.p, v); if (el.dataset.p === 'project.country') { S.project.vllOverride = ''; S.project.vlnOverride = ''; S.project.dregOverride = ''; } if (el.dataset.p === 'dc.platform') applyPlatform(v); }
   else if (el.dataset.arr) { const v = castVal(el); S[el.dataset.arr][+el.dataset.i][el.dataset.k] = el.dataset.k === 'cable' || el.dataset.k === 'ph' ? +v : v; }
+  else if (el.dataset.board) { S.boards = S.boards || {}; const b = S.boards[el.dataset.board] = S.boards[el.dataset.board] || {}; b[el.dataset.k] = castVal(el); }
   else if (el.dataset.rvmap) { const m = S.review.map[el.dataset.rvmap] = S.review.map[el.dataset.rvmap] || {}; m[el.dataset.k] = el.dataset.k === 'w' ? castVal(el) : el.value; }
   else if (el.dataset.rvarea) { S.review.areas[el.dataset.rvarea] = castVal(el); }
   else if (el.dataset.comp) { const i = el.dataset.comp; S.compliance[i] = S.compliance[i] || {}; S.compliance[i][el.dataset.k] = el.value; }

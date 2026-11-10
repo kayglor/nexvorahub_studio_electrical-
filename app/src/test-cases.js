@@ -464,6 +464,47 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   wchk('formatters show – for missing values', f0(null) === '–' && f2(undefined) === '–' && f1(0) === '0.0');
   S.sizing = JSON.parse(SZ0); S.project.country = C0; S.circuits = JSON.parse(CI0); S.project.mdMethod = M0; R = calcAll();
   out.workbookChecks = wFail.length ? wFail : 'all passed'; }
+// ---- distribution boards: fault levels, IEC 61439 checks; load growth ----
+{ const bFail = [], bchk = (n, ok, got) => { if (!ok) bFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const C0 = S.project.country, CI0 = JSON.stringify(S.circuits), B0 = JSON.stringify(S.boards || {}), SZ0 = JSON.stringify(S.sizing), P0 = JSON.stringify(S.project), DC0 = S.dc.include;
+  S.project.country = 'United Kingdom'; S.dc.include = false; R = calcAll();
+  bchk('RDF defaults (IEC 61439-2 Table 101)', [1, 2, 3, 4, 5, 6, 9, 10, 24].map(rdfDefault).join() === '1,0.9,0.9,0.8,0.8,0.7,0.7,0.6,0.6');
+  const msb = R.BD.boards.find(b => b.name === 'MSB'), gf = R.BD.boards.find(b => b.name === 'DB-GF');
+  bchk('main board fault = transformer LV fault level', near(msb.faultKA, R.flP, 1e-6) && msb.source === 'Transformer LV', [msb.faultKA, R.flP]);
+  // independent recalculation for DB-GF: source R/X from the LV fault level (X/R 6) + sub-main S01 impedance
+  const s01 = R.C.find(c => c.k.ref === 'S01'), Zs = R.X.vll / (Math.sqrt(3) * R.flP * 1000), Rs = Zs / Math.sqrt(37), Xs = 6 * Rs;
+  const Rc = s01.mvSel / 1000 / Math.sqrt(3) * s01.k.len, Xc = 0.08e-3 * s01.k.len, expect = R.X.vll / (Math.sqrt(3) * Math.hypot(Rs + Rc, Xs + Xc)) / 1000;
+  bchk('sub-board fault level from transformer + sub-main', near(gf.faultKA, expect, 1e-6) && gf.faultKA < msb.faultKA && /S01 95 mm² × 60 m/.test(gf.path.join(' ')), [gf.faultKA, expect]);
+  bchk('board supply from "Feeds board" and from description', feedsOf({ desc: 'Sub-main to DB-2F' }) === 'DB-2F' && feedsOf({ to: 'DB-X', desc: 'Sub-main to DB-2F' }) === 'DB-X');
+  const c01 = R.C.find(c => c.k.ref === 'C01');
+  bchk('calculated fault level used where PFC is blank', near(c01.pfcAuto, +gf.faultKA.toFixed(1)) && c01.status === 'PASS');
+  S.circuits.find(k => k.ref === 'C01').icn = 10; R = calcAll(); bchk('10 kA device at 11.5 kA fails breaking capacity', R.C.find(c => c.k.ref === 'C01').fail === 'Breaking capacity');
+  S.circuits.find(k => k.ref === 'C01').pfc = 6; R = calcAll(); bchk('an entered PFC overrides the calculated one', R.C.find(c => c.k.ref === 'C01').pfcAuto == null && R.C.find(c => c.k.ref === 'C01').status === 'PASS');
+  S.circuits.find(k => k.ref === 'C01').pfc = ''; S.sizing.autoPfc = false; R = calcAll(); bchk('automatic PFC can be switched off', R.C.every(c => c.pfcAuto == null));
+  S.sizing.autoPfc = true; S.circuits.find(k => k.ref === 'C01').icn = 15;
+  S.circuits.find(k => k.ref === 'C02').kw = 4; R = calcAll(); let g2 = R.BD.boards.find(b => b.name === 'DB-GF');
+  bchk('outgoing unit above RDF flagged (18.3 A on 20 A × 0.9)', g2.overRdf.map(c => c.k.ref).join() === 'C02', g2.overRdf.map(c => c.k.ref));
+  S.boards = { 'DB-GF': { rdf: 1 } }; R = calcAll(); bchk('RDF override (manufacturer value) clears it', R.BD.boards.find(b => b.name === 'DB-GF').overRdf.length === 0);
+  S.boards = { 'DB-GF': { incomer: 5, icw: 10 } }; R = calcAll(); g2 = R.BD.boards.find(b => b.name === 'DB-GF');
+  bchk('incomer overload and fault above rating fail', g2.incSt === 'bad' && g2.faultSt === 'bad');
+  S.boards = { 'DB-GF': { incomer: 63, icw: 25 } }; R = calcAll(); g2 = R.BD.boards.find(b => b.name === 'DB-GF'); bchk('within incomer and rating pass', g2.incSt === 'ok' && g2.faultSt === 'ok');
+  view = 'circuits'; render(); const ch = document.querySelector('#main').innerHTML;
+  bchk('Stage 7 boards panel', /Distribution boards – fault level and assembly checks/.test(ch) && /IEC 61439-2 Table 101/.test(ch) && /Feeds board/.test(ch));
+  S.project.country = 'United States'; R = calcAll(); bchk('RDF check not applied to NEC panelboards', R.BD.boards.every(b => !b.rdfApplies && !b.overRdf.length) && /NEC 408\.36/.test((view = 'circuits', render(), document.querySelector('#main').innerHTML)));
+  S.project.country = 'United Kingdom';
+  // load growth
+  S.project.growthPct = 3; S.project.growthYears = 10; S.project.date = '2026-11-10'; R = calcAll(); const GR = R.GR;
+  bchk('growth: demand × 1.03^t', GR && near(GR.endKva, R.sub * Math.pow(1.03, 10)) && GR.steps.map(s2 => s2.year).join() === '2026,2031,2036', GR && GR.steps.map(s2 => s2.year));
+  const tx = GR.caps.find(c => /Transformer/.test(c.name));
+  bchk('transformer adequate-until year', tx && tx.until === 2026 + Math.floor(Math.log(tx.cap / R.sub) / Math.log(1.03)), tx);
+  bchk('spare (design MD) used up after ln(1.2)/ln(1.03) ≈ 6 years', GR.caps[0].until === 2026 + Math.floor(Math.log(1.2) / Math.log(1.03)), GR.caps[0]);
+  view = 'sizing'; render(); bchk('Stage 6 growth tables', /Load growth/.test(document.querySelector('#main').innerHTML) && /Adequate until/.test(document.querySelector('#main').innerHTML));
+  const rd = reportDoc(), cv = csvSchedules();
+  bchk('report + csv', /Load growth/.test(rd) && /Distribution boards and fault levels/.test(rd) && /LOAD GROWTH \(3\.0%\/yr\)/.test(cv) && /DISTRIBUTION BOARDS – FAULT LEVEL AND ASSEMBLY CHECKS/.test(cv));
+  S.project.growthPct = ''; R = calcAll(); bchk('no projection without a growth rate', R.GR === null);
+  S.circuits = JSON.parse(CI0); S.boards = JSON.parse(B0); S.sizing = JSON.parse(SZ0); S.project = JSON.parse(P0); S.project.country = C0; S.dc.include = DC0; R = calcAll();
+  out.boards = R.BD.boards.map(b => [b.name, b.faultKA != null ? +b.faultKA.toFixed(2) : null, b.rdf, b.incSt]);
+  out.boardChecks = bFail.length ? bFail : 'all passed'; }
 // ---- Save project = .json + PDF ----
 { const sFail = [], saved = []; let printedNote = null; const save0 = save, pr0 = window.print;
   save = async (name, data, what) => { saved.push({ name, data, what }); };
