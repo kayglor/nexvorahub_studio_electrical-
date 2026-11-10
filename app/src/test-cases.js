@@ -433,6 +433,37 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.project.country = 'Canada'; R = calcAll(); nchk('not applied to CEC (Canada)', R.NL === null);
   OCC.Office.nec = U0; S.zones = JSON.parse(Z0); S.project.country = C0; S.project.mdMethod = M0; S.project.necEdition = E0; R = calcAll();
   out.necLightingChecks = nFail.length ? nFail : 'all passed'; }
+// ---- workbook improvements: essential-load generator sizing, NEC continuous loads, method comparison ----
+{ const wFail = [], wchk = (n, ok, got) => { if (!ok) wFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SZ0 = JSON.stringify(S.sizing), C0 = S.project.country, CI0 = JSON.stringify(S.circuits), M0 = S.project.mdMethod;
+  S.project.country = 'United Kingdom'; R = calcAll();
+  wchk('default generator method unchanged (share of MD)', R.genInfo.method === 'share' && near(R.ess, R.md * S.sizing.essential * S.sizing.genMargin) && R.gen === nextStd(GEN, R.ess), [R.genInfo.method, R.ess, R.gen]);
+  S.sizing.genMethod = 'schedule'; R = calcAll(); const G = R.genInfo;
+  wchk('essential loads: kW × ks ÷ pf', near(G.rows.map(r => r.kva).reduce((a, b) => a + b, 0), 10 + 27.5 + 30 + 22.5), G.rows.map(r => r.kva));
+  wchk('fire pumps added from Stage 4', near(G.fireKva, R.P.life) && R.P.life > 0, G.fireKva);
+  wchk('× margin → next standard generator', near(R.ess, (90 + R.P.life) * 1.25) && R.gen === nextStd(GEN, R.ess), [R.ess, R.gen]);
+  wchk('largest motor start checked against the set', G.bigStart && /Smoke extract/.test(G.bigStart.name) && near(G.bigStart.kva, 22 / (0.9 * 0.85) * 6) && G.startSt === 'ok', G.bigStart);
+  S.sizing.genFire = false; R = calcAll(); wchk('fire pumps can be excluded', R.genInfo.fireKva === 0 && near(R.ess, 90 * 1.25));
+  S.essLoads[1].kw = 90; S.sizing.genFire = true; R = calcAll(); wchk('large motor flags transient dip', ['warn', 'bad'].includes(R.genInfo.startSt), R.genInfo.startRatio); S.essLoads[1].kw = 22;
+  view = 'sizing'; render(); const sh = document.querySelector('#main').innerHTML;
+  wchk('sizing view: schedule + method comparison', /Essential load/.test(sh) && /Include fire pumps from Stage 4/.test(sh) && /Maximum demand – method comparison/.test(sh) && /BS 7671 Chapter 56/.test(sh));
+  const rd = reportDoc(), cv = csvSchedules();
+  wchk('report + csv: essential loads and comparison', /Essential loads \(standby generator\)/.test(rd) && /essential-load schedule/.test(rd) && /Method comparison/.test(rd) && /ESSENTIAL LOADS – STANDBY GENERATOR/.test(cv) && /MAXIMUM DEMAND – METHOD COMPARISON/.test(cv));
+  // method comparison
+  wchk('comparison: area method used, NEC as cross-check outside NEC countries', R.CMP[0].k === 'area' && R.CMP[0].used && near(R.CMP[0].md, R.md) && R.CMP.some(m => m.k === 'nec' && /Cross-check only/.test(m.note)), R.CMP.map(m => [m.k, Math.round(m.md), m.used]));
+  S.project.country = 'United States'; S.project.mdMethod = 'nec220'; R = calcAll();
+  wchk('comparison: NEC method used in the US', R.CMP.find(m => m.used).k === 'nec' && near(R.CMP.find(m => m.used).md, R.md), R.CMP.map(m => [m.k, Math.round(m.md), m.used]));
+  // continuous loads (NEC/CEC)
+  S.circuits.forEach(k => { k.cont = 'Yes'; }); R = calcAll();
+  wchk('NEC continuous: device ≥ 125% × Ib at a 240.6(A) rating', R.C.filter(c => c.ib && c.inr).every(c => c.inr >= c.ib * 1.25 - 1e-9 && NEC_STD.includes(c.inr)) && R.C.some(c => /continuous load/.test(c.spec || '')), R.C.map(c => [Math.round(c.ib * 10) / 10, c.inr]));
+  S.circuits.forEach(k => { k.cont = 'No'; }); R = calcAll(); const noCont = R.C.map(c => c.inr);
+  wchk('non-continuous at 100%', R.C.filter(c => c.ib && c.inr).every(c => c.inr >= c.ib - 1e-9));
+  view = 'circuits'; render(); wchk('circuits view has Continuous column in NEC countries', /Continuous \(125%\)/.test(document.querySelector('#main').innerHTML));
+  S.project.country = 'United Kingdom'; S.circuits.forEach(k => { k.cont = 'Yes'; }); R = calcAll();
+  wchk('no 125% rule outside NEC/CEC', R.C.map(c => c.inr).join() === '6,20,200,80'); view = 'circuits'; render(); wchk('no Continuous column in IEC countries', !/Continuous \(125%\)/.test(document.querySelector('#main').innerHTML));
+  wchk('formatters show – for missing values', f0(null) === '–' && f2(undefined) === '–' && f1(0) === '0.0');
+  S.sizing = JSON.parse(SZ0); S.project.country = C0; S.circuits = JSON.parse(CI0); S.project.mdMethod = M0; R = calcAll();
+  out.workbookChecks = wFail.length ? wFail : 'all passed'; }
 // ---- Save project = .json + PDF ----
 { const sFail = [], saved = []; let printedNote = null; const save0 = save, pr0 = window.print;
   save = async (name, data, what) => { saved.push({ name, data, what }); };

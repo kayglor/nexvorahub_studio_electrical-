@@ -293,10 +293,10 @@ function packTemplate() {
 }
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const f0 = (v) => isFinite(v) ? Math.round(v).toLocaleString('en-GB') : '–';
-const f1 = (v) => isFinite(v) ? (Math.round(v * 10) / 10).toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '–';
-const f2 = (v) => isFinite(v) ? v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–';
-const pct = (v, d = 0) => isFinite(v) ? (v * 100).toFixed(d) + '%' : '–';
+const f0 = (v) => v != null && isFinite(v) ? Math.round(v).toLocaleString('en-GB') : '–';
+const f1 = (v) => v != null && isFinite(v) ? (Math.round(v * 10) / 10).toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '–';
+const f2 = (v) => v != null && isFinite(v) ? v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–';
+const pct = (v, d = 0) => v != null && isFinite(v) ? (v * 100).toFixed(d) + '%' : '–';
 const nextStd = (list, v) => list.find(x => x >= v - 1e-9) ?? null;
 const uid = () => Math.random().toString(36).slice(2, 9);
 const SQ3 = Math.sqrt(3);
@@ -355,7 +355,13 @@ function exampleProject() {
       { id: uid(), desc: 'Sprinkler pump', svc: 'Fire – sprinkler', q: 30, h: 70, eff: 0.7, duty: 1, stby: 1 },
     ],
     dc: { include: false, tier: 'Tier III – Concurrently maintainable', method: 'By white-space area', area: 1000, m2rack: 2.5, racks: 400, itkw: 4000, density: 10, cooling: 'Air-cooled chillers with free cooling', fan: 0.05, upsEff: 0.96, upsModule: 500, upsLoad: 0.8, recharge: 0.1, battery: 'Lithium-ion', autonomy: 5, genKva: 2500, genLoad: 0.8, fuelH: 48, txKva: 2500, txLoad: 0.8, pue: 1.35, util: 0.6, support: 600, platform: AI_CUSTOM, liquid: 0, cduKw: 1500, arch: AI_ARCH.ac.name, swing: 0.5, ramp: 1, bessRed: 0.5, bessMin: 15 },
-    sizing: { txCount: 1, resilience: 'N', txLoading: 0.8, uk: 6, txType: 'Cast resin (dry type)', essential: 0.3, genMargin: 1.25, fuelH: 24, mainCsa: 240, clearance: 1.0, ways: 24, ze: 0.35 },
+    sizing: { txCount: 1, resilience: 'N', txLoading: 0.8, uk: 6, txType: 'Cast resin (dry type)', essential: 0.3, genMargin: 1.25, genMethod: 'share', genPf: 0.8, genFire: true, fuelH: 24, mainCsa: 240, clearance: 1.0, ways: 24, ze: 0.35 },
+    essLoads: [
+      { id: uid(), desc: 'Emergency and escape lighting', kw: 8, ks: 1, motor: false },
+      { id: uid(), desc: 'Smoke extract fans (life safety)', kw: 22, ks: 1, motor: true },
+      { id: uid(), desc: 'Critical HVAC (comms room)', kw: 30, ks: 0.8, motor: false },
+      { id: uid(), desc: 'IT / comms and security', kw: 20, ks: 0.9, motor: false },
+    ],
     circuits: [
       { id: uid(), ref: 'C01', from: 'DB-GF', desc: 'Lighting – retail', type: 'Lighting', kw: 1.2, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 25, amb: 30, grp: 2, arr: 'Bunched / enclosed', ci: 1, zdb: 0.45, pfc: '', icn: 10, rcd: 'None', idn: '' },
       { id: uid(), ref: 'C02', from: 'DB-GF', desc: 'Socket radial – retail', type: 'Other', kw: 4, pf: '', ph: 1, dev: 'RCBO Type B', cable: 0, len: 30, amb: 30, grp: 2, arr: 'Bunched / enclosed', ci: 1, zdb: 0.45, pfc: '', icn: 10, rcd: 'Type A', idn: 30 },
@@ -379,7 +385,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { S = null; }
 if (!S || S.v !== 1) S = exampleProject();
 // Projects saved before the AI data centre fields existed: fill in the new defaults.
-function upgrade(o) { const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; return o; }
+function upgrade(o) { const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; return o; }
 upgrade(S);
 let saveT;
 let saveWarned = false;
@@ -437,8 +443,8 @@ function tieredDemand(va, tiers) {
 }
 const necEdition = () => NEC_LIGHT_DF[S.project.necEdition] ? S.project.necEdition : '2023';
 const bandText = parts => parts.map(([b, fac], i) => `${i ? 'next' : 'first'} ${f0(b)} VA × ${Math.round(fac * 100)}%`).join('; ');
-function calcNecLighting(X, Z) {
-  if (X.fam !== 'NEC') return null;
+function calcNecLighting(X, Z, force) {
+  if (X.fam !== 'NEC' && !force) return null;
   const ed = necEdition(), tbl = NEC_LIGHT_DF[ed];
   const rows = Z.rows.map(r => {
     const occ = r.t ? r.t.occ : '', unit = OCC[occ] ? +OCC[occ].nec || 0 : 0, ft2 = (+r.z.area || 0) * 10.7639;
@@ -543,7 +549,9 @@ function calcCircuit(k, X) {
   const pf = +k.pf || X.pf, ph = +k.ph === 1 ? 1 : 3, vsys = ph === 1 ? X.vln : X.vll;
   const ib = +k.kw ? (ph === 1 ? k.kw * 1000 / (X.vln * pf) : k.kw * 1000 / (SQ3 * X.vll * pf)) : 0;
   const dev = DD.DEV.find(d => d.n === k.dev) || DD.DEV[0];
-  const inr = +k.inFix || (usesAWG(X) ? nextStd(NEC_STD.filter(a => a <= Math.max(...dev.r)), ib) : nextStd(dev.r, ib));
+  // NEC 210.20(A) / 215.3 / 230.42 (CEC Rule 8-104): continuous loads need a device rated at least 125% of the load
+  const cont = usesAWG(X) && k.cont === 'Yes', contF = cont ? 1.25 : 1;
+  const inr = +k.inFix || (usesAWG(X) ? nextStd(NEC_STD.filter(a => a <= Math.max(...dev.r)), ib * contF) : nextStd(dev.r, ib));
   const CMB = combosList(), cmb = CMB[+k.cable] || CMB[0];
   const ai = Math.min(DD.CAA.filter(a => a < (+k.amb || 30)).length, DD.CAA.length - 1);
   const ca = (cmb.temp === 70 ? cableFactor('CA70') : cableFactor('CA90'))[ai];
@@ -578,7 +586,8 @@ function calcCircuit(k, X) {
   r.status = r.fail ? 'FAIL – ' + r.fail : (zsMax != null && zs > zsMax ? 'PASS – ADS by RCD' : 'PASS');
   const poles = ph === 1 ? (rcd || /RCBO/.test(dev.n) ? 'SP&N' : 'SP') : (/MCCB|ACB/.test(dev.n) ? 'TP&N' : 'TP');
   r.awg = usesAWG(X) ? awgOf(csa) : '';
-  r.spec = (+k.cable === 0 && !packOn() ? `Twin & earth ${csa}/${cpc} mm² Cu (6242Y)` : `${ph === 1 ? 3 : 4}-core ${csa} mm² Cu ${cmb.temp === 70 ? 'PVC/SWA/PVC (BS 6346)' : 'XLPE/SWA/LSZH (BS 6724)'} + ${cpc} mm² cpc`) + ` · ${dev.n} ${inr} A ${poles}` + (+k.icn ? `, ${k.icn} kA` : '') + (rcd ? ` · RCD ${k.rcd} ${k.idn} mA` : '');
+  r.spec = (+k.cable === 0 && !packOn() ? `Twin & earth ${csa}/${cpc} mm² Cu (6242Y)` : `${ph === 1 ? 3 : 4}-core ${csa} mm² Cu ${cmb.temp === 70 ? 'PVC/SWA/PVC (BS 6346)' : 'XLPE/SWA/LSZH (BS 6724)'} + ${cpc} mm² cpc`) + ` · ${dev.n} ${inr} A ${poles}` + (+k.icn ? `, ${k.icn} kA` : '') + (rcd ? ` · RCD ${k.rcd} ${k.idn} mA` : '') + (cont ? ` · continuous load: device ≥ 125% × Ib (${X.fam === 'CEC' ? 'CEC Rule 8-104' : 'NEC 210.20(A), 215.3'})` : '');
+  r.cont = cont;
   return r;
 }
 /* ---------- electrical drawing generator (final circuits, layout, parameter checks) ---------- */
@@ -1205,6 +1214,13 @@ function calcAll() {
   // NEC countries can take general lighting from NEC Article 220 (unit load × area with Table 220.45/220.42 demand factors) instead of area densities; other loads then come from Stage 3
   const NL = calcNecLighting(X, Z), NB = PB == null && NL && S.project.mdMethod === 'nec220' ? NL.kva : null;
   const NR = NB != null ? NL.rec.kva : null, LoN = NB != null ? calcLoads(X, 'Small power – general sockets') : null;
+  // Method comparison: the same building by each available method (before spare); the one used for the design is marked
+  const Dm = D ? D.md : 0, NLx = NL || calcNecLighting(X, Z, true), LoNx = calcLoads(X, 'Small power – general sockets');
+  const CMP = [{ k: 'area', name: 'Area load densities + equipment schedule (IEC ku × diversity)', sub: Z.kva + Lo.kva + Li.kva + P.kva + Dm, note: 'Regional VA/m² after diversity; equipment = connected × demand × diversity × board Ks' }];
+  if (NLx && NLx.va > 0) CMP.push({ k: 'nec', name: `NEC Article 220 – ${NLx.ref} lighting + ${NLx.recRef} receptacles + equipment`, sub: NLx.kva + NLx.rec.kva + LoNx.kva + Li.kva + P.kva + Dm, note: X.fam === 'NEC' ? 'Unit loads × area with occupancy demand factors' : 'Cross-check only – NEC is not the wiring code for this region' });
+  if (RV.panels.length) CMP.push({ k: 'panels', name: 'Imported panel schedules', sub: RV.panelDem + Li.kva + P.kva + Dm, note: RV.panels.map(p => p.name).join(', ') });
+  const used = PB != null ? 'panels' : (S.project.mdMethod === 'nec220' && NL) ? 'nec' : 'area';
+  CMP.forEach(m => { m.md = m.sub * (1 + (+S.project.spare || 0)); m.used = m.k === used; });
   const sub = PB != null ? PB + Li.kva + P.kva + (D ? D.md : 0) : NB != null ? NB + NR + LoN.kva + Li.kva + P.kva + (D ? D.md : 0) : Z.kva + Lo.kva + Li.kva + P.kva + (D ? D.md : 0);
   const spare = sub * (+S.project.spare || 0), md = sub + spare, kw = md * X.pf, amps = md * 1000 / (SQ3 * X.vll);
   const z = S.sizing, nTx = Math.max(1, +z.txCount || 1);
@@ -1214,7 +1230,15 @@ function calcAll() {
   const fl1 = flc ? flc * 100 / z.uk / 1000 : null, flP = fl1 ? fl1 * (z.resilience === 'N+1' ? Math.max(nTx - 1, 1) : nTx) : null;
   const incomer = flc ? nextStd(SWB, flc) : null, icw = flP ? nextStd(KA, flP) : null;
   const supply = md <= 69 ? 'LV whole-current service (≤ 100 A 3-phase)' : md <= 275 ? 'LV CT-metered supply from the network' : md <= 1000 ? 'LV supply from a dedicated substation (likely)' : 'HV supply / customer-owned substation';
-  const ess = md * z.essential * z.genMargin, gen = nextStd(GEN, ess);
+  // Standby generator: share of maximum demand, or an essential-load schedule (kW × coincidence ÷ pf, plus fire pumps), × margin, next standard size.
+  const genPf = +z.genPf || 0.8, ksOf = e => e.ks === '' || e.ks == null || !isFinite(+e.ks) ? 1 : +e.ks;
+  const essRows = (S.essLoads || []).map(e => ({ e, kw: +e.kw || 0, ks: ksOf(e), kva: (+e.kw || 0) * ksOf(e) / genPf }));
+  const fireKva = z.genFire !== false ? P.life : 0, schedKva = essRows.reduce((a, r) => a + r.kva, 0) + fireKva, useSched = z.genMethod === 'schedule';
+  const ess = useSched ? schedKva * z.genMargin : md * z.essential * z.genMargin, gen = nextStd(GEN, ess);
+  // motor starting on the generator: largest essential motor (DOL ≈ 6 × running kVA) or fire pump (its starter) – indicative, confirm with ISO 8528-5 transient data
+  const starts = [...essRows.filter(r => r.e.motor && r.kw > 0).map(r => ({ name: r.e.desc, kva: r.kw / (0.9 * 0.85) * 6, how: 'DOL ≈ 6 × running kVA' })), ...(z.genFire !== false ? P.rows.filter(r => r.fire && r.motor).map(r => ({ name: r.p.desc, kva: r.startKva, how: r.starter })) : [])].sort((a, b) => b.kva - a.kva);
+  const bigStart = starts[0] || null, startRatio = bigStart && gen ? bigStart.kva / gen : null;
+  const genInfo = { method: useSched ? 'schedule' : 'share', pf: genPf, rows: essRows, fireKva, schedKva, bigStart, startRatio, startSt: startRatio == null ? 'na' : startRatio <= 1 ? 'ok' : startRatio <= 2 ? 'warn' : 'bad' };
   const S0 = +z.mainCsa, se = S0 <= 16 ? S0 : S0 <= 35 ? 16 : S0 / 2, met = nextStd(CSA, se) ?? CSA[CSA.length - 1];
   const pme = /PME|TN-C-S|MEN/.test(X.c.earthing);
   const bond = pme ? (S0 <= 35 ? 10 : S0 <= 50 ? 16 : S0 <= 95 ? 25 : S0 <= 150 ? 35 : 50) : Math.min(25, Math.max(6, nextStd(CSA, met / 2)));
@@ -1226,7 +1250,7 @@ function calcAll() {
   const W = calcDwg(X);
   // floor area for energy intensity: area schedule (+ data hall); if there is none, the rooms on the electrical drawing
   const E = calcEnergy(X, md, kw, (Z.area + (D ? D.white : 0)) || W.area || 0);
-  return { X, Z, Lo, Li, P, D, Dfull, sub, spare, md, kw, amps, swb: nextStd(SWB, amps), txKva, nTx, reqTx, flc, fl1, flP, incomer, icw, supply, ess, gen, met, bond, pme, nEarth, room, C, W, RV, PB, NL, NB, NR, LoN, E };
+  return { X, Z, Lo, Li, P, D, Dfull, sub, spare, md, kw, amps, swb: nextStd(SWB, amps), txKva, nTx, reqTx, flc, fl1, flP, incomer, icw, supply, ess, gen, met, bond, pme, nEarth, room, C, W, RV, PB, NL, NB, NR, LoN, genInfo, CMP, E };
 }
 function calcEnergy(X, md, kw, area) {
   const e = S.energy, sh = e.shares;
@@ -1431,6 +1455,7 @@ V.sizing = () => {
   return `<section class="sheet">${head('Stage 6', 'Supply & equipment sizing', 'Maximum demand build-up, transformer, main switchboard, standby generation, earthing and plant-room space.')}
   <div class="bar" aria-hidden="true">${parts.map((p, i) => `<i style="width:${R.md ? p[1] / R.md * 100 : 0}%;background:${colors[i]}"></i>`).join('')}</div>
   <div class="tbl-wrap" style="margin-top:10px"><table><tbody>${parts.map((p, i) => `<tr><td><span class="dot" style="display:inline-block;background:${colors[i]}"></span> ${p[0]}</td><td class="n">${f1(p[1])} kVA</td></tr>`).join('')}<tr class="total"><td>Total maximum demand (${pct(+S.project.spare)} spare)</td><td class="n">${f1(R.md)} kVA · ${f1(R.kw)} kW · ${f0(R.amps)} A</td></tr></tbody></table></div>
+  ${R.CMP.length > 1 ? `<h3>Maximum demand – method comparison</h3><div class="tbl-wrap"><table><thead><tr><th>Method</th><th>Before spare kVA</th><th>With ${pct(+S.project.spare)} spare kVA</th><th>vs design</th><th>Basis</th><th></th></tr></thead><tbody>${R.CMP.map(m => `<tr${m.used ? ' class="total"' : ''}><td>${esc(m.name)}</td><td class="n">${f1(m.sub)}</td><td class="n">${f1(m.md)}</td><td class="n">${m.used ? '—' : (m.md >= R.md ? '+' : '') + pct(R.md ? m.md / R.md - 1 : 0, 0)}</td><td class="note">${esc(m.note)}</td><td>${m.used ? pill('ok', 'Used') : ''}</td></tr>`).join('')}</tbody></table></div><p class="note">A large spread between methods is worth investigating before fixing the supply capacity. Change the method in Stage 2 (NEC countries) or Stage 11 (panel schedules).</p>` : ''}
   <h3>Transformer and switchboard</h3><div class="grid">
    ${fld('Number of transformers', inp('sizing.txCount', z.txCount, 'number'))}${fld('Resilience', sel('sizing.resilience', ['N', 'N+1'], z.resilience), 'N+1 = full load with one unit out')}
    ${fld('Target loading', inp('sizing.txLoading', z.txLoading, 'number'), '0.75–0.85')}${fld('Impedance Uk %', inp('sizing.uk', z.uk, 'number'), '4–4.75% ≤ 630 kVA; 6% above')}
@@ -1439,7 +1464,14 @@ V.sizing = () => {
    ${fld('Full-load current', der(R.flc ? `${f0(R.flc)} A` : '–'))}${fld('LV fault level', der(R.flP ? `${f1(R.fl1)} kA per unit · ${f1(R.flP)} kA parallel` : '–'))}
    ${fld('Incomer / busbar', der(R.incomer ? `${f0(R.incomer)} A ${R.incomer >= 630 ? 'ACB, 4-pole, LSIG' : 'MCCB'}` : '–'))}${fld('Short-circuit rating Icw', der(R.icw ? `${R.icw} kA (1 s)` : '> 120 kA – review'))}
    ${fld('Supply arrangement', der(R.supply))}${fld('Main switchboard for total MD', der(R.swb ? `${f0(R.swb)} A` : 'Split supplies'))}</div>
-  <h3>Standby generation</h3><div class="grid">${fld('Essential load share', inp('sizing.essential', z.essential, 'number'), 'Hospitals 0.6–1.0; offices 0.1–0.3')}${fld('Sizing margin', inp('sizing.genMargin', z.genMargin, 'number'))}${fld('Generator', der(R.gen ? `${f0(R.gen)} kVA prime (needs ${f0(R.ess)})` : 'Multiple sets'))}${fld('Largest motor start', der(`${f1(R.P.maxStart)} kVA`))}</div>
+  <h3>Standby generation</h3><div class="grid">${fld('Sizing method', sel('sizing.genMethod', [{ v: 'share', t: 'Share of maximum demand' }, { v: 'schedule', t: 'Essential-load schedule (below)' }], R.genInfo.method))}
+   ${R.genInfo.method === 'share' ? fld('Essential load share', inp('sizing.essential', z.essential, 'number'), 'Hospitals 0.6–1.0; offices 0.1–0.3') : fld('Power factor', inp('sizing.genPf', z.genPf ?? 0.8, 'number'), 'kVA = kW × ks ÷ pf')}${fld('Sizing margin', inp('sizing.genMargin', z.genMargin, 'number'), '1.25 = 25% spare')}
+   ${fld('Generator', der(R.gen ? `${f0(R.gen)} kVA prime (needs ${f0(R.ess)})` : 'Multiple sets'))}
+   ${fld('Largest motor start on generator', der(R.genInfo.bigStart ? `${f1(R.genInfo.bigStart.kva)} kVA – ${esc(R.genInfo.bigStart.name)} ${pill(R.genInfo.startSt, R.genInfo.startSt === 'ok' ? 'OK' : R.genInfo.startSt === 'warn' ? 'Check dip' : R.genInfo.startSt === 'na' ? 'Several sets – check per set' : 'Too large')}` : `${f1(R.P.maxStart)} kVA (all pumps)`), R.genInfo.bigStart ? `${f2(R.genInfo.startRatio)} × generator kVA – confirm transient dip with the manufacturer (ISO 8528-5)` : '')}</div>
+  ${R.genInfo.method === 'schedule' ? `<div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Essential load</th><th>kW</th><th>Coincidence ks</th><th>Motor (DOL start)</th><th>kVA</th><th></th></tr></thead><tbody>${R.genInfo.rows.map((r, i) => `<tr><td><input data-arr="essLoads" data-i="${i}" data-k="desc" value="${esc(r.e.desc)}"></td><td><input type="number" step="any" style="width:80px" data-arr="essLoads" data-i="${i}" data-k="kw" value="${esc(r.e.kw)}"></td><td><input type="number" step="any" style="width:70px" data-arr="essLoads" data-i="${i}" data-k="ks" value="${esc(r.e.ks)}"></td><td><input type="checkbox" style="width:auto" data-arr="essLoads" data-i="${i}" data-k="motor" ${r.e.motor ? 'checked' : ''}></td><td class="n">${f1(r.kva)}</td><td><button class="btn small ghost" data-del="essLoads" data-i="${i}">Remove</button></td></tr>`).join('')}
+   <tr><td colspan="4"><label class="row" style="gap:8px"><input type="checkbox" id="sizing_genFire" data-p="sizing.genFire" ${z.genFire !== false ? 'checked' : ''} style="width:auto"> Include fire pumps from Stage 4</label></td><td class="n">${f1(R.genInfo.fireKva)}</td><td></td></tr>
+   <tr class="total"><td colspan="4">Essential load × margin ${z.genMargin}</td><td class="n">${f1(R.genInfo.schedKva)} → ${f1(R.ess)} kVA</td><td></td></tr></tbody></table></div>
+  <div class="row" style="margin-top:6px"><button class="btn small" data-add="essLoads">Add essential load</button><span class="note">${{ NEC: 'NEC Articles 700 (emergency), 701 (legally required standby), 702 (optional standby) and 695 (fire pumps).', CEC: 'CEC Section 46 (emergency systems) and Section 32 (fire pumps).', ASNZS: 'AS/NZS 3000 Clause 7.2 (safety services) and AS 2941 (fire pumpsets).', IEC: 'BS 7671 Chapter 56 / IEC 60364-5-56 (safety services), BS 8519 and EN 12845 (fire pumps).' }[R.X.fam] || ''}</span></div>` : ''}
   <h3>Earthing and bonding</h3><div class="grid">${fld('Main incoming conductor (mm² Cu)', inp('sizing.mainCsa', z.mainCsa, 'number'))}${fld('Main earthing conductor', der(`${R.met} mm² (Table 54.7)`))}${fld('Main protective bonding', der(`${R.bond} mm² ${R.pme ? '(PME, Table 54.8)' : '(≥ ½ earthing, 6–25 mm²)'}`))}${fld('Transformer neutral–earth', der(R.nEarth ? `${R.nEarth} mm² (1 s, k = 143)` : '–'))}</div>
   <h3>Plant rooms</h3><div class="grid">${fld('Clearance around transformers (m)', inp('sizing.clearance', z.clearance, 'number'))}${fld('LV outgoing ways', inp('sizing.ways', z.ways, 'number'))}
    ${r ? fld('Transformer room', der(`${f1(r.L)} × ${f1(r.W)} m, ${f1(r.H)} m high (${f1(r.A)} m²)`)) + fld('LV switchroom', der(`${f1(r.swL + 1.6)} × 3.3 m (${f1(r.swA)} m²)`)) + fld('Heat loss / ventilation', der(`${f1(r.loss)} kW · ${f2(r.vent)} m³/s at ΔT 10 K`)) + fld('Unit weight / oil bund', der(`${f1(r.wt)} t${r.oil ? ` · bund ${f0(r.oil)} l` : ''}`)) : ''}</div>
@@ -1450,7 +1482,7 @@ V.circuits = () => {
     const k = r.k, s = (key, list, map) => `<select data-arr="circuits" data-i="${i}" data-k="${key}">${opt(list, k[key], map)}</select>`, n = (key, w = 70) => `<input type="number" step="any" style="width:${w}px" data-arr="circuits" data-i="${i}" data-k="${key}" value="${esc(k[key])}">`;
     const st = r.fail ? (r.fail === 'REVIEW' ? 'warn' : 'bad') : r.status ? 'ok' : 'na';
     return `<tr><td><input style="width:60px" data-arr="circuits" data-i="${i}" data-k="ref" value="${esc(k.ref)}"></td><td><input style="width:90px" data-arr="circuits" data-i="${i}" data-k="from" value="${esc(k.from)}"></td><td><input data-arr="circuits" data-i="${i}" data-k="desc" value="${esc(k.desc)}"></td>
-     <td>${s('type', ['Lighting', 'Other'])}</td><td>${n('kw')}</td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td><td class="wide">${s('cable', combosList().map((c, j) => ({ v: j, t: c.name || c.n })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td>${n('pfc', 55)}</td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
+     <td>${s('type', ['Lighting', 'Other'])}</td><td>${n('kw')}</td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td>${usesAWG(R.X) ? `<td>${s('cont', ['No', 'Yes'])}</td>` : ''}<td class="wide">${s('cable', combosList().map((c, j) => ({ v: j, t: c.name || c.n })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td>${n('pfc', 55)}</td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
      <td class="n">${f1(r.ib)}</td><td class="n">${r.inr ?? '–'}</td><td class="n">${esc(csaLabel(r.csa, R.X))}</td><td class="n">${r.Iz ? f1(r.Iz) : '–'}</td><td class="n">${r.vd != null ? f2(r.vd) + '%' : '–'}</td><td class="n">${r.zs != null ? f2(r.zs) : '–'}</td><td class="n">${r.zsMax != null ? f2(r.zsMax) : 'mfr'}</td><td class="n">${r.cpc ?? '–'}</td><td>${pill(st, r.status || '—')}</td><td><button class="btn small ghost" data-del="circuits" data-i="${i}">Remove</button></td></tr>`;
   }).join('');
   const specs = R.C.filter(r => r.spec).map(r => `<li><b>${esc(r.k.ref)}</b> ${esc(r.k.desc)} — ${esc(r.spec)}</li>`).join('');
@@ -1458,7 +1490,7 @@ V.circuits = () => {
   <div class="callout"><b>Cable data:</b> ${esc(cableSource())}. ${packOn() ? '' : (R.X.fam !== 'IEC' ? `For ${esc(FAMILY_NAME[R.X.fam])} projects these are proxy values – size conductors from the local tables (NEC 310.16, CEC Table 2, AS/NZS 3008.1).${usesAWG(R.X) ? ' Sizes are shown with their AWG / kcmil equivalent and devices use NEC 240.6(A) standard ratings.' : ''}` : 'Metric IEC tables (e.g. IEC 60364-5-52, national annexes) can be imported as a licensed table pack.')}
    <div class="row" style="margin-top:6px"><button class="btn small" data-act="load-pack">Import cable table pack (.json)</button><button class="btn small ghost" data-act="dl-packtpl">Download template</button>${packOn() ? '<button class="btn small ghost" data-act="rm-pack">Use built-in BS 7671 data</button>' : ''}</div></div>
   <input type="file" id="packIn" accept=".json" hidden>
-  <div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>From</th><th>Description</th><th>Type</th><th>kW</th><th>Ph</th><th>Device</th><th>Cable &amp; method</th><th>Length m</th><th>Amb °C</th><th>Grouped</th><th>Arrangement</th><th>Zdb Ω</th><th>PFC kA</th><th>Icn kA</th><th>RCD</th><th>IΔn mA</th><th>Ib A</th><th>In A</th><th>mm²</th><th>Iz A</th><th>VD</th><th>Zs Ω</th><th>Zs max</th><th>cpc</th><th>Result</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>From</th><th>Description</th><th>Type</th><th>kW</th><th>Ph</th><th>Device</th>${usesAWG(R.X) ? '<th>Continuous (125%)</th>' : ''}<th>Cable &amp; method</th><th>Length m</th><th>Amb °C</th><th>Grouped</th><th>Arrangement</th><th>Zdb Ω</th><th>PFC kA</th><th>Icn kA</th><th>RCD</th><th>IΔn mA</th><th>Ib A</th><th>In A</th><th>mm²</th><th>Iz A</th><th>VD</th><th>Zs Ω</th><th>Zs max</th><th>cpc</th><th>Result</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
   <h3>Specification</h3><ul class="note">${specs || '<li>Add circuits to generate cable and device specifications.</li>'}</ul></section>`;
 };
 V.energy = () => {
@@ -1602,7 +1634,9 @@ function reportBody() {
   ${R.D ? sec('Data centre') + tbl(['Parameter', 'Value'], [['Resilience', `${esc(R.D.t[0])} (${R.D.t[1]}, EN 50600 ${R.D.t[2]})`], ['IT critical load', `${f0(R.D.it)} kW (${f0(R.D.racks)} racks at ${S.dc.density} kW)`], ['Facility peak / MD', `${f0(R.D.fac)} kW / ${f0(R.D.md)} kVA, peak PUE ${f2(R.D.pueP)}`], ['UPS', `${R.D.upsI} × ${S.dc.upsModule} kW (${R.D.red.rU}), battery ${f0(R.D.batt)} kWh`], ['Generators', `${R.D.genI} × ${f0(S.dc.genKva)} kVA (${R.D.red.rG}), fuel ${f0(R.D.fuel)} l`], ['Transformers', `${R.D.txI} × ${f0(S.dc.txKva)} kVA (${R.D.red.rT})`], ['Cooling', `${R.D.crah} CRAH, ${R.D.chill} chillers, ${f0(R.D.heat)} kW heat`], ['Rack power', `${R.D.rackPdu} on ${R.D.paths} path(s)`], ...aiReportRows(R.D)]) + `<p class="s">AI platform values come from a dated library (v${esc(AIDC.version)}, data as of ${esc(AIDC.asOf)}) of vendor and trade-press figures. They are editable planning defaults, not verified code or manufacturer values; confirm with the vendor, operator and network operator. Mitigations: ${AI_DYN.mitigations.map(esc).join(' ')}</p>` : ''}
   ${R.NL && R.NL.va > 0 ? sec('NEC general lighting load (Article 220)') + tbl(['Occupancy class', 'Connected VA', 'Demand factors applied', 'Demand VA'], R.NL.classes.map(c => [esc(c.label), f0(c.va), esc(bandText(c.parts)), f0(c.demand)]), ['Total', f0(R.NL.va), '', f0(R.NL.demand)]) + (R.NL.rec.va > 0 ? tbl(['Receptacles (' + esc(R.NL.recRef) + ')', 'Connected VA', 'Demand factors applied', 'Demand VA'], [[R.NL.rec.governs === 'office' ? 'Office / bank minimum 1 VA/ft²' : R.NL.rec.src === 'stage3' ? 'Equipment schedule general sockets' : `${f0(R.NL.rec.count)} outlets × 180 VA`, f0(R.NL.rec.va), esc(bandText(R.NL.rec.parts)), f0(R.NL.rec.demand)]]) : '') + `<p class="s">Unit loads ${esc(R.NL.unitRef)} × area; demand factors ${esc(R.NL.ref)}. ${R.NB != null ? 'Used for maximum demand (general lighting); other loads from the equipment schedule.' : 'Shown for comparison; maximum demand uses area load densities.'} Confirm the NEC edition adopted by the AHJ.</p>` : ''}
   ${sec('Maximum demand')}${R.PB == null && R.NB != null ? `<p>Maximum demand by NEC Article 220: general lighting by unit load with ${esc(R.NL.ref)} demand factors, plus scheduled equipment, lifts, pumps and data hall.</p>` + tbl(['Source', 'kVA'], [['NEC general lighting (Article 220)', f1(R.NB)], ['NEC receptacles (' + esc(R.NL.recRef) + ')', f1(R.NR)], ['Equipment loads (excl. general sockets)', f1(R.LoN.kva)], ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)]) : R.PB != null ? `<p>Maximum demand is based on the imported panel schedules (${R.RV.panels.map(p => esc(p.name)).join(', ')}); the area and equipment schedules are not added.</p>` + tbl(['Source', 'kVA'], [...R.RV.panels.map(p => [`Panel ${esc(p.name)} (demand)`, f1(p.dem)]), ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)]) : tbl(['Source', 'kVA'], [['Area loads', f1(R.Z.kva)], ['Equipment loads', f1(R.Lo.kva)], ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)])}
-  ${sec('Supply, transformers and switchgear')}${tbl(['Item', 'Value'], [['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA, Uk ${S.sizing.uk}%, ${esc(S.sizing.txType)}` : 'Review'], ['Full-load current', R.flc ? `${f0(R.flc)} A` : '–'], ['LV fault level', R.flP ? `${f1(R.flP)} kA (infinite source)` : '–'], ['Main incomer / busbar', R.incomer ? `${f0(R.incomer)} A` : '–'], ['Short-circuit rating', R.icw ? `${R.icw} kA, 1 s` : '–'], ['Transformer room', R.room ? `${f1(R.room.L)} × ${f1(R.room.W)} m, ${f1(R.room.H)} m clear` : '–'], ['LV switchroom', R.room ? `${f1(R.room.swA)} m²` : '–'], ['Ventilation', R.room ? `${f2(R.room.vent)} m³/s for ${f1(R.room.loss)} kW losses` : '–'], ['Standby generator', R.gen ? `${f0(R.gen)} kVA (${pct(S.sizing.essential)} essential × ${S.sizing.genMargin})` : '–']])}
+  ${R.CMP.length > 1 ? tbl(['Method', 'Before spare kVA', 'With spare kVA', 'Used'], R.CMP.map(m => [esc(m.name), f1(m.sub), f1(m.md), m.used ? 'Yes' : ''])) + `<p class="s">Method comparison: the same building assessed by each available method; the design uses the method marked “Yes”.</p>` : ''}
+  ${R.genInfo.method === 'schedule' && R.genInfo.rows.length ? sec('Essential loads (standby generator)') + tbl(['Essential load', 'kW', 'ks', 'kVA'], [...R.genInfo.rows.map(r => [esc(r.e.desc), f1(r.kw), f2(r.ks), f1(r.kva)]), ...(R.genInfo.fireKva ? [['Fire pumps (Stage 4)', '', '', f1(R.genInfo.fireKva)]] : [])], ['Total × margin ' + S.sizing.genMargin, '', '', f1(R.ess)]) : ''}
+  ${sec('Supply, transformers and switchgear')}${tbl(['Item', 'Value'], [['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA, Uk ${S.sizing.uk}%, ${esc(S.sizing.txType)}` : 'Review'], ['Full-load current', R.flc ? `${f0(R.flc)} A` : '–'], ['LV fault level', R.flP ? `${f1(R.flP)} kA (infinite source)` : '–'], ['Main incomer / busbar', R.incomer ? `${f0(R.incomer)} A` : '–'], ['Short-circuit rating', R.icw ? `${R.icw} kA, 1 s` : '–'], ['Transformer room', R.room ? `${f1(R.room.L)} × ${f1(R.room.W)} m, ${f1(R.room.H)} m clear` : '–'], ['LV switchroom', R.room ? `${f1(R.room.swA)} m²` : '–'], ['Ventilation', R.room ? `${f2(R.room.vent)} m³/s for ${f1(R.room.loss)} kW losses` : '–'], ['Standby generator', R.gen ? (R.genInfo.method === 'schedule' ? `${f0(R.gen)} kVA (essential-load schedule ${f1(R.genInfo.schedKva)} kVA at pf ${R.genInfo.pf}, × ${S.sizing.genMargin})` : `${f0(R.gen)} kVA (${pct(S.sizing.essential)} essential × ${S.sizing.genMargin})`) + (R.genInfo.bigStart ? `; largest motor start ${f1(R.genInfo.bigStart.kva)} kVA = ${f2(R.genInfo.startRatio)} × generator` : '') : '–']])}
   ${sec('Earthing and bonding')}${tbl(['Item', 'Value'], [['Earthing system', esc(c.earthing)], ['Main earthing conductor', `${R.met} mm² Cu (Table 54.7)`], ['Main protective bonding', `${R.bond} mm² Cu`], ['Transformer neutral–earth', R.nEarth ? `${R.nEarth} mm² Cu` : '–']])}
   ${R.C.length ? sec('Cable and protection schedule') + `<p class="s">Cable data: ${esc(cableSource())}${usesAWG(R.X) ? '; sizes in mm² with AWG / kcmil equivalents' : ''}.</p>` + tbl(['Ref', 'From', 'Description', 'Ib A', 'In A', 'mm²', 'Iz A', 'VD %', 'Zs Ω', 'Result'], R.C.map(r => [esc(r.k.ref), esc(r.k.from), esc(r.k.desc), f1(r.ib), r.inr ?? '–', esc(csaLabel(r.csa, R.X)), r.Iz ? f1(r.Iz) : '–', r.vd != null ? f2(r.vd) : '–', r.zs != null ? f2(r.zs) : '–', esc(r.status)])) + `<ul class="s">${R.C.filter(r => r.spec).map(r => `<li>${esc(r.k.ref)}: ${esc(r.spec)}</li>`).join('')}</ul>` : ''}
   ${R.W.rooms.length ? sec('Lighting and small power – final circuits') + `<p>Generated layout for board ${esc(S.dwg.board)} using the lumen method (UF ${R.W.uf}, MF ${R.W.mf}) and ${esc(R.W.sock.n)} socket-outlets. Parameter checks: ${R.W.nOk} pass, ${R.W.nWarn} to check, ${R.W.nBad} fail.</p>` +
@@ -1675,6 +1709,8 @@ function csvSchedules() {
      ['Power architecture', d.arch, '', ''], ['Current per rack (LV AC)', a.rackAac.toFixed(1), 'A', `per phase at ${R.X.vll} V`], ['Current per rack (800 V DC)', a.rackAdc.toFixed(1), 'A', ''], ['Conversion losses AC', a.convAC.toFixed(0), 'kW', `efficiency ${(a.effAC * 100).toFixed(1)}%`], ['Conversion losses 800 V DC', a.convDC.toFixed(0), 'kW', `efficiency ${(a.effDC * 100).toFixed(1)}%`], ['800 V DC loss saving', a.convSave.toFixed(0), 'kW', `${a.convSaveMWh.toFixed(0)} MWh/yr; ${a.isDC ? 'applied' : 'not applied'}`],
      ['Facility peak', D.fac.toFixed(0), 'kW', ''], ['Data centre maximum demand', D.md.toFixed(0), 'kVA', ''], ['Training swing', a.swingMW.toFixed(2), 'MW', `ramp ${a.rampMWs.toFixed(2)} MW/s`], ['Grid-forming BESS power', a.bessMW.toFixed(2), 'MW', `${(a.bessRed * 100).toFixed(0)}% reduction (reported ${AI_DYN.bessReduction.map(x => x * 100).join('–')}%)`], ['Grid-forming BESS energy', a.bessMWh.toFixed(2), 'MWh', `${d.bessMin} min`], ['Grid-visible swing', a.residMW.toFixed(2), 'MW', 'estimate – confirm by dynamic study']].forEach(r => L.push(r.map(q).join(',')));
   }
+  if (R.CMP.length > 1) { L.push(''); L.push(q('MAXIMUM DEMAND – METHOD COMPARISON')); L.push(['Method', 'Before spare kVA', 'With spare kVA', 'Used', 'Basis'].map(q).join(',')); R.CMP.forEach(m => L.push([m.name, m.sub.toFixed(1), m.md.toFixed(1), m.used ? 'Yes' : '', m.note].map(q).join(','))); }
+  if (R.genInfo.method === 'schedule') { L.push(''); L.push(q('ESSENTIAL LOADS – STANDBY GENERATOR')); L.push(['Load', 'kW', 'ks', 'Motor', 'kVA'].map(q).join(',')); R.genInfo.rows.forEach(r => L.push([r.e.desc, r.kw, r.ks, r.e.motor ? 'Yes' : '', r.kva.toFixed(1)].map(q).join(','))); if (R.genInfo.fireKva) L.push(['Fire pumps (Stage 4)', '', '', '', R.genInfo.fireKva.toFixed(1)].map(q).join(',')); L.push(['Generator', R.gen, 'kVA', '', R.ess.toFixed(1)].map(q).join(',')); }
   L.push(''); L.push(['TOTAL MAXIMUM DEMAND kVA', R.md.toFixed(1), 'kW', R.kw.toFixed(1), 'A', R.amps.toFixed(0)].map(q).join(','));
   return L.join('\r\n');
 }
@@ -1723,7 +1759,7 @@ function onEdit(e, immediate) {
 }
 document.addEventListener('input', e => { if (e.target.matches('input:not([type=checkbox]),textarea')) onEdit(e, false); });
 document.addEventListener('change', e => { if (e.target.matches('select,input[type=checkbox],input[type=date]')) onEdit(e, true); });
-const BLANK = { dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', ku: '', df: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '' }) };
+const BLANK = { essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', ku: '', df: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
 let armedNew = false;
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1733,7 +1769,7 @@ document.addEventListener('click', async e => {
   if (proBlocked(act)) { toast(projectNotOffered() ? 'Pro is not offered in this region' : 'This is a Pro feature – see Plan & licence'); location.hash = '#account'; return; }
   if (act === 'lic-activate') { const i = document.getElementById('licKey'); activateLicence(i ? i.value : ''); return; }
   if (act === 'lic-remove') { removeLicence(); return; }
-  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {} }; persist(); render(); toast('Started a blank project'); }
+  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {} }; persist(); render(); toast('Started a blank project'); }
   if (act === 'save-json') await saveProjectFiles();
   if (act === 'save-json-only') save(projectFileName('json'), JSON.stringify(S, null, 1), 'Project file');
   if (act === 'load-json') $('#fileIn').click();
