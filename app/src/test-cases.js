@@ -314,7 +314,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   out.coverage = [K.full, K.supported, K.indicative, K.unavailable];
   out.coverageChecks = cFail.length ? cFail : 'all passed'; }
 // ---- regional cable data: AWG equivalents, US device ratings, imported table packs ----
-{ const tFail = [], tchk = (n, ok, got) => { if (!ok) tFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+{ const tFail = [], tchk = (n, ok, got) => { if (!ok) tFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); }; const XP0 = S.sizing.expand; S.sizing.expand = 0; R = calcAll();
   const S0 = S.project.country, C0 = JSON.stringify(S.circuits);
   tchk('AWG equivalents', awgOf(1.5) === '14 AWG' && awgOf(2.5) === '12 AWG' && awgOf(4) === '10 AWG' && awgOf(95) === '4/0 AWG' && awgOf(240) === '500 kcmil' && awgOf(600) === '> 1000 kcmil', [awgOf(2.5), awgOf(95), awgOf(240)]);
   S.project.country = 'United States'; R = calcAll();
@@ -336,7 +336,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   delete S.cablePack; R = calcAll(); tchk('built-in restored', R.C.find(c => c.k.ref === 'S01').csa === base.csa && cableSource() === 'BS 7671 Appendix 4 (built-in)');
   view = 'drawings'; render(); tchk('drawing cable list has names (bug fix)', (document.querySelector('#main').innerHTML.match(/<option value="\d"[^>]*>([^<]*)<\/option>/g) || []).some(o => /Twin &amp; earth/.test(o)));
   S.project.country = S0; S.circuits = JSON.parse(C0); R = calcAll();
-  out.cableChecks = tFail.length ? tFail : 'all passed'; }
+  S.sizing.expand = XP0; R = calcAll(); out.cableChecks = tFail.length ? tFail : 'all passed'; }
 // ---- paid access groundwork (open by default) ----
 { const aFail = [], achk = (n, ok, got) => { if (!ok) aFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const M0 = ACCESS.mode, U0 = ACCESS.checkoutUrl, L0 = LIC, C0 = S.project.country;
@@ -434,7 +434,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   OCC.Office.nec = U0; S.zones = JSON.parse(Z0); S.project.country = C0; S.project.mdMethod = M0; S.project.necEdition = E0; R = calcAll();
   out.necLightingChecks = nFail.length ? nFail : 'all passed'; }
 // ---- workbook improvements: essential-load generator sizing, NEC continuous loads, method comparison ----
-{ const wFail = [], wchk = (n, ok, got) => { if (!ok) wFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+{ const wFail = [], wchk = (n, ok, got) => { if (!ok) wFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); }; const XP0 = S.sizing.expand; S.sizing.expand = 0; R = calcAll();
   const SZ0 = JSON.stringify(S.sizing), C0 = S.project.country, CI0 = JSON.stringify(S.circuits), M0 = S.project.mdMethod;
   S.project.country = 'United Kingdom'; R = calcAll();
   wchk('default generator method unchanged (share of MD)', R.genInfo.method === 'share' && near(R.ess, R.md * S.sizing.essential * S.sizing.genMargin) && R.gen === nextStd(GEN, R.ess), [R.genInfo.method, R.ess, R.gen]);
@@ -463,9 +463,9 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   wchk('no 125% rule outside NEC/CEC', R.C.map(c => c.inr).join() === '6,20,200,80'); view = 'circuits'; render(); wchk('no Continuous column in IEC countries', !/Continuous \(125%\)/.test(document.querySelector('#main').innerHTML));
   wchk('formatters show – for missing values', f0(null) === '–' && f2(undefined) === '–' && f1(0) === '0.0');
   S.sizing = JSON.parse(SZ0); S.project.country = C0; S.circuits = JSON.parse(CI0); S.project.mdMethod = M0; R = calcAll();
-  out.workbookChecks = wFail.length ? wFail : 'all passed'; }
+  S.sizing.expand = XP0; R = calcAll(); out.workbookChecks = wFail.length ? wFail : 'all passed'; }
 // ---- distribution boards: fault levels, IEC 61439 checks; load growth ----
-{ const bFail = [], bchk = (n, ok, got) => { if (!ok) bFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+{ const bFail = [], bchk = (n, ok, got) => { if (!ok) bFail.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); }; const XP0 = S.sizing.expand; S.sizing.expand = 0; R = calcAll();
   const C0 = S.project.country, CI0 = JSON.stringify(S.circuits), B0 = JSON.stringify(S.boards || {}), SZ0 = JSON.stringify(S.sizing), P0 = JSON.stringify(S.project), DC0 = S.dc.include;
   S.project.country = 'United Kingdom'; S.dc.include = false; R = calcAll();
   bchk('RDF defaults (IEC 61439-2 Table 101)', [1, 2, 3, 4, 5, 6, 9, 10, 24].map(rdfDefault).join() === '1,0.9,0.9,0.8,0.8,0.7,0.7,0.6,0.6');
@@ -504,7 +504,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.project.growthPct = ''; R = calcAll(); bchk('no projection without a growth rate', R.GR === null);
   S.circuits = JSON.parse(CI0); S.boards = JSON.parse(B0); S.sizing = JSON.parse(SZ0); S.project = JSON.parse(P0); S.project.country = C0; S.dc.include = DC0; R = calcAll();
   out.boards = R.BD.boards.map(b => [b.name, b.faultKA != null ? +b.faultKA.toFixed(2) : null, b.rdf, b.incSt]);
-  out.boardChecks = bFail.length ? bFail : 'all passed'; }
+  S.sizing.expand = XP0; R = calcAll(); out.boardChecks = bFail.length ? bFail : 'all passed'; }
 // ---- generator sets, bill of quantities, design review sign-off ----
 { const gF = [], gchk = (n, ok, got) => { if (!ok) gF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const SZ0 = JSON.stringify(S.sizing), SO0 = JSON.stringify(S.signoff || {}), DC0 = S.dc.include, C0 = S.project.country;
@@ -548,6 +548,32 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   gchk('old projects get a sign-off record', (() => { const o = upgrade({ v: 1 }); return o.signoff && typeof o.signoff.items === 'object'; })());
   S.sizing = JSON.parse(SZ0); S.signoff = JSON.parse(SO0); S.dc.include = DC0; S.project.country = C0; R = calcAll();
   out.genBoqSignoffChecks = gF.length ? gF : 'all passed'; }
+// ---------- expansion allowance (15–25%) on transformer, generator and cable final ratings ----------
+{ const xF = [], xchk = (n, ok, got) => { if (!ok) xF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SZ0 = JSON.stringify(S.sizing), C0 = S.project.country, DC0 = S.dc.include; S.project.country = 'United Kingdom'; S.dc.include = false;
+  xchk('default allowance 20% on all three', S.sizing.expand === 0.2 && S.sizing.expTx && S.sizing.expGen && S.sizing.expCab);
+  R = calcAll(); const tx20 = R.txKva, md = R.md;
+  xchk('every applied rating meets the allowance', R.XP.rows.length >= 3 && R.XP.nBad === 0 && R.XP.rows.every(x => x.st === 'ok' && x.h >= 0.2 - 1e-9), R.XP.rows.map(x => [x.item, +x.h.toFixed(3), x.st]));
+  xchk('cables rated for Ib × 1.2', R.C.filter(c => c.ib && c.inr).every(c => c.inr >= c.ib * 1.2 - 1e-9 && c.Iz >= c.inr), R.C.map(c => [c.k.ref, c.ib, c.inr]));
+  S.sizing.expand = 0; R = calcAll(); const in0 = R.C.map(c => c.inr).join(); S.sizing.expand = 0.2; R = calcAll();
+  xchk('allowance raises some cable ratings', in0 !== R.C.map(c => c.inr).join(), in0);
+  xchk('example stays a passing design with 20%', R.C.every(c => /^PASS/.test(c.status)), R.C.map(c => c.status));
+  S.sizing.txLoading = 1; S.sizing.expand = 0.25; R = calcAll();
+  xchk('transformer firm capacity ≥ MD × 1.25 even at 100% loading', R.txKva * R.nTx >= md * 1.25 - 1e-9 && R.txKva === TX.find(t => t >= md * 1.25), [R.txKva, md]);
+  S.sizing.expTx = false; R = calcAll(); xchk('switching transformers off uses target loading only', R.txKva === TX.find(t => t >= md) && R.XP.rows[0].st === 'na', R.txKva);
+  S.sizing.expTx = true; S.sizing.txLoading = 0.8; S.sizing.genMargin = 1; S.sizing.expand = 0.15; R = calcAll();
+  xchk('generator margin at least 1 + allowance', near(R.genInfo.margin, 1.15, 1e-9) && near(R.ess, R.genInfo.base * 1.15, 1e-6), R.genInfo.margin);
+  S.sizing.genMargin = 1.25; R = calcAll(); xchk('a larger generator margin is kept', near(R.genInfo.margin, 1.25, 1e-9));
+  S.sizing.expand = 0.3; R = calcAll(); xchk('outside 15–25% warns', !R.XP.ok && /outside 15–25%/.test((view = 'sizing', render(), document.querySelector('#main').innerHTML)));
+  S.sizing.expand = 0.2; R = calcAll(); view = 'sizing'; render(); const h = document.querySelector('#main').innerHTML;
+  xchk('sizing view section and table', /Expansion allowance on rated equipment/.test(h) && /Final rated value/.test(h) && /All ratings ≥ 20%/.test(h));
+  const rd = reportDoc(); xchk('report section and summary', /Expansion allowance on rated equipment/.test(rd) && /20% on transformers, generators, cables/.test(rd));
+  xchk('CSV section', /EXPANSION ALLOWANCE 20%/.test(csvSchedules()));
+  xchk('checklist row', CHECKS.some(c => /Expansion allowance/.test(c[0])) && CHECKS[0][2](R)[1] === 'ok');
+  xchk('old projects get the allowance', (() => { const o = upgrade({ v: 1, sizing: { txCount: 1 } }); return o.sizing.expand === 0.2 && o.sizing.expCab === true; })());
+  S.sizing = JSON.parse(SZ0); S.dc.include = DC0; S.project.country = C0; R = calcAll();
+  out.expansionChecks = xF.length ? xF : 'all passed'; }
+
 // ---- Save project = .json + PDF ----
 { const sFail = [], saved = []; let printedNote = null; const save0 = save, pr0 = window.print;
   save = async (name, data, what) => { saved.push({ name, data, what }); };
