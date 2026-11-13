@@ -281,7 +281,7 @@ function exampleProject() {
       { id: uid(), desc: 'Sprinkler pump', svc: 'Fire – sprinkler', q: 30, h: 70, eff: 0.7, duty: 1, stby: 1 },
     ],
     dc: { include: false, tier: 'Tier III – Concurrently maintainable', method: 'By white-space area', area: 1000, m2rack: 2.5, racks: 400, itkw: 4000, density: 10, cooling: 'Air-cooled chillers with free cooling', fan: 0.05, upsEff: 0.96, upsModule: 500, upsLoad: 0.8, recharge: 0.1, battery: 'Lithium-ion', autonomy: 5, genKva: 2500, genLoad: 0.8, fuelH: 48, txKva: 2500, txLoad: 0.8, pue: 1.35, util: 0.6, support: 600, platform: AI_CUSTOM, liquid: 0, cduKw: 1500, arch: AI_ARCH.ac.name, swing: 0.5, ramp: 1, bessRed: 0.5, bessMin: 15 },
-    sizing: { txCount: 1, resilience: 'N', txLoading: 0.8, uk: 6, txType: 'Cast resin (dry type)', essential: 0.3, genMargin: 1.25, expand: 0.2, expTx: true, expGen: true, expCab: true, genMethod: 'share', genPf: 0.8, genFire: true, fuelH: 24, mainCsa: 240, clearance: 1.0, ways: 24, ze: 0.35 },
+    sizing: { txCount: 1, resilience: 'N', txLoading: 0.8, uk: 6, txType: 'Cast resin (dry type)', essential: 0.3, genMargin: 1.25, expand: 0.2, expTx: true, expGen: true, expCab: true, expDb: true, genMethod: 'share', genPf: 0.8, genFire: true, fuelH: 24, mainCsa: 240, clearance: 1.0, ways: 24, ze: 0.35 },
     essLoads: [
       { id: uid(), desc: 'Emergency and escape lighting', kw: 8, ks: 1, motor: false },
       { id: uid(), desc: 'Smoke extract fans (life safety)', kw: 22, ks: 1, motor: true },
@@ -294,8 +294,9 @@ function exampleProject() {
       { id: uid(), ref: 'S01', from: 'MSB', to: 'DB-GF', desc: 'Sub-main to DB-GF', type: 'Other', kw: 120, pf: '', ph: 3, dev: 'MCCB', cable: 4, len: 60, amb: 30, grp: 3, arr: 'Single layer', ci: 1, zdb: 0.02, pfc: 25, icn: 36, rcd: 'None', idn: '' },
       { id: uid(), ref: 'M01', from: 'MCC-ROOF', desc: 'ASHP-01', type: 'Other', kw: 45, pf: 0.92, ph: 3, dev: 'MCCB', cable: 3, len: 15, amb: 35, grp: 1, arr: 'Single layer', ci: 1, zdb: 0.12, pfc: 10, icn: 25, rcd: 'None', idn: '' },
     ],
-    energy: { currency: 'GBP', tariff: 0.25, demand: 3, lf: 0.4, benchmark: 95, co2: '', pvYield: '', pv: 100, batt: 50, shed: 0.05, pfUn: 0.85, pfTg: 0.95, shares: { lighting: 0.2, hvac: 0.4, pumps: 0.15, other: 0.25 }, m: { led: true, pir: true, bms: true, hrv: false, vsd: true, mt: true } },
+    energy: { currency: 'GBP', tariff: 0.25, demand: 3, lf: 0.4, benchmark: 95, co2: '', pvYield: '', pv: 100, batt: 50, shed: 0.05, pfUn: 0.85, pfTg: 0.95, shares: { lighting: 0.2, hvac: 0.4, pumps: 0.15, other: 0.25 }, m: { led: true, pir: true, bms: true, hrv: false, vsd: true, mt: true }, bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' },
     compliance: {},
+    cl: {},
     dwg: { board: 'DB-L1', ways: 24, sockType: '', sockCircuit: '', maxPts: '', vaSock: '', lightIn: '', maxLightPts: '', lightFill: 0.8, uf: 0.6, mf: 0.8, rcd: true, afdd: false, cable: 0, grp: 1, zdb: '' },
     review: { sheets: [], map: {}, areas: {}, vaSock: '' },
     dwgRooms: [
@@ -311,7 +312,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { S = null; }
 if (!S || S.v !== 1) S = exampleProject();
 // Projects saved before the AI data centre fields existed: fill in the new defaults.
-function upgrade(o) { if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; return o; }
+function upgrade(o) { if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
 upgrade(S);
 let saveT;
 let saveWarned = false;
@@ -389,19 +390,86 @@ function calcNecLighting(X, Z, force) {
   const rec = { src, count, stage3VA, calcVA, officeFt2, officeOn, officeVA, va: recVA, demand: rt.demand, parts: rt.parts, kva: rt.demand / 1000, ref: tbl.recRef, governs: officeVA > calcVA ? 'office' : 'calculated' };
   return { ed, ref: tbl.ref, unitRef: tbl.unitRef, recRef: tbl.recRef, rows, classes, va, demand, kva: demand / 1000, rec, noUnit: rows.filter(x => !x.unit && (+x.r.z.area || 0) > 0).length };
 }
+/* ---------- distribution board register: type library (editable defaults – confirm with the manufacturer) ---------- */
+const LP_CATS = ['General lighting', 'Small power – general sockets', 'Small power – dedicated equipment', 'External / common-area lighting', 'Electric heating – direct / panel', 'Water heating – instantaneous', 'Water heating – storage / thermostatic', 'Air conditioning – split / VRF', 'Other / unclassified'];
+const DB_TYPES = [
+  { k: 'LP', n: 'Lighting & small-power DB (TP&N)', ph: 3, std: 'IEC / BS EN 61439-3 (DBO)', nec: 'UL 67 panelboard', inc: [63, 80, 100, 125, 160, 250], ways: [6, 8, 12, 16, 18, 24, 36, 48], cats: LP_CATS },
+  { k: 'SP', n: 'Single-phase DB / consumer unit (SP&N)', ph: 1, std: 'IEC / BS EN 61439-3', nec: 'UL 67 load centre', inc: [63, 80, 100], ways: [6, 8, 10, 12, 16, 18, 22, 24], cats: LP_CATS },
+  { k: 'PW', n: 'Power DB – MCCB panelboard', ph: 3, std: 'IEC / BS EN 61439-2', nec: 'UL 67 / UL 891', inc: [160, 250, 400, 630, 800], ways: [6, 8, 12, 18, 24], cats: ['Small power – dedicated equipment', 'Laboratory / process equipment', 'Medical imaging equipment', 'Refrigeration / cold rooms', 'Escalators / travelators', 'Lifts', 'Motors – general', 'Other / unclassified'] },
+  { k: 'MCC', n: 'Mechanical services panel / MCC', ph: 3, std: 'IEC / BS EN 61439-2 (Form 2b–4)', nec: 'UL 845 MCC', inc: [100, 160, 250, 400, 630, 800, 1250, 1600], ways: [4, 6, 8, 12, 16, 24], cats: ['HVAC – chillers / heat pumps', 'HVAC – AHUs / fans / pumps', 'Motors – general', 'Air conditioning – split / VRF', 'Central cooling – chillers & cooling towers', 'Chilled / condenser water pumps', 'Domestic water booster pumps', 'Sewage / sump pumps', 'Refrigeration / cold rooms'] },
+  { k: 'ESS', n: 'Essential / life-safety DB (fire-rated supply)', ph: 3, std: 'IEC 61439-2/-3; BS 7671 Ch. 56 / IEC 60364-5-56; BS 8519', nec: 'NEC 700 / 695; UL 67', inc: [63, 100, 125, 160, 250, 400, 630], ways: [6, 8, 12, 18, 24], cats: ['Emergency / life-safety lighting', 'Fire-fighting / life-safety pumps', 'Smoke extract fans (life safety)', 'Fire & security alarm systems / BMS'] },
+  { k: 'EV', n: 'EV charging DB (Type B RCD / RDC-DD)', ph: 3, std: 'IEC 61439-3; BS 7671 Section 722', nec: 'NEC 625; UL 67', inc: [63, 100, 125, 160, 250, 400, 630], ways: [6, 8, 12, 18, 24, 36, 48], cats: ['EV charging – load managed', 'EV charging – unmanaged'] },
+  { k: 'KIT', n: 'Kitchen / catering DB', ph: 3, std: 'IEC / BS EN 61439-3', nec: 'UL 67 panelboard', inc: [63, 100, 125, 160, 250, 400], ways: [8, 12, 18, 24, 36], cats: ['Commercial kitchen equipment', 'Refrigeration / cold rooms', 'Small power – dedicated equipment', 'Small power – general sockets', 'General lighting'] },
+  { k: 'IT', n: 'IT / UPS-backed DB', ph: 3, std: 'IEC 61439-3; IEC 62040 (UPS)', nec: 'NEC 645; UL 67', inc: [63, 100, 125, 160, 250, 400], ways: [12, 18, 24, 36, 48], cats: ['IT / server / comms', 'Small power – dedicated equipment'] },
+  { k: 'SMDB', n: 'Sub-main distribution board (SMDB)', ph: 3, std: 'IEC / BS EN 61439-2 (Form 3b / 4)', nec: 'UL 891 switchboard', inc: [250, 400, 630, 800, 1000, 1250, 1600, 2000, 2500], ways: [6, 8, 12, 16, 18, 24], cats: [] },
+];
+const dbType = k => DB_TYPES.find(t => t.k === k) || null;
+const dbPhases = (t, o) => +o.ph === 1 || +o.ph === 3 ? +o.ph : t.ph;
+// suggested type from the connected load categories (largest connected kW wins); boards that feed other boards are SMDBs
+function dbAutoType(name, rows, feedsBoards) {
+  const kw = {}; rows.forEach(r => { DB_TYPES.forEach(t => { if (t.cats.includes(r.l.cat)) kw[t.k] = (kw[t.k] || 0) + r.conn + 1e-6 * (t.k === 'LP' ? 0 : 1); }); });
+  if (rows.some(r => /life-safety|Fire-fighting|Smoke extract/.test(r.l.cat))) return 'ESS';
+  const best = Object.entries(kw).sort((a, b) => b[1] - a[1])[0];
+  if (best) return best[0];
+  return feedsBoards ? 'SMDB' : 'LP';
+}
+// one register row per distribution board named in Stage 3, Stage 7 or the drawings (main switchboard excluded)
+function calcDbReg(X, Lo, C, BD, W) {
+  const ov = S.boards || {}, e = S.sizing.expDb !== false ? Math.min(Math.max(+S.sizing.expand || 0, 0), 1) : 0;
+  const names = [...new Set([...S.loads.map(l => (l.db || '').trim()), ...BD.boards.filter(b => !b.isMain).map(b => b.name), ...(W.rooms.length ? [S.dwg.board] : []), ...Object.keys(ov).filter(k => ov[k] && ov[k].reg)].filter(Boolean))];
+  const rows = names.map(name => {
+    const o = ov[name] || {}, ld = Lo.rows.filter(r => (r.l.db || '').trim() === name), dbl = Lo.dbs.find(d => d.name === name), bd = BD.boards.find(b => b.name === name);
+    const out = C.filter(c => (c.k.from || '').trim() === name), feedsBoards = out.some(c => feedsOf(c.k));
+    const auto = dbAutoType(name, ld, feedsBoards), t = dbType(o.type) || dbType(auto), ph = dbPhases(t, o);
+    const conn = ld.reduce((a, r) => a + r.conn, 0), demKva = dbl ? dbl.dem : 0, ks = dbl ? dbl.ks : null, ksAuto = dbl ? dbl.ksAuto : null;
+    const loadA = demKva ? demKva * 1000 / (ph === 1 ? X.vln : SQ3 * X.vll) : 0;
+    const dwgA = W.rooms.length && name === S.dwg.board ? W.C.reduce((a, c) => a + (c.ib || 0), 0) / (ph === 1 ? 1 : 3) : 0;
+    const cirA = bd ? bd.demandA * (ph === 1 ? 3 : 1) : 0;
+    const designA = Math.max(loadA, dwgA, cirA), reqA = designA * (1 + e);
+    const incAuto = bd && bd.fc ? bd.fc.inr : (nextStd(t.inc, reqA) ?? nextStd(DD.DEV.find(d => d.n === 'MCCB').r, reqA) ?? nextStd(DD.DEV.find(d => d.n === 'ACB').r, reqA));
+    const incomer = !isBlank(o.incomer) && +o.incomer > 0 ? +o.incomer : incAuto;
+    const used = ld.reduce((a, r) => a + Math.max(1, Math.round(+r.l.qty || 1)), 0) + out.length + (dwgA ? W.C.length : 0);
+    const waysReq = Math.ceil(used * (1 + Math.max(0.2, e)));
+    const waysAuto = t.ways.find(w => w >= waysReq) ?? Math.ceil(waysReq / 6) * 6;
+    const ways = !isBlank(o.ways) && +o.ways > 0 ? +o.ways : waysAuto;
+    const off = t.cats.length ? [...new Set(ld.filter(r => !t.cats.includes(r.l.cat)).map(r => r.l.cat))] : [];
+    const lifeOff = t.k !== 'ESS' && ld.some(r => /life-safety|Fire-fighting|Smoke extract/.test(r.l.cat));
+    const incSt = !designA ? 'na' : !incomer ? 'bad' : incomer + 1e-9 >= reqA ? 'ok' : incomer + 1e-9 >= designA ? 'warn' : 'bad';
+    const waySt = !used ? 'na' : ways >= waysReq ? 'ok' : ways >= used ? 'warn' : 'bad';
+    const fitSt = lifeOff ? 'bad' : off.length ? 'warn' : 'ok';
+    const st = [incSt, waySt, fitSt].includes('bad') ? 'bad' : [incSt, waySt, fitSt].includes('warn') ? 'warn' : 'ok';
+    const fc = bd && bd.fc ? bd.fc : C.find(c => feedsOf(c.k) === name && c.csa), kwh = dbl ? dbl.kwh : 0;
+    return { name, o, t, auto, ph, ld, conn, demKva, kwh, feeder: fc ? { ref: fc.k.ref, csa: fc.csa, inr: fc.inr, spec: fc.spec ? fc.spec.split(' · ')[0] : '', st: fc.fail ? 'bad' : 'ok', auto: fc.kwAuto != null } : null, ks, ksAuto, designA, reqA, e, incAuto, incomer, used, waysReq, waysAuto, ways, off, lifeOff, incSt, waySt, fitSt, st, fault: bd ? bd.faultKA : null, source: bd ? bd.source : (dwgA ? 'Electrical drawings' : 'Stage 3 loads') };
+  });
+  return { rows, e, nBad: rows.filter(r => r.st === 'bad').length, nWarn: rows.filter(r => r.st === 'warn').length };
+}
+// Typical annual load factors (average ÷ maximum demand) by category – guide values, override per item
+const LF_GUIDE = [[/life-safety|Fire-fighting|Smoke extract/, 0.05], [/Emergency/, 0.05], [/IT \/ server/, 0.8], [/Refrigeration/, 0.6], [/Fire & security|BMS/, 0.9], [/External/, 0.45], [/General lighting/, 0.4], [/sockets/, 0.25], [/kitchen/, 0.3], [/EV charging/, 0.25], [/chillers|Central cooling|split|VRF/, 0.35], [/AHUs|Chilled|condenser/, 0.5], [/booster|Sewage/, 0.3], [/Lifts|Escalators/, 0.2], [/heating/, 0.3], [/Laboratory|Medical|process/, 0.3]];
+const lfDefault = cat => (LF_GUIDE.find(([re]) => re.test(cat || '')) || [0, 0.4])[1];
+const FACTOR_GUIDE = [
+  ['Unit load', 'kW (or VA) per item from the equipment data or schedule', 'Equipment schedule'],
+  ['Utilisation factor Ku', 'Running load ÷ rated load of an item: motors 0.75–0.8, lighting and heaters 1.0', '0.6–1.0'],
+  ['Demand factor', 'Maximum demand ÷ connected load of the item or group', '0.5–1.0'],
+  ['Diversity factor', 'Applied here as a multiplier (≤ 1) = 1 ÷ classical diversity; sockets 0.4–0.6, lighting 0.9–1.0', '0.4–1.0'],
+  ['Coincidence / simultaneity Ks', 'By number of circuits on a board (IEC 61439 assumed loading): 2–3 → 0.9, 4–5 → 0.8, 6–9 → 0.7, 10+ → 0.6; between boards 0.8–1.0', '0.6–1.0'],
+  ['Load factor', 'Average load ÷ maximum demand over the year – sets the annual energy (kWh = demand × LF × 8,760 h)', '0.05–0.9'],
+  ['Expansion allowance', 'Added to the final rated value of boards, cables, transformers and generators (Stage 6)', '15–25%'],
+];
 function calcLoads(X, skipCat) {
   const rows = (skipCat ? S.loads.filter(l => l.cat !== skipCat) : S.loads).map(l => {
     const f = catFactors(l.cat, X);
     const ku = l.ku !== '' && l.ku != null ? +l.ku : f.ku, df = l.df !== '' && l.df != null ? +l.df : f.df;
     const pf = +l.pf || X.pf, conn = (+l.qty || 0) * (+l.kw || 0);
-    const dem = conn * ku * df;
-    return { l, ku, df, pf, conn, dem, kva: dem / pf, life: /Fire-fighting|Smoke extract/.test(l.cat) };
+    const uf = l.uf !== '' && l.uf != null && isFinite(+l.uf) ? +l.uf : 1, lf = l.lf !== '' && l.lf != null && isFinite(+l.lf) ? +l.lf : lfDefault(l.cat);
+    const dem = conn * uf * ku * df;
+    return { l, uf, ku, df, lf, pf, conn, afterU: conn * uf, afterD: conn * uf * ku, dem, kva: dem / pf, kwh: dem * lf * 8760, coin: df > 0 ? 1 / df : null, life: /Fire-fighting|Smoke extract/.test(l.cat) };
   });
   const dbs = {};
-  rows.forEach(r => { const k = r.l.db || '(unassigned)'; (dbs[k] = dbs[k] || { name: k, n: 0, kva: 0 }); if (r.conn > 0) dbs[k].n++; dbs[k].kva += r.kva; });
-  const dbl = Object.values(dbs).map(d => { const ks = [...KS].reverse().find(k => d.n >= k[0])?.[1] ?? 1; return { ...d, ks, dem: d.kva * ks, amps: d.kva * ks * 1000 / (SQ3 * X.vll) }; });
+  rows.forEach(r => { const k = r.l.db || '(unassigned)'; (dbs[k] = dbs[k] || { name: k, n: 0, kva: 0, kwh: 0, kw: 0 }); if (r.conn > 0) dbs[k].n++; dbs[k].kva += r.kva; dbs[k].kw += r.dem; dbs[k].kwh += r.kwh; });
+  const dbl = Object.values(dbs).map(d => { const ksAuto = [...KS].reverse().find(k => d.n >= k[0])?.[1] ?? 1, o = (S.boards || {})[d.name] || {}, ks = !isBlank(o.ks) && +o.ks > 0 ? Math.min(+o.ks, 1) : ksAuto; return { ...d, ks, ksAuto, dem: d.kva * ks, amps: d.kva * ks * 1000 / (SQ3 * X.vll) }; });
   const sum = dbl.reduce((a, d) => a + d.dem, 0);
-  return { rows, dbs: dbl, kva: sum * (+S.mainSF || 1) };
+  const t = k => rows.reduce((a, r) => a + r[k], 0);
+  return { rows, dbs: dbl, kva: sum * (+S.mainSF || 1), boardKva: sum, conn: t('conn'), afterU: t('afterU'), afterD: t('afterD'), demKw: t('dem'), demKva: t('kva'), kwh: t('kwh') };
 }
 function calcLifts(X) {
   const rows = S.lifts.map(L => {
@@ -1233,10 +1301,11 @@ function calcAll() {
   const td = txKva ? TXD[txKva] : null;
   const room = td ? { L: nTx * td[0] + (nTx + 1) * z.clearance, W: td[1] + 2 * z.clearance, H: Math.max(3, td[2] + 0.8), loss: nTx * td[4], oil: z.txType === 'Oil-immersed (ONAN)' ? nTx * td[5] * 1.1 : 0, wt: td[3] } : null;
   if (room) { room.A = room.L * room.W; room.swL = (Math.ceil(z.ways / 4) + nTx + (nTx > 1 ? 1 : 0)) * 0.8; room.swA = (room.swL + 1.6) * (1.0 + 1.5 + 0.8); room.vent = room.loss / (1.2 * 1.005 * 10); }
-  const C1 = S.circuits.map(k => { const r = calcCircuit({ ...k, _exp: exCab }, X); r.k = k; return r; });
+  const kwOf = k => { if (k.kw !== '' && k.kw != null) return null; const d = Lo.dbs.find(b => b.name === feedsOf(k)); return d && d.dem ? +(d.dem * (+k.pf || X.pf)).toFixed(2) : null; };
+  const C1 = S.circuits.map(k => { const ak = kwOf(k), r = calcCircuit({ ...k, ...(ak != null ? { kw: ak } : {}), _exp: exCab }, X); r.k = k; r.kwAuto = ak; return r; });
   const BD = calcBoards(X, C1, { flP, incomer, icw });
   // second pass: circuits without an entered prospective fault current use the calculated fault level at their board
-  const C = S.circuits.map((k, i) => { const fa = BD.autoPfc && (k.pfc === '' || k.pfc == null) ? BD.faultAt(k.from) : null; if (fa == null) return C1[i]; const r = calcCircuit({ ...k, _exp: exCab, pfc: +fa.toFixed(1) }, X); r.k = k; r.pfcAuto = +fa.toFixed(1); return r; });
+  const C = S.circuits.map((k, i) => { const fa = BD.autoPfc && (k.pfc === '' || k.pfc == null) ? BD.faultAt(k.from) : null; if (fa == null) return C1[i]; const ak = kwOf(k), r = calcCircuit({ ...k, ...(ak != null ? { kw: ak } : {}), _exp: exCab, pfc: +fa.toFixed(1) }, X); r.k = k; r.kwAuto = ak; r.pfcAuto = +fa.toFixed(1); return r; });
   const W = calcDwg(X);
   const firmTx = txKva ? txKva * (z.resilience === 'N+1' ? Math.max(nTx - 1, 1) : nTx) : null;
   const GR = calcGrowth(X, { sub, md, firmTx, incKva: incomer ? incomer * SQ3 * X.vll / 1000 : null, genCap: genCfg && genCfg.dutyKva && z.genMethod !== 'schedule' && z.essential > 0 ? genCfg.dutyKva / (z.essential * genM) : null });
@@ -1246,10 +1315,12 @@ function calcAll() {
   xpAdd('Transformers (firm capacity)', z.expTx !== false, md, txKva ? txKva * (z.resilience === 'N+1' ? Math.max(nTx - 1, 1) : nTx) : null, 'kVA', 'Maximum demand incl. spare');
   xpAdd('Standby generators (duty sets)', z.expGen !== false, essBase, genCfg && genCfg.dutyKva, 'kVA', genInfo.method === 'schedule' ? 'Essential-load schedule' : 'Essential share of maximum demand');
   C.forEach(r => { if (r.ib && r.inr) xpAdd(`Cable ${r.k.ref} – ${r.k.desc}`, z.expCab !== false, r.ib, r.Iz ? Math.min(r.inr, r.Iz) : r.inr, 'A', 'Design current Ib; rated = min(In, Iz)'); });
+  const DBR = calcDbReg(X, Lo, C, BD, W);
+  DBR.rows.forEach(d => { if (d.designA && d.incomer) xpAdd(`Board ${d.name} incomer`, S.sizing.expDb !== false, d.designA, d.incomer, 'A', 'Board design current after demand, diversity and simultaneity'); });
   XP.nBad = XP.rows.filter(x => x.st === 'bad').length;
   // floor area for energy intensity: area schedule (+ data hall); if there is none, the rooms on the electrical drawing
   const E = calcEnergy(X, md, kw, (Z.area + (D ? D.white : 0)) || W.area || 0);
-  return { X, Z, Lo, Li, P, D, Dfull, sub, spare, md, kw, amps, swb: nextStd(SWB, amps), txKva, nTx, reqTx, flc, fl1, flP, incomer, icw, supply, ess, gen, met, bond, pme, nEarth, room, C, BD, GR, genCfg, W, RV, PB, NL, NB, NR, LoN, genInfo, CMP, E, XP };
+  return { X, Z, Lo, Li, P, D, Dfull, sub, spare, md, kw, amps, swb: nextStd(SWB, amps), txKva, nTx, reqTx, flc, fl1, flP, incomer, icw, supply, ess, gen, met, bond, pme, nEarth, room, C, BD, GR, genCfg, W, RV, PB, NL, NB, NR, LoN, genInfo, CMP, E, XP, DBR };
 }
 function calcEnergy(X, md, kw, area) {
   const e = S.energy, sh = e.shares;
@@ -1269,6 +1340,7 @@ function calcEnergy(X, md, kw, area) {
 
 /* ---------- compliance ---------- */
 const CHECKS = [
+  ['Distribution boards: type suits the loads; incomer and ways sized with expansion', ['Design brief; 132.1; 314.1; 536', 'NEC 408.36; design brief', 'CEC Rule 14-012; design brief', 'AS/NZS 3000 Cl. 2.5; design brief'], R => [R.DBR.rows.length ? `${R.DBR.rows.length} boards – ${R.DBR.nBad} fail, ${R.DBR.nWarn} to check` : 'No boards yet', !R.DBR.rows.length ? 'na' : R.DBR.nBad ? 'bad' : R.DBR.nWarn ? 'warn' : 'ok']],
   ['Expansion allowance on transformers, generators and cables (15–25%)', ['Design brief; 132.1', 'Design brief; NEC 90.8(A)', 'Design brief', 'Design brief'], R => [R.XP.rows.length ? `${pct(R.XP.e)} – ${R.XP.rows.filter(x => x.st === 'ok').length} of ${R.XP.rows.filter(x => x.st !== 'na').length} ratings meet it` : 'No rated equipment yet', !R.XP.rows.length ? 'warn' : !R.XP.ok ? 'warn' : R.XP.nBad ? 'bad' : 'ok']],
   ['Supply characteristics assessed (voltage, frequency, earthing, fault level)', ['313.1; 312', 'NEC 110.4; utility service requirements', 'CEC Rule 2-100; utility', 'AS/NZS 3000 Cl. 2.2.1'], R => [`${R.X.vln}/${R.X.vll} V, ${R.X.c.hz} Hz, ${R.X.c.earthing}`, 'ok']],
   ['Maximum demand assessed with demand / diversity factors', ['311.1; IET OSG App. A', 'NEC Article 220', 'CEC Rules 8-200 to 8-210', 'AS/NZS 3000 Cl. 2.2.2; App. C'], R => [`${f0(R.md)} kVA including spare`, R.md > 0 ? 'ok' : 'warn']],
@@ -1294,7 +1366,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 /* ---------- views ---------- */
 const VIEWS = [
   ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
-  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
+  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account'];
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'project';
@@ -1315,6 +1387,7 @@ function railStatus(id) {
   if (id === 'compliance') { const st = CHECKS.map(c => c[2](R)[1]); return st.includes('bad') ? 'bad' : st.includes('warn') ? 'warn' : 'ok'; }
   if (id === 'sizing') return R.txKva ? 'ok' : 'bad';
   if (id === 'review') return !R.RV.sheets.length ? '' : R.RV.nBad ? 'bad' : R.RV.nWarn ? 'warn' : 'ok';
+  if (id === 'checklist' || id === 'facilities') { const st = clStat(id === 'facilities' ? facIds() : CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items))); return st.complete ? 'ok' : st.started ? 'warn' : ''; }
   if (id === 'drawings') return !R.W.rooms.length ? '' : R.W.nBad ? 'bad' : R.W.nWarn ? 'warn' : 'ok';
   return '';
 }
@@ -1385,24 +1458,45 @@ V.area = () => {
   <tbody>${rows}<tr class="total"><td colspan="2">Total</td><td class="n">${f0(R.Z.area)}</td><td colspan="3"></td><td class="n">${f1(R.Z.area ? R.Z.kva * 1000 / R.Z.area : 0)}</td><td></td><td class="n">${f1(R.Z.kva)}</td>${code ? '<td colspan="2"></td>' : ''}<td colspan="2"></td></tr></tbody></table></div>
   <p class="note">${TYPES.length} building and space types across offices, retail, hospitality, education, healthcare, residential, industrial, logistics, data, leisure, worship, public services, transport, parking and public realm. ${code ? `Code lighting load is the ${R.X.fam === 'NEC' ? 'NEC Table 220.12' : 'CEC Section 8 (values to verify)'} unit load for the type's occupancy – a minimum for general lighting only.` : ''}</p>${necLightingPanel()}</section>`;
 };
+function dbRegister() {
+  const D = R.DBR; if (!D.rows.length) return '<p class="note">Assign loads to a board, or add a board, to build the board register.</p>';
+  const selB = (d, k, opts, auto) => `<select data-board="${esc(d.name)}" data-k="${k}" style="min-width:${k === 'type' ? 210 : 105}px" aria-label="${k} ${esc(d.name)}">${[`<option value=""${d.o[k] === '' || d.o[k] == null ? ' selected' : ''}>Auto (${esc(auto)})</option>`, ...opts.map(o => `<option value="${esc(o.v)}"${String(d.o[k] ?? '') === String(o.v) ? ' selected' : ''}>${esc(o.t)}</option>`)].join('')}</select>`;
+  const st = (s, ok, warn, bad) => pill(s, s === 'ok' ? ok : s === 'warn' ? warn : s === 'bad' ? bad : '–');
+  const rows = D.rows.map(d => `<tr><td><b>${esc(d.name)}</b><br><span class="note">${esc(d.source)}</span></td>
+    <td class="note">${d.feeder ? `${esc(d.feeder.ref)}: ${esc(csaLabel(d.feeder.csa, R.X))} mm², ${d.feeder.inr} A${d.feeder.auto ? ' (kW from this board)' : ''} ${pill(d.feeder.st, d.feeder.st === 'ok' ? 'OK' : 'Check')}` : 'No sub-main in Stage 7'}<br>${d.kwh ? f1(d.kwh / 1000) + ' MWh/yr' : ''}</td>
+    <td class="wide">${selB(d, 'type', DB_TYPES.map(t => ({ v: t.k, t: t.n })), dbType(d.auto).n)}<br><span class="note">${esc(R.X.fam === 'NEC' ? d.t.nec : d.t.std)}</span></td>
+    <td>${selB(d, 'ph', [{ v: 3, t: '3-phase' }, { v: 1, t: '1-phase' }], d.t.ph === 1 ? '1-phase' : '3-phase')}</td>
+    <td class="n">${d.ld.length}</td><td class="n">${f1(d.conn)}</td><td class="n">${f1(d.demKva)}</td>
+    <td>${d.ksAuto != null ? `<input type="number" step="any" style="width:60px" data-board="${esc(d.name)}" data-k="ks" value="${esc(d.o.ks ?? '')}" placeholder="${f2(d.ksAuto)}" aria-label="Ks ${esc(d.name)}">` : '<span class="note">–</span>'}</td>
+    <td class="n">${f1(d.designA)}</td><td class="n">${f1(d.reqA)}</td>
+    <td>${selB(d, 'incomer', [...new Set([...d.t.inc, ...(d.incAuto && !d.t.inc.includes(d.incAuto) ? [d.incAuto] : [])])].sort((a, b) => a - b).map(a => ({ v: a, t: a + ' A' })), d.incAuto ? d.incAuto + ' A' : '–')}</td>
+    <td>${selB(d, 'ways', [...new Set([...d.t.ways, d.waysAuto])].sort((a, b) => a - b).map(w => ({ v: w, t: w + ' ways' })), d.waysAuto + ' ways')}<br><span class="note">${d.used} used, needs ${d.waysReq}</span></td>
+    <td>${st(d.incSt, 'Incomer OK', 'No expansion headroom', 'Incomer too small')} ${st(d.waySt, 'Ways OK', 'Short of spare ways', 'Too few ways')} ${d.fitSt === 'ok' ? '' : st(d.fitSt, '', 'Type: ' + d.off.join(', '), 'Life-safety load needs an essential DB')}</td></tr>`).join('');
+  return `<div class="tbl-wrap"><table><thead><tr><th>Board</th><th>Sub-main cable · energy</th><th>DB type</th><th>Supply</th><th>Load items</th><th>Connected kW</th><th>Σ demand kVA</th><th>Simultaneity Ks</th><th>Design A/phase</th><th>+${pct(D.e)} expansion A</th><th>Incomer rating</th><th>Ways</th><th>Checks</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 V.equipment = () => {
-  const rows = R.Lo.rows.map((r, i) => `<tr><td><input data-arr="loads" data-i="${i}" data-k="db" value="${esc(r.l.db)}" style="width:110px"></td>
+  const dbNames = [...new Set([...R.DBR.rows.map(d => d.name), ...S.loads.map(l => l.db).filter(Boolean)])];
+  const rows = R.Lo.rows.map((r, i) => `<tr><td><select data-arr="loads" data-i="${i}" data-k="db" style="width:120px" aria-label="Board">${opt(['', ...dbNames.filter(n => n !== r.l.db), ...(r.l.db ? [r.l.db] : [])].sort(), r.l.db || '')}</select></td>
     <td><input data-arr="loads" data-i="${i}" data-k="desc" value="${esc(r.l.desc)}"></td>
     <td class="wide"><select data-arr="loads" data-i="${i}" data-k="cat">${opt(CATS.map(c => c.name), r.l.cat)}</select></td>
     <td><input type="number" step="any" data-arr="loads" data-i="${i}" data-k="qty" value="${esc(r.l.qty)}"></td>
     <td><input type="number" step="any" data-arr="loads" data-i="${i}" data-k="kw" value="${esc(r.l.kw)}"></td>
     <td><input type="number" step="any" data-arr="loads" data-i="${i}" data-k="pf" value="${esc(r.l.pf)}" placeholder="${R.X.pf}"></td>
     <td class="n">${f1(r.conn)}</td>
+    <td><input type="number" step="any" style="width:60px" data-arr="loads" data-i="${i}" data-k="uf" value="${esc(r.l.uf ?? '')}" placeholder="1.00" aria-label="Utilisation factor"></td>
     <td><input type="number" step="any" data-arr="loads" data-i="${i}" data-k="ku" value="${esc(r.l.ku)}" placeholder="${f2(catFactors(r.l.cat, R.X).ku)}"></td>
     <td><input type="number" step="any" data-arr="loads" data-i="${i}" data-k="df" value="${esc(r.l.df)}" placeholder="${f2(catFactors(r.l.cat, R.X).df)}"></td>
-    <td class="n">${f1(r.dem)}</td><td class="n"><b>${f1(r.kva)}</b></td><td><button class="btn small ghost" data-del="loads" data-i="${i}">Remove</button></td></tr>`).join('');
-  const dbs = R.Lo.dbs.map(d => `<tr><td>${esc(d.name)}</td><td class="n">${d.n}</td><td class="n">${f1(d.kva)}</td><td class="n">${f2(d.ks)}</td><td class="n"><b>${f1(d.dem)}</b></td><td class="n">${f0(d.amps)}</td><td class="n">${nextStd(DD.DEV[4].r, d.amps * 1.25) ?? '>1600'}</td></tr>`).join('');
-  return `<section class="sheet">${head('Stage 3', 'Equipment loads', `Actual client equipment by distribution board. Demand = connected × demand factor × diversity factor (defaults from the <b>${esc(R.X.c.set)}</b> set – type to override), then a simultaneity factor per board.`, `<button class="btn" data-add="loads">Add item</button>`)}
-  <div class="tbl-wrap"><table><thead><tr><th>Board</th><th>Description</th><th>Load category</th><th>Qty</th><th>kW each</th><th>PF</th><th>Connected kW</th><th>Demand factor</th><th>Diversity</th><th>Demand kW</th><th>Demand kVA</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
-  <h3>Distribution board summary</h3>
-  <div class="row" style="margin-bottom:8px">${fld('Main switchboard simultaneity factor', inp('mainSF', S.mainSF, 'number'), 'Between boards, typically 0.8–1.0')}</div>
-  <div class="tbl-wrap"><table><thead><tr><th>Board</th><th>Items</th><th>Σ demand kVA</th><th>Simultaneity Ks</th><th>Board demand kVA</th><th>Current A (3-ph)</th><th>Incomer A (+25% spare)</th></tr></thead><tbody>${dbs}<tr class="total"><td colspan="4">Equipment maximum demand (× ${S.mainSF})</td><td class="n">${f1(R.Lo.kva)}</td><td colspan="2"></td></tr></tbody></table></div>
-  <p class="note">Simultaneity per board follows IEC 61439 assumed loading: 2–3 circuits 0.9, 4–5 0.8, 6–9 0.7, 10+ 0.6.</p></section>`;
+    <td><input type="number" step="any" style="width:60px" data-arr="loads" data-i="${i}" data-k="lf" value="${esc(r.l.lf ?? '')}" placeholder="${f2(lfDefault(r.l.cat))}" aria-label="Load factor"></td>
+    <td class="n">${f1(r.dem)}</td><td class="n"><b>${f1(r.kva)}</b></td><td class="n">${f1(r.kwh / 1000)}</td><td><button class="btn small ghost" data-del="loads" data-i="${i}">Remove</button></td></tr>`).join('');
+  const dbs = dbRegister();
+  return `<section class="sheet">${head('Stage 3', 'Equipment loads', `Actual client equipment by distribution board. Demand = unit load × qty × utilisation × demand factor × diversity (defaults from the <b>${esc(R.X.c.set)}</b> set – type to override), then the coincidence (simultaneity) factor Ks per board. Annual energy = demand × load factor × 8,760 h.`, `<button class="btn" data-add="loads">Add item</button>`)}
+  <div class="tbl-wrap"><table><thead><tr><th>Board</th><th>Description</th><th>Load category</th><th>Qty</th><th>kW each</th><th>PF</th><th>Connected kW</th><th>Utilisation Ku</th><th>Demand factor</th><th>Diversity</th><th>Load factor</th><th>Demand kW</th><th>Demand kVA</th><th>Energy MWh/yr</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  <h3>Distribution boards – type, rating and expansion</h3>
+  <div class="row" style="margin-bottom:8px;align-items:flex-end">${fld('Main switchboard simultaneity factor', inp('mainSF', S.mainSF, 'number'), 'Between boards, typically 0.8–1.0')}${fld('Add a board', '<input id="newDb" type="text" placeholder="e.g. DB-L2" style="width:140px">')}<button class="btn small" data-act="add-db">Add board</button></div>
+  ${dbs}
+  <details style="margin-top:8px"><summary><b>Factor guide</b> – what each factor means and typical values</summary><div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Factor</th><th>Meaning and use</th><th>Typical</th></tr></thead><tbody>${FACTOR_GUIDE.map(g => `<tr><td>${g[0]}</td><td class="note">${g[1]}</td><td class="n">${g[2]}</td></tr>`).join('')}</tbody></table></div><p class="note">Guide values only – confirm against the project brief, the client's equipment data and the regulations adopted locally.</p></details>
+  <p class="note">Each board's demand comes from its loads above (connected × demand factor × diversity) × simultaneity Ks, or from its Stage 7 circuits and drawing circuits. The incomer and ways are then sized for the ${pct(R.DBR.e)} expansion allowance (Stage 6) – leave the dropdowns on Auto or pick a standard rating to check it. Default Ks follows IEC 61439 assumed loading: 2–3 circuits 0.9, 4–5 0.8, 6–9 0.7, 10+ 0.6. Board types and ratings are editable defaults; confirm with the assembly manufacturer.</p>
+  <p class="note">Equipment maximum demand: Σ board demand × ${S.mainSF} = <b>${f1(R.Lo.kva)} kVA</b>.</p></section>`;
 };
 V['lifts-pumps'] = () => {
   const lr = R.Li.rows.map((r, i) => `<tr><td><input data-arr="lifts" data-i="${i}" data-k="desc" value="${esc(r.L.desc)}"></td><td class="wide"><select data-arr="lifts" data-i="${i}" data-k="type">${opt(LIFT_TYPES, r.L.type)}</select></td>
@@ -1449,6 +1543,24 @@ function aiDcSection(d, D) {
   <h3>Mitigations</h3><ul class="note">${AI_DYN.mitigations.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`;
 }
 const xpTable = () => R.XP.rows.length ? `<div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Equipment</th><th>Design load</th><th>Final rated value</th><th>Headroom</th><th>Basis</th><th></th></tr></thead><tbody>${R.XP.rows.map(x => `<tr><td>${esc(x.item)}</td><td class="n">${f1(x.load)} ${x.unit}</td><td class="n">${f1(x.rated)} ${x.unit}</td><td class="n">${pct(x.h)}</td><td class="note">${esc(x.basis)}</td><td>${x.st === 'na' ? pill('warn', 'Not applied') : pill(x.st, x.st === 'ok' ? 'OK' : 'Below allowance')}</td></tr>`).join('')}</tbody></table></div>` : '';
+function chainRows() {
+  const L = R.Lo, z = S.sizing, firm = R.txKva ? R.txKva * (z.resilience === 'N+1' ? Math.max(R.nTx - 1, 1) : R.nTx) : null, other = R.sub - L.kva;
+  return [
+    ['Connected load – Stage 3 equipment (unit load × qty)', L.conn, 'kW', ''],
+    ['× utilisation factor Ku', L.afterU, 'kW', L.conn ? f2(L.afterU / L.conn) : ''],
+    ['× demand factor', L.afterD, 'kW', L.afterU ? f2(L.afterD / L.afterU) : ''],
+    ['× diversity factor', L.demKw, 'kW', L.afterD ? f2(L.demKw / L.afterD) : ''],
+    ['÷ power factor → apparent demand', L.demKva, 'kVA', L.demKva ? f2(L.demKw / L.demKva) : ''],
+    ['× coincidence Ks per board (by number of circuits)', L.boardKva, 'kVA', L.demKva ? f2(L.boardKva / L.demKva) : ''],
+    ['× coincidence between boards (main switchboard)', L.kva, 'kVA', f2(+S.mainSF || 1)],
+    ['+ area / NEC / panel loads, lifts, pumps, data centre', R.sub, 'kVA', other ? '+' + f1(other) : ''],
+    [`+ spare ${pct(+S.project.spare)} → maximum demand`, R.md, 'kVA', f2(1 + (+S.project.spare || 0))],
+    [`Transformer requirement (target loading ${z.txLoading}, expansion ${pct(z.expTx !== false ? R.XP.e : 0)})`, R.reqTx * (z.resilience === 'N+1' ? Math.max(R.nTx - 1, 1) : R.nTx), 'kVA', ''],
+    ['Selected transformer firm capacity', firm, 'kVA', R.txKva ? `${R.nTx} × ${f0(R.txKva)}` : ''],
+    ['Annual energy of Stage 3 equipment (Σ demand × load factor × 8,760 h)', L.kwh / 1000, 'MWh/yr', L.demKw ? `LF ${f2(L.kwh / (L.demKw * 8760))}` : ''],
+  ];
+}
+const chainTable = () => R.Lo.conn ? `<h3>Design factor chain – connected load to transformer</h3><div class="tbl-wrap"><table><thead><tr><th>Step</th><th>Result</th><th>Factor</th></tr></thead><tbody>${chainRows().map(c => `<tr><td>${esc(c[0])}</td><td class="n">${c[1] != null ? f1(c[1]) + ' ' + c[2] : '–'}</td><td class="n">${c[3]}</td></tr>`).join('')}</tbody></table></div><p class="note">Each sub-main left with a blank kW in Stage 7 takes the demand of the board it feeds, so the cable, its protective device and the board incomer follow the same factors and the expansion allowance.</p>` : '';
 V.sizing = () => {
   const z = S.sizing, r = R.room;
   const parts = R.PB == null && R.NB != null ? [['NEC general lighting (Art. 220)', R.NB], ['NEC receptacles', R.NR], ['Equipment (excl. general sockets)', R.LoN.kva], ['Lifts', R.Li.kva], ['Pumps', R.P.kva], ['Data centre', R.D ? R.D.md : 0], ['Spare', R.spare]] : R.PB != null ? [['Panel schedules', R.PB], ['Lifts', R.Li.kva], ['Pumps', R.P.kva], ['Data centre', R.D ? R.D.md : 0], ['Spare', R.spare]] : [['Area loads', R.Z.kva], ['Equipment', R.Lo.kva], ['Lifts', R.Li.kva], ['Pumps', R.P.kva], ['Data centre', R.D ? R.D.md : 0], ['Spare', R.spare]];
@@ -1461,8 +1573,9 @@ V.sizing = () => {
   ${R.GR ? `<div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Year</th><th>Demand kVA (before spare)</th><th>% of transformer firm capacity</th></tr></thead><tbody>${R.GR.steps.map(st => `<tr><td>${st.year}</td><td class="n">${f1(st.kva)}</td><td class="n">${st.pctTx != null ? pct(st.pctTx) : '–'}</td></tr>`).join('')}</tbody></table></div>
   <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Capacity</th><th>kVA</th><th>Adequate until</th><th>At ${R.GR.y0 + R.GR.yrs}</th></tr></thead><tbody>${R.GR.caps.map(c => `<tr><td>${esc(c.name)}</td><td class="n">${f0(c.cap)}</td><td class="n">${c.until}</td><td>${pill(c.within ? 'ok' : 'bad', c.within ? 'Within' : 'Exceeded')}</td></tr>`).join('')}</tbody></table></div>
   <p class="note">Demand grows at ${pct(R.GR.g, 1)} a year from ${R.GR.y0}: ${f1(R.GR.steps[0].kva)} kVA today → ${f1(R.GR.endKva)} kVA in ${R.GR.y0 + R.GR.yrs}. Spare capacity (${pct(+S.project.spare)}) is included in the design maximum demand; generator check applies when sized as a share of maximum demand.</p>` : ''}
+  ${chainTable()}
   <h3>Expansion allowance on rated equipment</h3><div class="grid">${fld('Expansion allowance', inp('sizing.expand', z.expand ?? 0.2, 'number', 'min="0" max="1" step="0.01"'), 'Fraction of the design load, 0.15–0.25 typical (0.2 = 20%)')}
-   ${fld('Apply to', ['expTx|Transformers', 'expGen|Generators', 'expCab|Cables (Stage 7)'].map(o => { const [k, l] = o.split('|'); return `<label class="row" style="gap:6px;margin:2px 0"><input type="checkbox" style="width:auto" data-p="sizing.${k}" ${z[k] !== false ? 'checked' : ''}> ${l}</label>`; }).join(''))}
+   ${fld('Apply to', ['expTx|Transformers', 'expGen|Generators', 'expCab|Cables (Stage 7)', 'expDb|Distribution boards'].map(o => { const [k, l] = o.split('|'); return `<label class="row" style="gap:6px;margin:2px 0"><input type="checkbox" style="width:auto" data-p="sizing.${k}" ${z[k] !== false ? 'checked' : ''}> ${l}</label>`; }).join(''))}
    ${fld('Status', der(R.XP.ok ? pill(R.XP.nBad ? 'bad' : 'ok', R.XP.nBad ? `${R.XP.nBad} item(s) below ${pct(R.XP.e)}` : `All ratings ≥ ${pct(R.XP.e)} headroom`) : pill('warn', `${pct(R.XP.e)} is outside 15–25%`)))}</div>
   ${xpTable()}
   <p class="note">The allowance is applied to the final rated value: transformer firm capacity ≥ maximum demand × (1 + allowance); generator margin is at least 1 + allowance; Stage 7 devices and cables are rated for Ib × (1 + allowance). Voltage drop and Zs are checked at the design current. It is in addition to the ${pct(+S.project.spare)} spare in the maximum demand.</p>
@@ -1506,7 +1619,7 @@ V.circuits = () => {
     const k = r.k, s = (key, list, map) => `<select data-arr="circuits" data-i="${i}" data-k="${key}">${opt(list, k[key], map)}</select>`, n = (key, w = 70) => `<input type="number" step="any" style="width:${w}px" data-arr="circuits" data-i="${i}" data-k="${key}" value="${esc(k[key])}">`;
     const st = r.fail ? (r.fail === 'REVIEW' ? 'warn' : 'bad') : r.status ? 'ok' : 'na';
     return `<tr><td><input style="width:60px" data-arr="circuits" data-i="${i}" data-k="ref" value="${esc(k.ref)}"></td><td><input style="width:90px" data-arr="circuits" data-i="${i}" data-k="from" value="${esc(k.from)}"></td><td><input style="width:90px" data-arr="circuits" data-i="${i}" data-k="to" value="${esc(k.to || '')}" placeholder="${esc(feedsOf(k) || '–')}" title="For sub-mains: the board this circuit supplies"></td><td><input data-arr="circuits" data-i="${i}" data-k="desc" value="${esc(k.desc)}"></td>
-     <td>${s('type', ['Lighting', 'Other'])}</td><td>${n('kw')}</td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td>${usesAWG(R.X) ? `<td>${s('cont', ['No', 'Yes'])}</td>` : ''}<td class="wide">${s('cable', combosList().map((c, j) => ({ v: j, t: c.name || c.n })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td><input type="number" step="any" style="width:60px" data-arr="circuits" data-i="${i}" data-k="pfc" value="${esc(k.pfc)}" placeholder="${r.pfcAuto ?? ''}" title="Blank = calculated at the board"></td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
+     <td>${s('type', ['Lighting', 'Other'])}</td><td><input type="number" step="any" style="width:70px" data-arr="circuits" data-i="${i}" data-k="kw" value="${esc(k.kw)}" placeholder="${r.kwAuto ?? ''}" title="Blank on a sub-main = the demand of the board it feeds (Stage 3)"></td><td>${s('ph', [1, 3])}</td><td>${s('dev', DD.DEV.map(d => d.n))}</td>${usesAWG(R.X) ? `<td>${s('cont', ['No', 'Yes'])}</td>` : ''}<td class="wide">${s('cable', combosList().map((c, j) => ({ v: j, t: c.name || c.n })))}</td><td>${n('len', 60)}</td><td>${n('amb', 55)}</td><td>${n('grp', 50)}</td><td>${s('arr', ['Bunched / enclosed', 'Single layer'])}</td><td>${n('zdb', 60)}</td><td><input type="number" step="any" style="width:60px" data-arr="circuits" data-i="${i}" data-k="pfc" value="${esc(k.pfc)}" placeholder="${r.pfcAuto ?? ''}" title="Blank = calculated at the board"></td><td>${n('icn', 55)}</td><td>${s('rcd', ['None', 'Type AC', 'Type A', 'Type F', 'Type B'])}</td><td>${n('idn', 55)}</td>
      <td class="n">${f1(r.ib)}</td><td class="n">${r.inr ?? '–'}</td><td class="n">${esc(csaLabel(r.csa, R.X))}</td><td class="n">${r.Iz ? f1(r.Iz) : '–'}</td><td class="n">${r.vd != null ? f2(r.vd) + '%' : '–'}</td><td class="n">${r.zs != null ? f2(r.zs) : '–'}</td><td class="n">${r.zsMax != null ? f2(r.zsMax) : 'mfr'}</td><td class="n">${r.cpc ?? '–'}</td><td>${pill(st, r.status || '—')}</td><td><button class="btn small ghost" data-del="circuits" data-i="${i}">Remove</button></td></tr>`;
   }).join('');
   const specs = R.C.filter(r => r.spec).map(r => `<li><b>${esc(r.k.ref)}</b> ${esc(r.k.desc)} — ${esc(r.spec)}</li>`).join('');
@@ -1524,8 +1637,338 @@ V.energy = () => {
   <div class="split"><div><h3>Inputs</h3><div class="grid">${fld('Currency', inp('energy.currency', e.currency))}${fld('Tariff per kWh', inp('energy.tariff', e.tariff, 'number'))}${fld('Capacity charge per kVA/month', inp('energy.demand', e.demand, 'number'))}${fld('Annual load factor', inp('energy.lf', e.lf, 'number'), 'Offices 0.35–0.45')}${fld('EUI benchmark kWh/m²/yr', inp('energy.benchmark', e.benchmark, 'number'))}${fld('Grid carbon kgCO₂e/kWh', inp('energy.co2', e.co2, 'number', `placeholder="${E.co2}"`))}${fld('PV yield kWh/kWp/yr', inp('energy.pvYield', e.pvYield, 'number', `placeholder="${E.yld}"`))}${fld('Solar PV kWp', inp('energy.pv', e.pv, 'number'))}${fld('Battery kW (peak shaving)', inp('energy.batt', e.batt, 'number'))}${fld('Load shedding share of MD', inp('energy.shed', e.shed, 'number'))}${fld('Uncorrected PF', inp('energy.pfUn', e.pfUn, 'number'))}${fld('Target PF', inp('energy.pfTg', e.pfTg, 'number'))}</div>
    <h3>Measures</h3>${ms.map(([k, l, h]) => `<label class="row" style="gap:8px;margin:4px 0"><input type="checkbox" style="width:auto" id="m_${k}" data-p="energy.m.${k}" ${e.m[k] ? 'checked' : ''}> ${l} <span class="note">${h}</span></label>`).join('')}</div>
   <div><h3>Results</h3><div class="kpis">${[['Baseline', `${f0(E.base / 1000)} MWh/yr`], ['Savings', `${f0(E.savKwh / 1000)} MWh/yr`, pct(E.base ? E.savKwh / E.base : 0)], ['PV used', `${f0(E.pvUse / 1000)} MWh/yr`], ['Grid import', `${f0(E.imp / 1000)} MWh/yr`], ['Net EUI', `${f0(E.eui)} kWh/m²`, !isFinite(E.eui) ? 'floor area not known' : E.eui <= e.benchmark ? 'within benchmark' : 'above benchmark'], ['Annual cost', `${esc(e.currency)} ${f0(E.cost)}`, `saving ${f0(E.costSave)}`], ['Carbon', `${f1(E.tco2)} tCO₂e/yr`], ['MD after management', `${f0(E.mdAfter)} kVA`, `from ${f0(R.md)} kVA`], ['PF correction', `${f0(E.bank)} kVAr`, `needs ${f0(E.q)} kVAr`]].map(([a, b, c]) => `<div class="kpi"><span>${a}</span><b>${b}</b>${c ? `<small>${c}</small>` : ''}</div>`).join('')}</div>
-   <p class="note">End-use split: lighting ${pct(e.shares.lighting)}, HVAC ${pct(e.shares.hvac)}, pumps & fans ${pct(e.shares.pumps)}, other ${pct(e.shares.other)}. Floor area ${f0(E.area)} m².</p></div></div></section>`;
+   <p class="note">End-use split: lighting ${pct(e.shares.lighting)}, HVAC ${pct(e.shares.hvac)}, pumps & fans ${pct(e.shares.pumps)}, other ${pct(e.shares.other)}. Floor area ${f0(E.area)} m².</p></div></div>${energyProgramme()}</section>`;
 };
+/* ---------- design parameter checklist, energy programme and facilities register ---------- */
+// Each item is [group, parameter, unit, guidance]. Progress is kept per item in S.cl[id] = { st, val, note }.
+const CL_ST = ['Not started', 'In progress', 'Done', 'N/A'];
+const clSlug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const clId = (set, label) => clSlug(set) + '.' + clSlug(label);
+const CL_CHECKLIST = [
+  ["ld", "Load design", [
+    ["Building","Floor area","m²","Gross internal area per use class"],
+    ["Building","Use class and occupancy","text","Office, residential, retail, industrial"],
+    ["Building","Operating hours","h/day","Drives diversity and energy"],
+    ["Building","Supply voltage and frequency","V / Hz","230/400 V 50 Hz UK; confirm region"],
+    ["Load density","Lighting density","W/m²","BS EN 12464 lux levels"],
+    ["Load density","Small power and IT density","VA/m²","By space type"],
+    ["Load density","ADMD per dwelling","kVA","Dwellings only"],
+    ["Connected load","Lighting, sockets, HVAC","kW","Schedule per board"],
+    ["Connected load","Lifts, pumps, fans","kW","Include starting method"],
+    ["Connected load","Kitchen and process loads","kW",""],
+    ["Connected load","Essential and life-safety loads","kW","Fire, emergency lighting, pumps"],
+    ["Demand","Demand factor per load group","%","From standard tables"],
+    ["Demand","Diversity between groups","%",""],
+    ["Demand","Maximum demand","kVA","See Calc sheet"],
+    ["Demand","Power factor and phase balance","pf / %","Target pf 0.95 or better"],
+    ["Special loads","Motor starting current and method","A","DOL, star-delta, soft start, VFD"],
+    ["Special loads","Harmonics (drives, LED)","THD %","Affects neutral and transformer"],
+    ["Special loads","Standby generator load","kVA","Include starting kVA"],
+    ["Growth","Future growth allowance","%","Typically 20-25%"],
+    ["Output","Load schedule by board","doc",""],
+    ["Output","Supply capacity request to utility","doc",""]]],
+  ["cs", "Cable selection", [
+    ["Load side","Design current Ib","A",""],
+    ["Load side","Protective device rating In","A","Ib ≤ In ≤ Iz"],
+    ["Load side","Load type and starting current","text",""],
+    ["Installation","Installation method","ref","BS 7671 Appendix 4"],
+    ["Installation","Cable type","text","XLPE/SWA, LSZH, MICC"],
+    ["Installation","Length of run","m",""],
+    ["Installation","Ambient temperature","°C",""],
+    ["Rating factors","Ca (ambient)","factor",""],
+    ["Rating factors","Cg (grouping)","factor",""],
+    ["Rating factors","Ci (thermal insulation)","factor",""],
+    ["Voltage drop","Permitted drop","%","3% lighting, 5% other (App. 12)"],
+    ["Voltage drop","mV/A/m from tables","mV/A/m","At operating temperature"],
+    ["Fault protection","Prospective fault current","kA",""],
+    ["Fault protection","Adiabatic check S² ≥ I²t / k²","mm²","k from cable tables"],
+    ["Fault protection","Earth-fault loop impedance Zs","Ω","Must meet disconnection time"],
+    ["Other","Neutral sizing with harmonics","text",""],
+    ["Other","Parallel cables","text",""],
+    ["Other","Fire performance","text",""]]],
+  ["bp", "Distribution boards, power and control panels, switchboards", [
+    ["Distribution board","Number of ways and spare ways","ways","20-25% spare"],
+    ["Distribution board","Busbar rating and TP&N or SP&N","A",""],
+    ["Distribution board","RCBO/RCD, SPD, main switch","text",""],
+    ["Distribution board","Circuit chart and labelling","doc",""],
+    ["Power panel","Incomer and outgoing ratings","A",""],
+    ["Power panel","Fault rating","kA",""],
+    ["Power panel","IP rating and form of separation","text",""],
+    ["Control panel","Starter type","text","DOL, star-delta, VFD"],
+    ["Control panel","Control voltage and PLC I/O","text",""],
+    ["Control panel","Emergency stop and interlocks","text",""],
+    ["Control panel","BMS/SCADA interface","text",""],
+    ["Main switchboard","Rated current and Icw","A / kA",""],
+    ["Main switchboard","ACB or MCCB incomers","text",""],
+    ["Main switchboard","ATS/changeover and interlock","text",""],
+    ["Main switchboard","IEC 61439 type testing","doc",""],
+    ["Physical","Switchroom size and access","m",""],
+    ["Physical","Ventilation and heat dissipation","kW",""],
+    ["Physical","Arc-flash and clearances","text",""],
+    ["Earthing","Earthing system","text","TN-S, TN-C-S, TT"],
+    ["Earthing","Discrimination study","doc",""]]],
+  ["tx", "Transformers and HV", [
+    ["Sizing","kVA from maximum demand","kVA","See Calc sheet"],
+    ["Sizing","Loading target","%","70-80%"],
+    ["Sizing","Redundancy (N+1)","text",""],
+    ["Electrical","Voltage ratio","kV","11/0.415 or 33/11"],
+    ["Electrical","Vector group","text","e.g. Dyn11"],
+    ["Electrical","Impedance","%","Sets fault level"],
+    ["Electrical","Tap changer range","%",""],
+    ["Type","Oil-filled or cast resin","text",""],
+    ["Type","Cooling","text","ONAN, AN"],
+    ["Type","No-load and load losses","kW",""],
+    ["Protection","Buchholz and winding temperature","text",""],
+    ["Protection","HV fuse or relay settings","text",""],
+    ["Protection","Oil sampling and IEC 60076 tests","doc",""],
+    ["RMU","Ring main unit configuration","text","e.g. 3-way"],
+    ["RMU","Fault rating and breaking capacity","kA",""],
+    ["Substation","Plinth, bund and fire barrier","text",""],
+    ["Substation","Ventilation and access","text",""],
+    ["Substation","Utility metering point","text",""]]]];
+// Energy management programme: the five pillars (optimisation, theft control, alternative sources, load management, smart metering).
+const EP_PILLARS = [
+  ['ep-opt', 'Optimisation', 'Cut the energy the building needs before adding supply. Measures and savings are calculated above.', [
+    ['Baseline', 'Annual baseline and EUI benchmark', 'kWh/m²/yr', 'Compare with the benchmark above'],
+    ['Baseline', 'End-use split (lighting, HVAC, pumps, other)', '%', 'From sub-metering or a survey'],
+    ['Measures', 'Lighting efficiency and controls', '%', 'LED, daylight and presence control'],
+    ['Measures', 'HVAC set-points, scheduling and BMS tuning', 'text', 'Seasonal reset, optimum start/stop'],
+    ['Measures', 'Variable-speed drives on pumps and fans', 'kW', 'Affinity-law savings on part load'],
+    ['Measures', 'Heat recovery and envelope improvements', 'text', ''],
+    ['Verification', 'Measurement and verification plan', 'doc', 'IPMVP option and metering boundary'],
+    ['Verification', 'Energy management review cycle', 'doc', 'ISO 50001 plan, do, check, act']]],
+  ['ep-theft', 'Theft control', 'Find and stop unmetered or bypassed consumption (non-technical loss). Use the reconciliation calculator below.', [
+    ['Detection', 'Incomer versus sub-meter reconciliation', '%', 'Use the calculator below'],
+    ['Detection', 'Tamper alarms (cover open, reverse energy, magnetic)', 'text', 'Available on most smart meters'],
+    ['Detection', 'Night-time and unoccupied load profile review', 'kW', 'Unexplained base load'],
+    ['Prevention', 'Sealed, lockable meter cabinets and tamper-evident seals', 'text', ''],
+    ['Prevention', 'Secure CT and VT terminals with shorting blocks', 'text', 'Prevents bypassing and metering errors'],
+    ['Prevention', 'Inspection for bypass links and illegal connections', 'doc', 'Scheduled and random inspections'],
+    ['Response', 'Investigation and recovery procedure', 'doc', 'Evidence, billing adjustment, escalation'],
+    ['Response', 'Register of unmetered and temporary supplies', 'doc', 'Events, construction, signage']]],
+  ['ep-alt', 'Alternative energy sources', 'On-site generation and storage. Solar PV and battery sizes are the inputs above.', [
+    ['Solar', 'Solar PV capacity and yield', 'kWp', 'Roof or car-park area, shading, orientation'],
+    ['Solar', 'Inverters, DC protection and export limitation', 'text', 'Utility approval for grid-parallel running'],
+    ['Storage', 'Battery energy storage sizing', 'kW / kWh', 'Peak shaving, backup and PV self-use'],
+    ['Other', 'Heat pumps, CHP, wind, biomass or hydro screening', 'text', 'Site resource and planning limits'],
+    ['Other', 'Standby generation and fuel (diesel, HVO, gas)', 'kVA', 'See Supply & equipment'],
+    ['Grid', 'Grid connection, export and tariff arrangement', 'doc', 'Net metering, feed-in or private use'],
+    ['Grid', 'Changeover and anti-islanding protection', 'text', 'ATS and loss-of-mains protection']]],
+  ['ep-load', 'Load management', 'Keep maximum demand and capacity charges down and protect essential supplies.', [
+    ['Limits', 'Maximum demand limit and tariff structure', 'kVA', 'Capacity charge is entered above'],
+    ['Limits', 'Peak shaving with battery or generator', 'kW', 'Battery kW is entered above'],
+    ['Control', 'Load-shedding priority list', 'text', 'Non-essential first, interlocked with the generator'],
+    ['Control', 'EV charging management', 'kW', 'Dynamic limit on a shared supply'],
+    ['Control', 'Scheduling of large loads (pumps, chillers, process)', 'text', 'Avoid simultaneous starts'],
+    ['Power quality', 'Power factor correction and harmonic filtering', 'kVAr', 'Bank size is in the results above'],
+    ['Response', 'Demand response and time-of-use shifting', 'text', '']]],
+  ['ep-smart', 'Smart metering', 'Meter every significant load, read it automatically and use the data. Use the coverage calculator below.', [
+    ['Design', 'Metering points schedule (incomer, floors, tenants, plant)', 'points', 'Use the coverage calculator below'],
+    ['Design', 'Meter class and approvals', 'text', 'IEC 62053 class 1 or better; approved for billing where required'],
+    ['Design', 'Interval resolution and data retention', 'min', '15 or 30 minute intervals are typical'],
+    ['Communications', 'Meter bus and gateway (Modbus, M-Bus, BACnet, LoRaWAN, GSM)', 'text', 'Link to the BMS or energy management system'],
+    ['Communications', 'Time synchronisation and outage buffering', 'text', ''],
+    ['Software', 'Dashboard, alarms and tenant billing', 'text', ''],
+    ['Software', 'Data security and privacy', 'doc', 'Access control, encryption, local data-protection law'],
+    ['Commissioning', 'Meter verification and CT ratios', 'doc', 'Check against the incomer reading']]],
+];
+// Facilities: [id, area, topic, where it connects to the electrical design, items]
+const FAC = [
+  ['hard', 'Hard services', 'Building plant and infrastructure. Electrical loads from these plants belong in Equipment loads, Lifts & pumps and the essential (standby) loads.', [
+    ['wtp', 'MEP plants', 'Water treatment plant', [['equipment', 'Add pumps, dosing and UV or RO loads'], ['sizing', 'Include essential loads on the generator']], [
+      ['Design', 'Raw water source, quality and demand', 'm³/day', 'Borehole, mains or surface; test results drive the treatment train'],
+      ['Design', 'Treatment train', 'text', 'Screening, coagulation, filtration, disinfection, RO if needed'],
+      ['Design', 'Storage and break tanks', 'm³', 'Days of autonomy and fire reserve'],
+      ['Electrical', 'Pumps, duty and standby, drives', 'kW', 'Feed to Lifts & pumps'],
+      ['Electrical', 'Standby power and restart sequence', 'kVA', 'Essential load on the generator'],
+      ['Control', 'Dosing, instrumentation and SCADA', 'text', 'pH, turbidity, residual chlorine, level'],
+      ['Compliance', 'Potable water compliance and sampling plan', 'doc', 'Local drinking-water standard']]],
+    ['pp', 'MEP plants', 'Power plant', [['sizing', 'Generator and transformer sizing'], ['energy', 'Alternative sources and storage']], [
+      ['Design', 'Plant duty (prime, standby, CHP)', 'text', ''],
+      ['Design', 'Generator sets and paralleling', 'kVA', 'See Supply & equipment'],
+      ['Design', 'Fuel storage, bunding and autonomy', 'h', 'Hours at full load; fire and spill rules'],
+      ['Design', 'Exhaust, ventilation and acoustics', 'text', ''],
+      ['Electrical', 'Switchgear, synchronising and ATS', 'text', ''],
+      ['Operation', 'Testing regime and black-start', 'doc', 'On-load tests and an annual load-bank test'],
+      ['Compliance', 'Emissions and permitting', 'doc', '']]],
+    ['stp', 'MEP plants', 'Sewage treatment plant', [['equipment', 'Add blowers, pumps and screens'], ['sizing', 'Include essential loads on the generator']], [
+      ['Design', 'Design flow and organic load', 'm³/day', 'Population equivalent and BOD'],
+      ['Design', 'Treatment process', 'text', 'Screening, aeration or MBR/SBR, clarification, disinfection, sludge'],
+      ['Electrical', 'Lift stations and pumps, duty and standby', 'kW', ''],
+      ['Electrical', 'Blowers, aerators and drives', 'kW', 'Usually the largest electrical load in the plant'],
+      ['Design', 'Odour control and ventilation', 'text', ''],
+      ['Compliance', 'Effluent discharge consent and monitoring', 'doc', ''],
+      ['Control', 'Standby power and high-level alarms', 'text', '']]],
+    ['hvt', 'HV layout', 'Transformers and ring main units', [['sizing', 'Transformer, incomer and fault-level results']], [
+      ['Design', 'Single-line diagram and ring or radial arrangement', 'doc', ''],
+      ['Design', 'Transformer ratings, vector group and impedance', 'kVA', 'Sized in Supply & equipment'],
+      ['Design', 'RMU configuration (ways, switch, fuse, breaker)', 'text', 'e.g. 3-way, 2 ring switches and 1 fuse-switch'],
+      ['Protection', 'Fault level, protection settings and discrimination', 'kA', ''],
+      ['Earthing', 'Substation earthing, HV/LV segregation, touch and step voltage', 'text', ''],
+      ['Civil', 'Plinth, bund, fire separation and ventilation', 'text', ''],
+      ['Utility', 'Metering point and utility approval', 'doc', ''],
+      ['Operation', 'Switching procedures, interlocks, labelling and permits', 'doc', 'Safe isolation and key interlocks']]],
+    ['ugc', 'HV layout', 'Underground cable network', [['circuits', 'Cable sizing and voltage drop']], [
+      ['Survey', 'Route survey and existing services drawings', 'doc', 'Utility searches; scan where records are poor'],
+      ['Design', 'Cable type, size and voltage', 'text', 'XLPE, armour, screen'],
+      ['Design', 'Depth, bedding, marker tape and cover tiles', 'm', 'Follow the utility specification'],
+      ['Design', 'Ducts, draw pits and joint bays', 'text', ''],
+      ['Design', 'Soil thermal resistivity and grouping derating', 'factor', ''],
+      ['Design', 'Separation from water, gas and telecoms', 'm', ''],
+      ['Testing', 'Insulation, sheath and VLF or partial-discharge tests', 'doc', ''],
+      ['Records', 'As-built route and joint locations', 'doc', '']]],
+    ['rad', 'IT infrastructure', 'Radio layout', [], [
+      ['Design', 'Radio services (PMR/TETRA, Wi-Fi, LoRaWAN, DAS, microwave links)', 'text', ''],
+      ['Survey', 'Coverage survey and link budget', 'doc', ''],
+      ['Civil', 'Mast or pole, structure and lightning protection', 'text', ''],
+      ['Electrical', 'Antennas, cabling, earthing and bonding', 'text', ''],
+      ['Compliance', 'Spectrum licence and regulator approval', 'doc', ''],
+      ['Electrical', 'Power supply (PoE, UPS, battery autonomy)', 'h', 'Add the load to the schedule']]],
+    ['fib', 'IT infrastructure', 'Fibre layout', [], [
+      ['Design', 'Backbone route and topology', 'doc', 'Ring or star with diverse routes'],
+      ['Design', 'Fibre type and core count', 'cores', 'Single-mode backbone; multimode in the building'],
+      ['Civil', 'Ducts, chambers and separation from power cables', 'text', ''],
+      ['Install', 'Splicing, termination and patch panels', 'text', ''],
+      ['Testing', 'OTDR and loss-budget testing', 'doc', ''],
+      ['Records', 'Labelling and as-built records', 'doc', ''],
+      ['Rooms', 'Comms rooms, cooling and UPS', 'text', 'Add the load to the schedule']]]]],
+  ['soft', 'Soft services', 'People-based services that keep the estate running. Their equipment (access control, CCTV, irrigation pumps) still needs power and a supply route.', [
+    ['cln', 'Cleaning', 'Cleaning', [], [
+      ['Scope', 'Scope and frequencies by area', 'doc', 'Cleaning specification and service levels'],
+      ['Scope', 'Specialist cleaning (kitchens, WCs, façade, car park)', 'text', ''],
+      ['Resources', 'Equipment, consumables and cleaners\' stores', 'text', 'Water, drain and socket points'],
+      ['Resources', 'Staffing model (in-house or contractor)', 'text', ''],
+      ['Environment', 'Waste segregation and disposal', 'text', ''],
+      ['Safety', 'Chemical safety (COSHH) and method statements', 'doc', ''],
+      ['Quality', 'Audits and performance indicators', 'doc', '']]],
+    ['hrt', 'Horticulture', 'Horticulture', [['equipment', 'Add irrigation pumps and landscape lighting']], [
+      ['Design', 'Landscape plan and plant schedule', 'doc', ''],
+      ['Water', 'Irrigation design and water source', 'm³/day', 'Mains, borehole or treated or grey water'],
+      ['Electrical', 'Irrigation controllers, pumps and landscape lighting', 'kW', 'Add the load to the schedule'],
+      ['Maintenance', 'Mowing, pruning and seasonal planting cycles', 'doc', ''],
+      ['Maintenance', 'Soil, drainage and fertiliser plan', 'doc', ''],
+      ['Safety', 'Pest, disease and chemical control', 'doc', ''],
+      ['Environment', 'Green waste and composting', 'text', '']]],
+    ['acs', 'Security', 'Access control system and app', [['circuits', 'Power supplies and cables for readers and locks']], [
+      ['Design', 'Risk assessment and security zones', 'doc', ''],
+      ['App', 'Access control app, user roles and visitor pre-registration', 'text', 'Mobile credentials, cards or PIN; cloud or on-premises'],
+      ['App', 'Credential lifecycle (issue, suspend, revoke)', 'doc', ''],
+      ['Hardware', 'Door schedule: readers, controllers, locks, exit devices', 'doors', 'Fail-safe or fail-secure by door'],
+      ['Safety', 'Fire alarm interface and release of doors on alarm', 'text', 'Escape routes must stay free'],
+      ['Integration', 'Links to BMS, lifts and visitor management', 'text', ''],
+      ['Network', 'Network, PoE budget and backup power', 'kW / h', 'Add the load to the schedule'],
+      ['Cyber', 'Cybersecurity and data protection', 'doc', 'Encryption, patching, retention and local data-protection law']]],
+    ['shw', 'Security', 'Supporting hardware (CCTV, intruder, barriers)', [['circuits', 'Power supplies and cables']], [
+      ['CCTV', 'Cameras, coverage plan and recorders', 'cameras', 'Retention period and storage'],
+      ['CCTV', 'Lighting levels for camera performance', 'lux', ''],
+      ['Intruder', 'Intruder alarm, perimeter detection and panic alarms', 'text', ''],
+      ['Barriers', 'Gates, barriers and bollards', 'text', 'Vehicle access and emergency override'],
+      ['Control', 'Control room, guarding and patrols', 'text', ''],
+      ['Electrical', 'UPS, standby power and cable routes', 'h', ''],
+      ['Maintenance', 'Testing and maintenance schedule', 'doc', '']]]]],
+];
+// Values the app already knows, shown beside the matching checklist rows.
+const CL_AUTO = (() => {
+  const A = {}, a = (set, label, fn) => { A[clId(set, label)] = fn; };
+  a('ld', 'Floor area', R => [`${f0(R.Z.area)} m² in the area schedule`, '#area']);
+  a('ld', 'Supply voltage and frequency', R => [`${R.X.vln}/${R.X.vll} V, ${R.X.c.hz} Hz`, '#project']);
+  a('ld', 'Lighting, sockets, HVAC', R => [`${f0(R.Z.kva + R.Lo.kva)} kVA demand (area + equipment)`, '#equipment']);
+  a('ld', 'Lifts, pumps, fans', R => [`${f0(R.Li.kva + R.P.kva)} kVA demand`, '#lifts-pumps']);
+  a('ld', 'Maximum demand', R => [`${f0(R.md)} kVA, ${f0(R.amps)} A per phase`, '#sizing']);
+  a('ld', 'Power factor and phase balance', R => [`pf ${S.project.pf}; correction target ${S.energy.pfTg}`, '#energy']);
+  a('ld', 'Standby generator load', R => [R.gen ? `${f0(R.gen)} kVA generator` : 'Not sized', '#sizing']);
+  a('ld', 'Future growth allowance', R => [`${pct(+S.project.spare)} spare in demand; ${pct(R.XP.e)} on equipment`, '#sizing']);
+  a('cs', 'Design current Ib', R => [`${R.C.length} circuit(s) sized`, '#circuits']);
+  a('cs', 'Protective device rating In', R => [`${R.C.filter(c => c.fail && c.fail !== 'REVIEW').length} failing, ${R.C.filter(c => c.fail === 'REVIEW').length} to review`, '#circuits']);
+  a('cs', 'Permitted drop', R => [`${R.X.c.vdl}% lighting, ${R.X.c.vdo}% other`, '#circuits']);
+  a('cs', 'Prospective fault current', R => [R.flP ? `${f1(R.flP)} kA at the LV busbar` : '', '#sizing']);
+  a('bp', 'Number of ways and spare ways', R => [`${S.sizing.ways} ways at the main board`, '#sizing']);
+  a('bp', 'Rated current and Icw', R => [R.incomer ? `${f0(R.incomer)} A, Icw ${R.icw ?? '> 120'} kA` : '', '#sizing']);
+  a('bp', 'Switchroom size and access', R => [R.room ? `${f1(R.room.swA)} m² switchroom` : '', '#sizing']);
+  a('bp', 'Ventilation and heat dissipation', R => [R.room ? `${f1(R.room.loss)} kW losses, ${f2(R.room.vent)} m³/s` : '', '#sizing']);
+  a('bp', 'Earthing system', R => [R.X.c.earthing, '#project']);
+  a('tx', 'kVA from maximum demand', R => [`${f0(R.md)} kVA`, '#sizing']);
+  a('tx', 'Loading target', R => [pct(+S.sizing.txLoading), '#sizing']);
+  a('tx', 'Redundancy (N+1)', R => [`${S.sizing.resilience}; ${R.nTx || '–'} transformer(s)`, '#sizing']);
+  a('tx', 'Impedance', R => [`${S.sizing.uk}%`, '#sizing']);
+  a('tx', 'Oil-filled or cast resin', R => [S.sizing.txType, '#sizing']);
+  a('tx', 'Voltage ratio', R => [R.txKva ? `${f0(R.txKva)} kVA, secondary ${R.X.vll} V` : '', '#sizing']);
+  a('ep-opt', 'Annual baseline and EUI benchmark', R => [isFinite(R.E.eui) ? `${f0(R.E.eui)} kWh/m²/yr net vs ${S.energy.benchmark}` : 'Floor area not known', '#energy']);
+  a('ep-alt', 'Solar PV capacity and yield', R => [`${S.energy.pv} kWp, ${f0(R.E.pvGen / 1000)} MWh/yr`, '#energy']);
+  a('ep-alt', 'Battery energy storage sizing', R => [`${S.energy.batt} kW`, '#energy']);
+  a('ep-alt', 'Standby generation and fuel (diesel, HVO, gas)', R => [R.gen ? `${f0(R.gen)} kVA` : '', '#sizing']);
+  a('ep-load', 'Maximum demand limit and tariff structure', R => [`MD ${f0(R.E.mdAfter)} kVA after management (from ${f0(R.md)})`, '#energy']);
+  a('ep-load', 'Power factor correction and harmonic filtering', R => [`${f0(R.E.bank)} kVAr bank`, '#energy']);
+  a('ep-theft', 'Incomer versus sub-meter reconciliation', () => { const P = energyProg(); return [P.theft.text, '']; });
+  a('ep-smart', 'Metering points schedule (incomer, floors, tenants, plant)', () => { const P = energyProg(); return [P.meter.text, '']; });
+  return A;
+})();
+// Energy reconciliation (theft control) and smart-meter coverage, from the inputs on the Energy management page.
+function energyProg() {
+  const e = S.energy, bulk = +e.bulkKwh, haveT = e.bulkKwh !== '' && e.bulkKwh != null && bulk > 0 && e.subKwh !== '' && e.subKwh != null && isFinite(+e.subKwh), lim = +e.lossLimit > 0 ? +e.lossLimit : 5;
+  const un = haveT ? bulk - +e.subKwh : null, unPct = haveT ? un / bulk * 100 : null;
+  const tSt = !haveT ? 'na' : unPct < 0 ? 'warn' : unPct <= lim ? 'ok' : unPct <= 2 * lim ? 'warn' : 'bad';
+  const tTxt = !haveT ? 'Enter the incomer and sub-meter readings' : unPct < 0 ? `Sub-meters read ${f1(-unPct)}% more than the incomer – check CT ratios and meter accuracy` : `${f0(un)} kWh unaccounted (${f1(unPct)}% against a ${f1(lim)}% limit)`;
+  const annual = haveT && un > 0 ? un * 12 * (+e.tariff || 0) : null;
+  const pts = +e.ptsTotal, haveM = e.ptsTotal !== '' && e.ptsTotal != null && pts > 0 && e.ptsSmart !== '' && e.ptsSmart != null && isFinite(+e.ptsSmart), cov = haveM ? +e.ptsSmart / pts * 100 : null;
+  const mSt = !haveM ? 'na' : cov >= 100 ? 'ok' : 'warn';
+  const mTxt = !haveM ? 'Enter the metering points and smart meters installed' : `${f0(+e.ptsSmart)} of ${f0(pts)} points on smart meters (${f0(Math.min(cov, 999))}%)${cov > 100 ? ' – more meters than points, check the schedule' : ''}`;
+  return { theft: { have: haveT, un, pct: unPct, lim, st: tSt, text: tTxt, annual }, meter: { have: haveM, cov, st: mSt, text: mTxt } };
+}
+function clItem(id) { return (S.cl && S.cl[id]) || {}; }
+function clStat(ids) {
+  let done = 0, prog = 0, na = 0; ids.forEach(id => { const s = clItem(id).st || 'Not started'; if (s === 'Done') done++; else if (s === 'In progress') prog++; else if (s === 'N/A') na++; });
+  const app = ids.length - na; return { n: ids.length, done, prog, na, app, frac: app ? done / app : 1, started: done + prog + na > 0, complete: app > 0 && done === app };
+}
+const clIds = (set, items) => items.map(it => clId(set, it[1]));
+const clPill = st => pill(st === 'Done' ? 'ok' : st === 'In progress' ? 'warn' : 'na', st);
+function clTable(set, items, o = {}) {
+  const hasAuto = items.some(it => CL_AUTO[clId(set, it[1])]); let last = null;
+  const rows = items.map(([g, label, unit, hint]) => {
+    const id = clId(set, label), it = clItem(id); let a = null; const fn = CL_AUTO[id]; if (fn) { try { a = fn(R); } catch (e) { a = null; } }
+    const grp = g && g !== last ? `<tr class="grp"><td colspan="${hasAuto ? 7 : 6}"><b>${esc(g)}</b></td></tr>` : ''; last = g || last;
+    return `${grp}<tr><td>${esc(label)}</td><td>${esc(unit)}</td><td class="note">${esc(hint || '')}</td><td><input data-cl="${id}" data-k="val" value="${esc(it.val || '')}" placeholder="Value or decision"></td>${hasAuto ? `<td>${a && a[0] ? `${esc(a[0])}${a[1] ? ` <a href="${a[1]}">open</a>` : ''}` : ''}</td>` : ''}<td><select style="min-width:120px" data-cl="${id}" data-k="st">${opt(CL_ST, it.st || 'Not started')}</select></td><td><input data-cl="${id}" data-k="note" value="${esc(it.note || '')}" placeholder="Evidence or note"></td></tr>`;
+  }).join('');
+  return `<div class="tbl-wrap"><table><thead><tr><th>Parameter</th><th>Unit</th><th>Guidance</th><th>Value or decision</th>${hasAuto ? '<th>From this design</th>' : ''}<th>Status</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function clKpis(list) { return `<div class="kpis">${list.map(([l, s]) => `<div class="kpi"><span>${esc(l)}</span><b>${s.done} of ${s.app}</b><small>${s.prog ? s.prog + ' in progress · ' : ''}${pct(s.frac)} complete${s.na ? ' · ' + s.na + ' not applicable' : ''}</small></div>`).join('')}</div>`; }
+V.checklist = () => {
+  const stats = CL_CHECKLIST.map(([set, , items]) => [set, clStat(clIds(set, items))]);
+  const tot = clStat(CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items)));
+  return `<section class="sheet">${head('Parameters', 'Design checklist', 'Every parameter needed to design the load, pick cables, size boards, panels and switchboards, and specify transformers and HV. Rows marked with a design value fill in from the calculations; record your own value, status and evidence for each.')}
+  ${clKpis([['All parameters', tot], ...CL_CHECKLIST.map(([set, title], i) => [title, stats[i][1]])])}
+  ${CL_CHECKLIST.map(([set, title, items]) => `<h3>${esc(title)}</h3>${clTable(set, items)}`).join('')}
+  <p class="note">Guidance values are general practice (BS 7671, IEC 61439 and IEC 60076 style) and must be confirmed against the standards and utility requirements adopted for the project region.</p></section>`;
+};
+function facIds() { return FAC.flatMap(([, , , topics]) => topics.flatMap(t => clIds(t[0], t[4]))); }
+V.facilities = () => {
+  const cat = FAC.map(([id, title, intro, topics]) => [id, title, intro, topics, clStat(topics.flatMap(t => clIds(t[0], t[4])))]);
+  return `<section class="sheet">${head('Facilities', 'Facilities: hard and soft services', 'Plan the building services around the electrical design: MEP plants, HV layout and cable network, IT infrastructure, then cleaning, horticulture and security with access control.')}
+  ${clKpis(cat.map(c => [c[1], c[4]]))}
+  ${cat.map(([id, title, intro, topics]) => `<h2 style="margin-top:22px">${esc(title)}</h2><p class="note">${esc(intro)}</p>` + topics.map(([tid, area, name, links, items]) => `<h3>${esc(area)}${area === name ? '' : ': ' + esc(name)}</h3>${links.length ? `<p class="note">Feeds the design: ${links.map(([v, t]) => `<a href="#${v}">${esc(t)}</a>`).join(' · ')}</p>` : ''}${clTable(tid, items)}`).join('')).join('')}
+  <p class="note">Items are prompts for the design and handover file. Sizing of the electrical supply for each plant stays in the load, cable and supply stages.</p></section>`;
+};
+function energyProgramme() {
+  const P = energyProg(), e = S.energy, T = P.theft, M = P.meter;
+  const stat = clStat(EP_PILLARS.flatMap(([set, , , items]) => clIds(set, items)));
+  const calc = id => id === 'ep-theft' ? `<div class="grid">${fld('Incomer (bulk) kWh in a month', inp('energy.bulkKwh', e.bulkKwh, 'number'), 'Read from the main incomer meter')}${fld('Sum of sub-meter kWh, same month', inp('energy.subKwh', e.subKwh, 'number'), 'All sub-meters and metered tenants')}${fld('Acceptable unaccounted %', inp('energy.lossLimit', e.lossLimit, 'number'), 'Cable and transformer losses plus meter error; edit to suit')}</div>
+    <p>${pill(T.st, T.text)}${T.annual != null ? ` <span class="note">≈ ${esc(e.currency)} ${f0(T.annual)} a year at the tariff if this persists</span>` : ''}</p>
+    <p class="note">Unaccounted energy also includes unmetered loads and meter error, so treat a high figure as a prompt to investigate, not proof of theft.</p>`
+    : id === 'ep-smart' ? `<div class="grid">${fld('Metering points needed', inp('energy.ptsTotal', e.ptsTotal, 'number'), 'Incomer, floors, tenants and major plant')}${fld('Smart meters installed', inp('energy.ptsSmart', e.ptsSmart, 'number'), 'Interval-reading, communicating meters')}</div><p>${pill(M.st, M.text)}</p>` : '';
+  return `<h2 style="margin-top:26px">Energy management programme</h2>
+  <p class="note">The five pillars of an energy programme. Calculated figures sit above; use this register to track what is planned, in progress and done.</p>
+  ${clKpis([['Programme', stat]])}
+  ${EP_PILLARS.map(([set, title, intro, items]) => `<h3>${esc(title)}</h3><p class="note">${esc(intro)}</p>${calc(set)}${clTable(set, items)}`).join('')}`;
+}
+function clReportHtml() {
+  const rows = [], add = (area, set, items) => items.forEach(it => { const id = clId(set, it[1]), v = clItem(id); if ((v.st && v.st !== 'Not started') || v.val || v.note) rows.push([area, esc(it[1]), esc(v.st || 'Not started'), esc(v.val || ''), esc(v.note || '')]); });
+  CL_CHECKLIST.forEach(([set, title, items]) => add(title, set, items));
+  EP_PILLARS.forEach(([set, title, , items]) => add('Energy: ' + title, set, items));
+  FAC.forEach(([, cat, , topics]) => topics.forEach(t => add(cat + ': ' + t[2], t[0], t[4])));
+  if (!rows.length) return '';
+  const P = energyProg(), ids = [...CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items)), ...EP_PILLARS.flatMap(([set, , , items]) => clIds(set, items)), ...facIds()], st = clStat(ids);
+  return `<p>${st.done} of ${st.app} parameters complete (${pct(st.frac)})${P.theft.have ? `; energy reconciliation: ${esc(P.theft.text)}` : ''}${P.meter.have ? `; smart metering: ${esc(P.meter.text)}` : ''}.</p>` + tbl(['Area', 'Item', 'Status', 'Value or decision', 'Notes'], rows);
+}
 /* ---------- design review and sign-off ---------- */
 const SIGNOFF_ITEMS = [['load', 'Load assessment and maximum demand'], ['supply', 'Supply, transformers and switchgear'], ['gen', 'Standby generation'], ['cables', 'Cable sizing, voltage drop and earth fault loop impedance'], ['fault', 'Fault levels, breaking capacity and selectivity'], ['boards', 'Distribution boards (IEC 61439 / panelboards)'], ['earthing', 'Earthing and bonding'], ['energy', 'Energy management'], ['drawings', 'Drawings and layouts'], ['compliance', 'Compliance checklist and regional coverage'], ['boq', 'Bill of quantities']];
 const SIGNOFF_STATUS = ['Not reviewed', 'Reviewed – no comments', 'Reviewed – comments addressed', 'Action required'];
@@ -1616,31 +2059,31 @@ V.review = () => {
 /* ---------- bill of quantities: built from the design (quantities for pricing; rates left blank) ---------- */
 function boqItems() {
   const items = [], add = (sec, desc, unit, qty, note = '') => { if (qty > 0 || unit === 'lot') items.push({ sec, desc, unit, qty, note }); };
+  const xpOn = k => R.XP && R.XP.e > 0 && S.sizing[k] !== false, xpNote = k => xpOn(k) ? `Rated for ${pct(R.XP.e)} expansion` : '';
   const z = S.sizing, X = R.X, poles = (ph, dev, rcd) => ph === 1 ? (rcd || /RCBO/.test(dev) ? 'SP&N' : 'SP') : /MCCB|ACB/.test(dev) ? 'TP&N' : 'TP';
   // A supply
-  if (R.txKva) add('A', `Transformer ${f0(R.txKva)} kVA, ${esc(z.txType)}, Uk ${z.uk}%, ratio HV/${X.vll} V`, 'no', z.txType === 'Utility-owned' ? 0 : R.nTx, z.txType === 'Utility-owned' ? 'By the utility' : (z.resilience === 'N+1' ? 'N+1 configuration' : ''));
+  if (R.txKva) add('A', `Transformer ${f0(R.txKva)} kVA, ${esc(z.txType)}, Uk ${z.uk}%, ratio HV/${X.vll} V`, 'no', z.txType === 'Utility-owned' ? 0 : R.nTx, z.txType === 'Utility-owned' ? 'By the utility' : [z.resilience === 'N+1' ? 'N+1 configuration' : '', xpNote('expTx') && `${xpNote('expTx')} (firm ${f0(R.txKva * (z.resilience === 'N+1' ? Math.max(R.nTx - 1, 1) : R.nTx))} kVA vs MD ${f0(R.md)} kVA)`].filter(Boolean).join('; '));
   if (R.incomer) add('A', `Main LV switchboard ${X.vll} V, incomer ${f0(R.incomer)} A ${R.incomer >= 630 ? 'ACB 4-pole' : 'MCCB'}, Icw ${R.icw ?? '–'} kA (1 s), ${z.ways} outgoing ways`, 'no', 1, X.fam === 'NEC' ? 'UL 891 switchboard' : 'IEC / BS EN 61439-2');
   // B standby generation
   const g = R.genCfg;
   if (g && g.unit) {
-    add('B', `Diesel generator set ${f0(g.unit)} kVA prime, ${X.vll} V ${X.c.hz} Hz, acoustic enclosure`, 'no', g.installed, `${g.red}${g.installed > 1 ? `, ${g.duty} duty` : ''}`);
+    add('B', `Diesel generator set ${f0(g.unit)} kVA prime, ${X.vll} V ${X.c.hz} Hz, acoustic enclosure`, 'no', g.installed, [`${g.red}${g.installed > 1 ? `, ${g.duty} duty` : ''}`, xpNote('expGen') && `${xpNote('expGen')} (margin × ${f2(R.genInfo.margin)})`].filter(Boolean).join('; '));
     if (g.parallel) add('B', 'Generator synchronising / paralleling switchboard with load management', 'no', 1);
     const atsA = nextStd(SWB, R.ess * 1000 / (SQ3 * X.vll)); if (atsA) add('B', `Automatic transfer switch ${atsA} A, 4-pole`, 'no', 1, 'Essential board changeover');
     const litres = g.dutyKva * 0.8 * 0.27 * (+z.fuelH || 24); add('B', `Fuel storage for ${+z.fuelH || 24} h at full load (≈ 0.27 l/kWh)`, 'litres', Math.ceil(litres / 100) * 100, 'Bulk + day tanks; confirm with fire authority');
   }
   // C distribution boards
-  R.BD.boards.filter(b => !b.isMain).forEach(b => { const ways = Math.max(4, Math.ceil(b.n * 1.2 / 2) * 2); add('C', `Distribution board ${esc(b.name)}: incomer ${b.incomer ?? '–'} A, ${ways} ways (${b.n} used + spare)${b.rating ? `, rated ${b.rating} kA` : b.faultKA ? `, fault level ${f1(b.faultKA)} kA` : ''}`, 'no', 1, X.fam === 'NEC' ? 'UL 67 panelboard' : 'IEC 61439-3 / -2'); });
-  if (R.W.rooms.length && !R.BD.boards.some(b => b.name === S.dwg.board)) { const n = R.W.C.length, ways = Math.max(4, Math.ceil(n * 1.2 / 2) * 2); add('C', `Distribution board ${esc(S.dwg.board)}: ${ways} ways (${n} final circuits + spare)`, 'no', 1, 'From the electrical drawings'); }
+  R.DBR.rows.forEach(d => add('C', `${esc(d.t.n)} ${esc(d.name)}: ${d.ph === 1 ? 'SP&N' : 'TP&N'}, incomer ${d.incomer ?? '–'} A, ${d.ways} ways (${d.used} used + spare)${d.o.icw ? `, rated ${d.o.icw} kA` : d.fault ? `, fault level ${f1(d.fault)} kA` : ''}`, 'no', 1, [X.fam === 'NEC' ? d.t.nec : d.t.std, d.e > 0 ? `Rated for ${pct(d.e)} expansion` : ''].filter(Boolean).join('; ')));
   // D protective devices (cable schedule + generated final circuits)
-  const dev = {}, putDev = (name, inr, ph, rcd, icn) => { if (!inr) return; const k = `${name} ${inr} A ${poles(ph, name, rcd)}${rcd ? ' 30 mA' : ''}${icn ? `, ${icn} kA` : ''}`; dev[k] = (dev[k] || 0) + 1; };
-  R.C.forEach(c => putDev(c.dev.n, c.inr, c.ph, c.k.rcd && c.k.rcd !== 'None' && +c.k.idn > 0, +c.k.icn || 0));
+  const dev = {}, devX = {}, putDev = (name, inr, ph, rcd, icn, xp) => { if (!inr) return; const k = `${name} ${inr} A ${poles(ph, name, rcd)}${rcd ? ' 30 mA' : ''}${icn ? `, ${icn} kA` : ''}`; dev[k] = (dev[k] || 0) + 1; if (xp) devX[k] = 1; };
+  R.C.forEach(c => putDev(c.dev.n, c.inr, c.ph, c.k.rcd && c.k.rcd !== 'None' && +c.k.idn > 0, +c.k.icn || 0, c.ex > 0));
   R.W.C.forEach(c => putDev(c.cc.dev.n, c.cc.inr, 1, c.rcd, 0));
-  Object.entries(dev).sort().forEach(([k, n]) => add('D', k, 'no', n));
+  Object.entries(dev).sort().forEach(([k, n]) => add('D', k, 'no', n, devX[k] ? `Sub-main / feeder: ${xpNote('expCab') || 'rated for expansion'}` : ''));
   // E cables (+10% allowance for terminations and routing)
-  const cab = {}, putCab = (desc, len) => { if (!desc || !(len > 0)) return; cab[desc] = (cab[desc] || 0) + len; };
-  R.C.forEach(c => putCab(c.spec ? c.spec.split(' · ')[0] : '', +c.k.len || 0));
+  const cab = {}, cabX = {}, putCab = (desc, len, xp) => { if (!desc || !(len > 0)) return; cab[desc] = (cab[desc] || 0) + len; if (xp) cabX[desc] = 1; };
+  R.C.forEach(c => putCab(c.spec ? c.spec.split(' · ')[0] : '', +c.k.len || 0, c.ex > 0));
   R.W.C.forEach(c => putCab(c.cc.csa ? (c.cc.ring ? `Twin & earth ${c.cc.csa}/${c.cc.cpc} mm² (ring)` : `${String((combosList()[+S.dwg.cable || 0] || {}).name || 'Cable').split(' – ')[0]} ${c.cc.csa}/${c.cc.cpc} mm² (final circuits)`) : '', c.len));
-  Object.entries(cab).sort().forEach(([k, m]) => add('E', esc(k), 'm', Math.ceil(m * 1.1), 'Incl. 10% allowance'));
+  Object.entries(cab).sort().forEach(([k, m]) => add('E', esc(k), 'm', Math.ceil(m * 1.1), cabX[k] ? `Incl. 10% allowance; size ${xpNote('expCab').toLowerCase() || 'rated for expansion'}` : 'Incl. 10% allowance'));
   // F luminaires and accessories (from the electrical drawings)
   if (R.W.rooms.length) {
     const lum = {}; R.W.rooms.forEach(o => { lum[o.lum.n] = (lum[o.lum.n] || 0) + o.nLum; });
@@ -1668,7 +2111,7 @@ function boqBody() {
   let n = 0; const sec = t => `<h2>${++n}. ${t}</h2>`;
   return `<div class="tb"><div class="tb-t"><div class="tb-k">Bill of quantities – electrical services</div><div class="tb-n">${esc(p.name)}</div></div>
    <div class="tb-g">${[['Client', p.client], ['Site', p.site], ['Reference', p.ref], ['Revision', p.rev], ['Date', p.date], ['Stage', p.stage], ['Designer', p.designer || '—'], ['Checker', p.checker || '—']].map(([a, b]) => `<div><span>${a}</span>${esc(b)}</div>`).join('')}</div></div>
-  <p class="s">Quantities are derived from the design in NexvoraHub Studio (${esc(p.country)}, ${esc(R.X.c.regs)}). They are for pricing and must be confirmed by measurement against the issued drawings and specification; rates are to be priced by the tenderer.</p>
+  <p class="s">Quantities are derived from the design in NexvoraHub Studio (${esc(p.country)}, ${esc(R.X.c.regs)}). They are for pricing and must be confirmed by measurement against the issued drawings and specification; rates are to be priced by the tenderer.${R.XP && R.XP.e > 0 ? ` Ratings include a ${pct(R.XP.e)} expansion allowance on ${[S.sizing.expTx !== false && 'transformers', S.sizing.expGen !== false && 'generators', S.sizing.expCab !== false && 'sub-main / feeder devices and cables'].filter(Boolean).join(', ') || 'no items'} (Stage 6), applied after diversity.` : ''}</p>
   ${secs.map(k => sec(BOQ_SECTIONS[k]) + tbl(['Item', 'Description', 'Unit', 'Qty', 'Rate', 'Amount', 'Notes'], items.filter(i => i.sec === k).map((i, j) => [`${k}.${j + 1}`, i.desc, i.unit, f0(i.qty), '', '', i.note]))).join('')}
   ${sec('Summary')}${tbl(['Section', 'Description', 'Amount'], secs.map(k => [k, BOQ_SECTIONS[k], '']), ['', 'Total (excluding taxes)', ''])}
   <table class="r kv" style="margin-top:14px"><tbody>${[['Prepared by', p.designer || '—'], ['Checked by', p.checker || '—'], ['Approved by', so.approver ? `${esc(so.approver)}${so.approverQual ? ', ' + esc(so.approverQual) : ''}${so.approverDate ? ' – ' + esc(so.approverDate) : ''}` : '—']].map(([a, b]) => `<tr><th>${a}</th><td>${typeof b === 'string' && b !== '—' && a !== 'Approved by' ? esc(b) : b}</td></tr>`).join('')}</tbody></table>
@@ -1736,7 +2179,7 @@ function reportBody() {
   const comp = CHECKS.map((ch, i) => { const [res, st] = ch[2](R); return [i + 1, esc(ch[0]), esc(ch[1][X.famIdx]), esc(res), (S.compliance[i] || {}).st || 'Not checked']; });
   return `<div class="tb"><div class="tb-t"><div class="tb-k">${tr('Electrical load assessment and design report')}</div><div class="tb-n">${esc(p.name)}</div></div>
    <div class="tb-g">${[['Client', p.client], ['Site', p.site], ['Reference', p.ref], ['Revision', p.rev], ['Date', p.date], ['Stage', p.stage], ['Designer', p.designer || '—'], ['Checker', p.checker || '—']].map(([a, b]) => `<div><span>${tr(a)}</span>${esc(b)}</div>`).join('')}</div></div>${rLang() !== 'en' ? `<p class="s"><i>${tr('TRANSLATION_NOTE')}</i></p>` : ''}
-  ${sec('Summary')}<table class="r kv"><tbody>${[['Design region', `${esc(p.country)} (${esc(X.dreg)})`], ['Wiring regulations', esc(c.regs)], ['Supply', `${X.vln}/${X.vll} V, ${c.hz} Hz, ${esc(c.earthing)}`], ['Total maximum demand', `<b>${f0(R.md)} kVA</b> (${f0(R.kw)} kW, ${f0(R.amps)} A per phase) including ${pct(+p.spare)} spare`], ['Supply arrangement', esc(R.supply)], ['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA ${esc(S.sizing.txType)}, ${S.sizing.resilience}` : 'Exceeds standard sizes – review'], ['Main LV incomer', R.incomer ? `${f0(R.incomer)} A, Icw ${R.icw ?? '> 120'} kA` : '–'], ['Standby generation', esc(genText())], ['Expansion allowance', `${pct(R.XP.e)} on ${[S.sizing.expTx !== false && 'transformers', S.sizing.expGen !== false && 'generators', S.sizing.expCab !== false && 'cables'].filter(Boolean).join(', ') || 'none'}${R.XP.nBad ? ` – ${R.XP.nBad} item(s) below` : ''}`], ['Annual electricity (net)', `${f0(R.E.imp / 1000)} MWh/yr, ${f0(R.E.eui)} kWh/m²/yr, ${f1(R.E.tco2)} tCO₂e/yr`]].map(([a, b]) => `<tr><th>${tr(a)}</th><td>${b}</td></tr>`).join('')}</tbody></table>
+  ${sec('Summary')}<table class="r kv"><tbody>${[['Design region', `${esc(p.country)} (${esc(X.dreg)})`], ['Wiring regulations', esc(c.regs)], ['Supply', `${X.vln}/${X.vll} V, ${c.hz} Hz, ${esc(c.earthing)}`], ['Total maximum demand', `<b>${f0(R.md)} kVA</b> (${f0(R.kw)} kW, ${f0(R.amps)} A per phase) including ${pct(+p.spare)} spare`], ['Supply arrangement', esc(R.supply)], ['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA ${esc(S.sizing.txType)}, ${S.sizing.resilience}` : 'Exceeds standard sizes – review'], ['Main LV incomer', R.incomer ? `${f0(R.incomer)} A, Icw ${R.icw ?? '> 120'} kA` : '–'], ['Standby generation', esc(genText())], ['Expansion allowance', `${pct(R.XP.e)} on ${[S.sizing.expTx !== false && 'transformers', S.sizing.expGen !== false && 'generators', S.sizing.expCab !== false && 'cables', S.sizing.expDb !== false && 'distribution boards'].filter(Boolean).join(', ') || 'none'}${R.XP.nBad ? ` – ${R.XP.nBad} item(s) below` : ''}`], ['Annual electricity (net)', `${f0(R.E.imp / 1000)} MWh/yr, ${f0(R.E.eui)} kWh/m²/yr, ${f1(R.E.tco2)} tCO₂e/yr`]].map(([a, b]) => `<tr><th>${tr(a)}</th><td>${b}</td></tr>`).join('')}</tbody></table>
   ${sec('Design basis and standards')}<p>${esc(method)}</p>
   ${tbl(['Item', 'Basis'], [['Wiring regulations', esc(c.regs)], ['Load calculation method', esc(c.method)], ['Demand / diversity factor set', esc(c.set)], ['Lighting design', esc(c.lighting)], ['Emergency lighting', esc(c.emergency)], ['LV assemblies', esc(c.assemblies)], ['Protective devices', esc(c.devices)], ['Voltage-drop limits', `${c.vdl}% lighting, ${c.vdo}% other`], ['Utility / authority', esc(c.authority)], ['Power factor / spare', `${p.pf} / ${pct(+p.spare)}`]])}
   ${(() => { const cv = coverageOf(c); return `<p class="s"><b>Regional coverage for ${esc(p.country)}: ${esc(cv.label)}${cv.verified ? ` – verified against ${esc(cv.verified.edition)} (${esc(cv.verified.date)})` : ' – not yet verified against the edition in force'}.</b> ${cv.notes.map(esc).join(' ')} Cable data: ${esc(packOn() ? cableSource() : cv.cable)}.</p>`; })()}
@@ -1749,6 +2192,8 @@ function reportBody() {
   ${sec('Maximum demand')}${R.PB == null && R.NB != null ? `<p>Maximum demand by NEC Article 220: general lighting by unit load with ${esc(R.NL.ref)} demand factors, plus scheduled equipment, lifts, pumps and data hall.</p>` + tbl(['Source', 'kVA'], [['NEC general lighting (Article 220)', f1(R.NB)], ['NEC receptacles (' + esc(R.NL.recRef) + ')', f1(R.NR)], ['Equipment loads (excl. general sockets)', f1(R.LoN.kva)], ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)]) : R.PB != null ? `<p>Maximum demand is based on the imported panel schedules (${R.RV.panels.map(p => esc(p.name)).join(', ')}); the area and equipment schedules are not added.</p>` + tbl(['Source', 'kVA'], [...R.RV.panels.map(p => [`Panel ${esc(p.name)} (demand)`, f1(p.dem)]), ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)]) : tbl(['Source', 'kVA'], [['Area loads', f1(R.Z.kva)], ['Equipment loads', f1(R.Lo.kva)], ['Lifts', f1(R.Li.kva)], ['Pumps (normal supply)', f1(R.P.kva)], ['Data centre', f1(R.D ? R.D.md : 0)], [`Spare (${pct(+p.spare)})`, f1(R.spare)]], ['Total maximum demand', f1(R.md)])}
   ${R.CMP.length > 1 ? tbl(['Method', 'Before spare kVA', 'With spare kVA', 'Used'], R.CMP.map(m => [esc(m.name), f1(m.sub), f1(m.md), m.used ? 'Yes' : ''])) + `<p class="s">Method comparison: the same building assessed by each available method; the design uses the method marked “Yes”.</p>` : ''}
   ${R.XP.rows.length ? sec('Expansion allowance on rated equipment') + tbl(['Equipment', 'Design load', 'Final rated value', 'Headroom', 'Result'], R.XP.rows.map(x => [esc(x.item), `${f1(x.load)} ${x.unit}`, `${f1(x.rated)} ${x.unit}`, pct(x.h), x.st === 'na' ? 'Not applied' : x.st === 'ok' ? 'OK' : 'Below allowance'])) + `<p class="s">Allowance ${pct(R.XP.e)} of the design load on the final rated value (15–25% typical), in addition to the ${pct(+p.spare)} spare in the maximum demand.</p>` : ''}
+  ${R.Lo.conn ? sec('Design factor chain') + tbl(['Step', 'Result', 'Factor'], chainRows().map(c => [esc(c[0]), c[1] != null ? `${f1(c[1])} ${c[2]}` : '–', c[3]])) : ''}
+  ${R.DBR.rows.length ? sec('Distribution board schedule') + tbl(['Board', 'Type', 'Supply', 'Demand kVA', 'Ks', 'Design A', 'Incomer A', 'Ways', 'Standard', 'Result'], R.DBR.rows.map(d => [esc(d.name), esc(d.t.n), d.ph === 1 ? '1-ph' : '3-ph', f1(d.demKva), d.ks != null ? f2(d.ks) : '–', f1(d.designA), d.incomer ?? '–', `${d.ways} (${d.used} used)`, esc(R.X.fam === 'NEC' ? d.t.nec : d.t.std), d.st === 'ok' ? 'OK' : d.st === 'warn' ? 'Check' : 'Fail'])) + `<p class="s">Board demand from the load schedule after demand, diversity and simultaneity factors; incomers and ways sized for a ${pct(R.DBR.e)} expansion allowance and ≥ 20% spare ways.</p>` : ''}
   ${R.genInfo.method === 'schedule' && R.genInfo.rows.length ? sec('Essential loads (standby generator)') + tbl(['Essential load', 'kW', 'ks', 'kVA'], [...R.genInfo.rows.map(r => [esc(r.e.desc), f1(r.kw), f2(r.ks), f1(r.kva)]), ...(R.genInfo.fireKva ? [['Fire pumps (Stage 4)', '', '', f1(R.genInfo.fireKva)]] : [])], ['Total × margin ' + f2(R.genInfo.margin), '', '', f1(R.ess)]) : ''}
   ${sec('Supply, transformers and switchgear')}${tbl(['Item', 'Value'], [['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA, Uk ${S.sizing.uk}%, ${esc(S.sizing.txType)}` : 'Review'], ['Full-load current', R.flc ? `${f0(R.flc)} A` : '–'], ['LV fault level', R.flP ? `${f1(R.flP)} kA (infinite source)` : '–'], ['Main incomer / busbar', R.incomer ? `${f0(R.incomer)} A` : '–'], ['Short-circuit rating', R.icw ? `${R.icw} kA, 1 s` : '–'], ['Transformer room', R.room ? `${f1(R.room.L)} × ${f1(R.room.W)} m, ${f1(R.room.H)} m clear` : '–'], ['LV switchroom', R.room ? `${f1(R.room.swA)} m²` : '–'], ['Ventilation', R.room ? `${f2(R.room.vent)} m³/s for ${f1(R.room.loss)} kW losses` : '–'], ['Standby generator', R.genCfg && R.genCfg.unit ? genText() + '; ' + (R.genInfo.method === 'schedule' ? `${f0(R.gen)} kVA (essential-load schedule ${f1(R.genInfo.schedKva)} kVA at pf ${R.genInfo.pf}, × ${f2(R.genInfo.margin)})` : `${f0(R.gen)} kVA (${pct(S.sizing.essential)} essential × ${f2(R.genInfo.margin)})`) + (R.genInfo.bigStart ? `; largest motor start ${f1(R.genInfo.bigStart.kva)} kVA = ${f2(R.genInfo.startRatio)} × generator` : '') : '–']])}
   ${R.GR ? sec('Load growth') + tbl(['Year', 'Demand kVA', '% of transformer firm capacity'], R.GR.steps.map(st => [st.year, f1(st.kva), st.pctTx != null ? pct(st.pctTx) : '–'])) + tbl(['Capacity', 'kVA', 'Adequate until', 'At horizon'], R.GR.caps.map(c => [esc(c.name), f0(c.cap), c.until, c.within ? 'Within' : 'Exceeded'])) + `<p class="s">${pct(R.GR.g, 1)} per year over ${R.GR.yrs} years from ${R.GR.y0}.</p>` : ''}
@@ -1767,6 +2212,7 @@ function reportBody() {
     (R.RV.chk.length ? tbl(['Scope', 'Check', 'Result', 'Status', 'Reference'], R.RV.chk.map(c => [esc(c.scope), esc(c.item), esc(c.res), { ok: 'Pass', warn: 'Check', bad: 'Fail' }[c.st], esc(c.ref)])) : '') +
     `<p class="s">Counts are taken from block references in the drawings; rooms without outlines are assigned to the nearest room label. Verify against the drawings. This is a design pre-check, not certification.</p>` : ''}
   ${sec('Energy management')}${tbl(['Item', 'Value'], [['Baseline electricity', `${f0(R.E.base / 1000)} MWh/yr`], ['Savings from measures', `${f0(R.E.savKwh / 1000)} MWh/yr`], ['Solar PV', `${S.energy.pv} kWp, ${f0(R.E.pvGen / 1000)} MWh/yr`], ['Net grid import', `${f0(R.E.imp / 1000)} MWh/yr (${f0(R.E.eui)} kWh/m²/yr)`], ['Annual cost', `${esc(S.energy.currency)} ${f0(R.E.cost)}`], ['Carbon', `${f1(R.E.tco2)} tCO₂e/yr at ${R.E.co2} kg/kWh`], ['Maximum demand after management', `${f0(R.E.mdAfter)} kVA`], ['Power factor correction', `${f0(R.E.bank)} kVAr automatic bank`]])}
+  ${(() => { const h = clReportHtml(); return h ? sec('Design checklist, energy programme and facilities status') + h : ''; })()}
   ${sec('Compliance checklist')}${tbl(['#', 'Requirement', 'Reference', 'Design result', 'Engineer status'], comp)}
   ${(() => { const so = S.signoff || {}, it = so.items || {}, SS = signoffState(); return sec('Design review and sign-off') + `<p><b>${esc(SS.label)}</b></p>` + tbl(['Review item', 'Status', 'Reviewed by', 'Date', 'Comments'], SIGNOFF_ITEMS.map(([k, label]) => { const v = it[k] || {}; return [esc(label), esc(v.status || 'Not reviewed'), esc(v.by || ''), esc(v.date || ''), esc(v.comment || '')]; })) + `<table class="r kv"><tbody><tr><th>Designed by</th><td>${esc(p.designer || '—')}</td></tr><tr><th>Checked by</th><td>${esc(p.checker || '—')}</td></tr><tr><th>Approved by</th><td>${so.approver ? esc(so.approver) + (so.approverQual ? ', ' + esc(so.approverQual) : '') + (so.approverDate ? ' – ' + esc(so.approverDate) : '') : '—'}</td></tr></tbody></table>`; })()}
   ${R.W.rooms.length ? `<div class="dwg-appendix">${sec('Appendix – electrical layout drawing')}${toSVG(dwgGeom(R.W))}<p class="s">${esc(S.dwg.board)} – generated layout; the AutoCAD DXF is available from the Electrical drawings stage.</p></div>` : ''}
@@ -1786,8 +2232,9 @@ function csvSchedules() {
   L.push(['Project', S.project.name, 'Ref', S.project.ref, 'Rev', S.project.rev, 'Region', S.project.country].map(q).join(','));
   L.push(''); L.push(['AREA LOAD SCHEDULE'].map(q).join(',')); L.push(['Zone', 'Type', 'Area m2', 'Base VA/m2', 'Regional factor', 'Design VA/m2', 'Demand kVA'].map(q).join(','));
   R.Z.rows.forEach(r => L.push([r.z.desc, r.z.type, r.z.area, r.base, r.mult, r.dens.toFixed(1), r.kva.toFixed(1)].map(q).join(',')));
-  L.push(''); L.push(q('EQUIPMENT LOADS')); L.push(['Board', 'Item', 'Category', 'Qty', 'kW each', 'Connected kW', 'Demand factor', 'Diversity', 'Demand kVA'].map(q).join(','));
-  R.Lo.rows.forEach(r => L.push([r.l.db, r.l.desc, r.l.cat, r.l.qty, r.l.kw, r.conn.toFixed(1), r.ku, r.df, r.kva.toFixed(1)].map(q).join(',')));
+  L.push(''); L.push(q('EQUIPMENT LOADS')); L.push(['Board', 'Item', 'Category', 'Qty', 'kW each', 'Connected kW', 'Utilisation Ku', 'Demand factor', 'Diversity', 'Load factor', 'Demand kW', 'Demand kVA', 'Energy kWh/yr'].map(q).join(','));
+  R.Lo.rows.forEach(r => L.push([r.l.db, r.l.desc, r.l.cat, r.l.qty, r.l.kw, r.conn.toFixed(1), r.uf, r.ku, r.df, r.lf, r.dem.toFixed(1), r.kva.toFixed(1), r.kwh.toFixed(0)].map(q).join(',')));
+  if (R.DBR.rows.length) { L.push(''); L.push(q('DISTRIBUTION BOARD SCHEDULE')); L.push(['Board', 'Type', 'Phases', 'Connected kW', 'Demand kVA', 'Ks', 'Design A', 'Required A (with expansion)', 'Incomer A', 'Ways', 'Ways used', 'Standard', 'Result'].map(q).join(',')); R.DBR.rows.forEach(d => L.push([d.name, d.t.n, d.ph, d.conn.toFixed(1), d.demKva.toFixed(1), d.ks != null ? d.ks.toFixed(2) : '', d.designA.toFixed(1), d.reqA.toFixed(1), d.incomer ?? '', d.ways, d.used, R.X.fam === 'NEC' ? d.t.nec : d.t.std, d.st === 'ok' ? 'OK' : d.st === 'warn' ? 'Check' : 'Fail'].map(q).join(','))); }
   if (R.XP.rows.length) { L.push(''); L.push(q('EXPANSION ALLOWANCE ' + pct(R.XP.e))); L.push(['Equipment', 'Design load', 'Final rated value', 'Unit', 'Headroom %', 'Result'].map(q).join(',')); R.XP.rows.forEach(x => L.push([x.item, x.load.toFixed(1), x.rated.toFixed(1), x.unit, (x.h * 100).toFixed(1), x.st === 'na' ? 'Not applied' : x.st === 'ok' ? 'OK' : 'Below allowance'].map(q).join(','))); }
   L.push(''); L.push(q('CABLE AND PROTECTION')); L.push(['Ref', 'From', 'Description', 'Ib A', 'In A', 'csa mm2', 'AWG equivalent', 'Iz A', 'VD %', 'Zs ohm', 'cpc mm2', 'Result', 'Specification'].map(q).join(','));
   R.C.forEach(r => L.push([r.k.ref, r.k.from, r.k.desc, r.ib.toFixed(1), r.inr, r.csa, r.awg || '', r.Iz?.toFixed(1), r.vd?.toFixed(2), r.zs?.toFixed(3), r.cpc, r.status, r.spec].map(q).join(',')));
@@ -1855,6 +2302,7 @@ function render(keepFocus) {
   if (keepFocus && ds) {
     let el = id ? document.getElementById(id) : null;
     if (!el && ds.arr) el = document.querySelector(`[data-arr="${ds.arr}"][data-i="${ds.i}"][data-k="${ds.k}"]`);
+    if (!el && ds.cl) el = document.querySelector(`[data-cl="${ds.cl}"][data-k="${ds.k}"]`);
     if (!el && ds.comp) el = document.querySelector(`[data-comp="${ds.comp}"][data-k="${ds.k}"]`);
     if (el) { el.focus(); try { if (pos != null && el.setSelectionRange && el.type !== 'number') el.setSelectionRange(pos, pos); } catch (e) { } }
   }
@@ -1874,6 +2322,7 @@ function onEdit(e, immediate) {
   else if (el.dataset.rvmap) { const m = S.review.map[el.dataset.rvmap] = S.review.map[el.dataset.rvmap] || {}; m[el.dataset.k] = el.dataset.k === 'w' ? castVal(el) : el.value; }
   else if (el.dataset.rvarea) { S.review.areas[el.dataset.rvarea] = castVal(el); }
   else if (el.dataset.comp) { const i = el.dataset.comp; S.compliance[i] = S.compliance[i] || {}; S.compliance[i][el.dataset.k] = el.value; }
+  else if (el.dataset.cl) { S.cl = S.cl || {}; const it = S.cl[el.dataset.cl] = S.cl[el.dataset.cl] || {}; it[el.dataset.k] = el.value; }
   else return;
   S.project.example = S.project.example && !(el.dataset.p === 'project.name');
   persist();
@@ -1882,7 +2331,7 @@ function onEdit(e, immediate) {
 }
 document.addEventListener('input', e => { if (e.target.matches('input:not([type=checkbox]),textarea')) onEdit(e, false); });
 document.addEventListener('change', e => { if (e.target.matches('select,input[type=checkbox],input[type=date]')) onEdit(e, true); });
-const BLANK = { essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', ku: '', df: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
+const BLANK = { essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: (R && R.DBR && R.DBR.rows[0] && R.DBR.rows[0].name) || 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', uf: '', ku: '', df: '', lf: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
 let armedNew = false;
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1892,7 +2341,8 @@ document.addEventListener('click', async e => {
   if (proBlocked(act)) { toast(projectNotOffered() ? 'Pro is not offered in this region' : 'This is a Pro feature – see Plan & licence'); location.hash = '#account'; return; }
   if (act === 'lic-activate') { const i = document.getElementById('licKey'); activateLicence(i ? i.value : ''); return; }
   if (act === 'lic-remove') { removeLicence(); return; }
-  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {} }; persist(); render(); toast('Started a blank project'); }
+  if (act === 'add-db') { const el = document.getElementById('newDb'), n = String(el && el.value || '').trim().slice(0, 40); if (!n) { toast('Type a board name first'); return; } S.boards = S.boards || {}; S.boards[n] = Object.assign(S.boards[n] || {}, { reg: true }); persist(); render(); toast('Added board ' + n); return; }
+  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {}, cl: {} }; persist(); render(); toast('Started a blank project'); }
   if (act === 'save-json') await saveProjectFiles();
   if (act === 'save-json-only') save(projectFileName('json'), JSON.stringify(S, null, 1), 'Project file');
   if (act === 'load-json') $('#fileIn').click();

@@ -573,6 +573,50 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   xchk('old projects get the allowance', (() => { const o = upgrade({ v: 1, sizing: { txCount: 1 } }); return o.sizing.expand === 0.2 && o.sizing.expCab === true; })());
   S.sizing = JSON.parse(SZ0); S.dc.include = DC0; S.project.country = C0; R = calcAll();
   out.expansionChecks = xF.length ? xF : 'all passed'; }
+// ---------- distribution board register, factor chain, sub-main interconnection, BOQ expansion tags ----------
+{ const dF = [], dchk2 = (n, ok, got) => { if (!ok) dF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SN = JSON.stringify({ sizing: S.sizing, boards: S.boards, loads: S.loads, circuits: S.circuits }), C0 = S.project.country, DC0 = S.dc.include, MD0 = R.md;
+  S.project.country = 'United Kingdom'; S.dc.include = false; R = calcAll(); const md0 = R.md;
+  const reg = n => R.DBR.rows.find(d => d.name === n);
+  dchk2('register lists the example boards', ['DB-EV', 'MCC-ROOF', 'DB-GF', 'DB-L1'].every(n => reg(n)) && !reg('MSB'), R.DBR.rows.map(d => d.name));
+  dchk2('auto type from the loads', reg('DB-EV').t.k === 'EV' && reg('MCC-ROOF').t.k === 'MCC' && reg('DB-GF').t.k === 'KIT' && reg('DB-L1').t.k === 'LP', R.DBR.rows.map(d => d.t.k));
+  const ev = reg('DB-EV');
+  dchk2('EV board current from demand kVA', near(ev.designA, ev.demKva * 1000 / (Math.sqrt(3) * R.X.vll), 1e-6), ev.designA);
+  dchk2('incomer sized for 20% expansion from the type list', ev.incomer === ev.t.inc.find(a => a >= ev.designA * 1.2) && ev.incSt === 'ok', [ev.incomer, ev.reqA]);
+  dchk2('ways ≥ used × 1.2', ev.ways >= Math.ceil(ev.used * 1.2) && ev.waySt === 'ok', [ev.used, ev.ways]);
+  dchk2('example register all OK', R.DBR.nBad === 0 && R.DBR.nWarn === 0, R.DBR.rows.map(d => [d.name, d.st]));
+  S.boards['DB-EV'] = { ...(S.boards['DB-EV'] || {}), incomer: '125' }; R = calcAll();
+  dchk2('incomer between design and expansion warns', reg('DB-EV').incSt === 'warn' && R.XP.rows.some(x => x.item === 'Board DB-EV incomer' && x.st === 'bad'), reg('DB-EV').incSt);
+  S.boards['DB-EV'].incomer = '100'; R = calcAll(); dchk2('incomer below design current fails', reg('DB-EV').incSt === 'bad' && CHECKS[0][2](R)[1] === 'bad');
+  S.boards['DB-EV'].incomer = ''; S.boards['DB-EV'].type = 'LP'; R = calcAll(); dchk2('wrong board type flags the load category', reg('DB-EV').fitSt === 'warn' && /EV charging/.test(reg('DB-EV').off.join()));
+  S.boards['DB-EV'].type = ''; S.boards['DB-EV'].ks = '0.5'; R = calcAll(); dchk2('Ks override changes board and maximum demand', near(R.Lo.dbs.find(d => d.name === 'DB-EV').ks, 0.5) && R.md < md0, [R.md, md0]);
+  S.boards['DB-EV'].ks = ''; S.sizing.expand = 0.15; R = calcAll(); dchk2('15% allowance re-sizes the incomer basis', near(reg('DB-EV').reqA, reg('DB-EV').designA * 1.15, 1e-9));
+  S.sizing.expDb = false; R = calcAll(); dchk2('boards can be excluded from expansion', reg('DB-EV').e === 0); S.sizing.expDb = true; S.sizing.expand = 0.2;
+  // factor chain on a load
+  const L0 = S.loads[0]; L0.uf = 0.8; L0.lf = 0.5; R = calcAll(); const r0 = R.Lo.rows[0];
+  dchk2('utilisation factor multiplies demand', near(r0.dem, r0.conn * 0.8 * r0.ku * r0.df, 1e-9) && near(r0.kwh, r0.dem * 0.5 * 8760, 1e-9));
+  L0.uf = ''; L0.lf = ''; R = calcAll(); dchk2('blank factors = Ku 1 and category load factor', R.Lo.rows[0].uf === 1 && R.Lo.rows[0].lf === lfDefault(L0.cat) && near(R.md, md0, 1e-9), [R.md, md0]);
+  dchk2('chain ends at the selected transformer', (() => { const c = chainRows(); return near(c[8][1], R.md, 1e-9) && c[10][1] >= c[9][1] - 1e-9 && near(c[3][1], R.Lo.demKw, 1e-9); })());
+  // sub-main kW from the board it feeds
+  const s01 = S.circuits.find(c => c.ref === 'S01'), kw0 = s01.kw; s01.kw = ''; R = calcAll(); const rs = R.C.find(c => c.k.ref === 'S01'), gf = R.Lo.dbs.find(d => d.name === 'DB-GF');
+  dchk2('blank sub-main kW takes the board demand', rs.kwAuto != null && near(rs.kwAuto, +(gf.dem * R.X.pf).toFixed(2), 1e-9) && rs.ib > 0 && rs.inr >= rs.ib * 1.2 - 1e-9, [rs.kwAuto, gf.dem]);
+  dchk2('register shows the feeder', reg('DB-GF').feeder && reg('DB-GF').feeder.ref === 'S01' && reg('DB-GF').feeder.auto);
+  s01.kw = kw0;
+  // add-board action, views, report, BOQ, CSV
+  S.boards['DB-L2'] = { reg: true }; R = calcAll(); dchk2('added board appears in the register', !!reg('DB-L2'));
+  delete S.boards['DB-L2']; R = calcAll();
+  view = 'equipment'; render(); const h = document.querySelector('#main').innerHTML;
+  dchk2('Stage 3 shows dropdowns, register and guide', /Distribution boards – type, rating and expansion/.test(h) && /Auto \(EV charging DB/.test(h) && /data-k="db"/.test(h) && /Factor guide/.test(h) && /Utilisation Ku/.test(h) && /Load factor/.test(h));
+  view = 'sizing'; render(); dchk2('Stage 6 shows the factor chain', /Design factor chain – connected load to transformer/.test(document.querySelector('#main').innerHTML));
+  const rd = reportDoc(); dchk2('report: board schedule and factor chain', /Distribution board schedule/.test(rd) && /Design factor chain/.test(rd));
+  const bq = boqItems(); dchk2('BOQ boards from the register', bq.some(i => i.sec === 'C' && /EV charging DB .*DB-EV: TP&N, incomer 160 A/.test(i.desc)), bq.filter(i => i.sec === 'C').map(i => i.desc));
+  dchk2('BOQ marks expansion-rated items', /Rated for 20% expansion/.test(bq.find(i => /^Transformer/.test(i.desc)).note) && /Rated for 20% expansion/.test(bq.find(i => /Diesel generator/.test(i.desc)).note) && bq.some(i => i.sec === 'E' && /rated for 20% expansion/.test(i.note)) && bq.some(i => i.sec === 'D' && /Sub-main \/ feeder/.test(i.note)));
+  view = 'boq'; render(); dchk2('BOQ basis note', /Ratings include a 20% expansion allowance/.test(document.querySelector('#main').innerHTML));
+  const csv = csvSchedules(); dchk2('CSV: register and factor columns', /DISTRIBUTION BOARD SCHEDULE/.test(csv) && /Utilisation Ku/.test(csv) && /Energy kWh\/yr/.test(csv));
+  const o = JSON.parse(SN); Object.assign(S, { sizing: o.sizing, boards: o.boards, loads: o.loads, circuits: o.circuits }); S.dc.include = DC0; S.project.country = C0; R = calcAll();
+  dchk2('state restored', near(R.md, MD0, 1e-9));
+  out.dbRegisterChecks = dF.length ? dF : 'all passed'; }
+
 
 // ---- Save project = .json + PDF ----
 { const sFail = [], saved = []; let printedNote = null; const save0 = save, pr0 = window.print;
@@ -592,6 +636,61 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   if (!['terms.html', 'privacy.html', 'refunds.html'].every(u => rail.includes(`href="${u}"`))) gFail.push('rail legal links missing');
   view = 'account'; render(); if (!/Refund policy/.test(document.querySelector('#main').innerHTML)) gFail.push('account page refund link missing');
   out.legalLinkChecks = gFail.length ? gFail : 'all passed'; }
+// ---- design checklist, energy programme and facilities register ----
+{ const cF = [], cc = (n, ok, got) => { if (!ok) cF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const CL0 = JSON.stringify(S.cl || {}), EN0 = JSON.stringify(S.energy), V0 = view;
+  const sets = [...CL_CHECKLIST.map(([s, , it]) => [s, it]), ...EP_PILLARS.map(([s, , , it]) => [s, it]), ...FAC.flatMap(([, , , tp]) => tp.map(t => [t[0], t[4]]))];
+  const all = sets.flatMap(([s, it]) => clIds(s, it));
+  cc('every item has a unique id', new Set(all).size === all.length, all.length - new Set(all).size);
+  cc('item shape [group, parameter, unit, hint]', sets.every(([, it]) => it.every(r => r.length === 4 && r[1] && typeof r[2] === 'string')));
+  cc('covers load, cable, boards, transformers', ['ld', 'cs', 'bp', 'tx'].every(s => CL_CHECKLIST.some(c => c[0] === s)) && CL_CHECKLIST.length === 4);
+  cc('five energy pillars', EP_PILLARS.length === 5 && ['Optimisation', 'Theft control', 'Alternative energy sources', 'Load management', 'Smart metering'].every(n => EP_PILLARS.some(p => p[1] === n)));
+  const topics = FAC.flatMap(([, , , tp]) => tp.map(t => t[2]));
+  cc('hard and soft facility topics', ['Water treatment plant', 'Power plant', 'Sewage treatment plant', 'Transformers and ring main units', 'Underground cable network', 'Radio layout', 'Fibre layout', 'Cleaning', 'Horticulture', 'Access control system and app'].every(n => topics.includes(n)) && FAC.map(f => f[0]).join() === 'hard,soft');
+  // state starts empty and upgrades old projects
+  S.cl = {}; const old = { energy: { tariff: 0.2, m: {} } }; upgrade(old); cc('old project gains cl and energy fields', JSON.stringify(old.cl) === '{}' && old.energy.lossLimit === 5 && old.energy.bulkKwh === '' && old.energy.tariff === 0.2);
+  cc('progress starts at zero', clStat(all).done === 0 && !clStat(all).started);
+  // editing writes to S.cl through the normal handler
+  const ed = (id, k, value) => onEdit({ target: { dataset: { cl: id, k }, value } }, true);
+  const idMD = clId('ld', 'Maximum demand'), idFA = clId('ld', 'Floor area');
+  ed(idMD, 'st', 'Done'); ed(idMD, 'val', '650 kVA'); ed(idFA, 'st', 'N/A'); ed(clId('tx', 'Impedance'), 'st', 'In progress');
+  cc('edits stored', S.cl[idMD].st === 'Done' && S.cl[idMD].val === '650 kVA' && S.cl[idFA].st === 'N/A');
+  const ld = clStat(clIds('ld', CL_CHECKLIST[0][2]));
+  cc('N/A is excluded from the percentage', ld.done === 1 && ld.na === 1 && ld.app === ld.n - 1 && near(ld.frac, 1 / (ld.n - 1)), ld);
+  // views
+  view = 'checklist'; render(); let h = document.querySelector('#main').innerHTML;
+  cc('checklist view shows all four sets', ['Load design', 'Cable selection', 'Distribution boards, power and control panels, switchboards', 'Transformers and HV', 'Motor starting current and method', 'Adiabatic check', 'Ring main unit configuration'].every(s => h.includes(s)));
+  cc('checklist view fills in design values', h.includes(f0(R.md) + ' kVA') && h.includes('href="#sizing"'));
+  cc('checklist view keeps the saved value', h.includes('value="650 kVA"') && /data-cl="ld\.maximum-demand" data-k="st">.*<option value="Done" selected>/.test(h));
+  view = 'facilities'; render(); h = document.querySelector('#main').innerHTML;
+  cc('facilities view shows hard and soft services', ['Hard services', 'Soft services', 'Water treatment plant', 'Sewage treatment plant', 'Underground cable network', 'Fibre layout', 'Horticulture', 'Access control app', 'CCTV'].every(s => h.includes(s)));
+  cc('facilities view links back to the design', h.includes('href="#equipment"') && h.includes('href="#sizing"'));
+  view = 'energy'; render(); h = document.querySelector('#main').innerHTML;
+  cc('energy view shows the programme', ['Energy management programme', 'Theft control', 'Alternative energy sources', 'Load management', 'Smart metering', 'Incomer (bulk) kWh'].every(s => h.includes(s)));
+  // theft reconciliation and smart-meter coverage
+  const T = (bulk, sub, lim) => { Object.assign(S.energy, { bulkKwh: bulk, subKwh: sub, lossLimit: lim ?? 5 }); return energyProg().theft; };
+  cc('theft: blank is not assessed', T('', '').st === 'na' && !T('', '').have);
+  cc('theft: 2% unaccounted is OK', T(10000, 9800).st === 'ok' && near(T(10000, 9800).pct, 2));
+  cc('theft: 8% unaccounted is a warning', T(10000, 9200).st === 'warn' && near(T(10000, 9200).un, 800));
+  cc('theft: 12% unaccounted is flagged', T(10000, 8800).st === 'bad');
+  cc('theft: sub-meters above the incomer is a warning', T(10000, 10300).st === 'warn' && /check CT ratios/.test(T(10000, 10300).text));
+  cc('theft: limit is editable', T(10000, 9200, 10).st === 'ok');
+  S.energy.tariff = 0.25; cc('theft: annual cost', near(T(10000, 9200).annual, 800 * 12 * 0.25));
+  const M = (tot, smart) => { Object.assign(S.energy, { ptsTotal: tot, ptsSmart: smart }); return energyProg().meter; };
+  cc('meters: blank is not assessed', M('', '').st === 'na');
+  cc('meters: 40 of 50 is 80% and a warning', near(M(50, 40).cov, 80) && M(50, 40).st === 'warn');
+  cc('meters: full coverage is OK', M(50, 50).st === 'ok');
+  Object.assign(S.energy, { bulkKwh: 10000, subKwh: 9200, ptsTotal: 50, ptsSmart: 40 }); render(); h = document.querySelector('#main').innerHTML;
+  cc('energy view shows the results', /800 kWh unaccounted \(8\.0% against a 5\.0% limit\)/.test(h) && /40 of 50 points on smart meters \(80%\)/.test(h), h.match(/\d+ kWh unaccounted[^<]*/));
+  // report: appears only when something has been recorded
+  const cl1 = S.cl; S.cl = {}; let rep = reportBody(); cc('report omits the section when nothing is recorded', !/facilities status/.test(rep));
+  S.cl = cl1; rep = reportBody(); cc('report includes the recorded items', /facilities status/.test(rep) && rep.includes('650 kVA') && rep.includes('Maximum demand') && /1 of \d+ parameters complete/.test(rep));
+  S.project.lang = 'fr'; cc('translated report still renders', /Synthèse/.test(reportBody()) && /facilities status/.test(reportBody())); S.project.lang = 'en';
+  // every view still renders
+  for (const [id] of VIEWS) { try { view = id; render(); if (!document.querySelector('#main').innerHTML.length) cF.push(id + ': empty'); } catch (e) { cF.push(id + ': ' + e.message); } }
+  cc('rail lists the new stages', VIEWS.some(v => v[0] === 'checklist') && VIEWS.some(v => v[0] === 'facilities'));
+  S.cl = JSON.parse(CL0); S.energy = JSON.parse(EN0); view = V0; R = calcAll();
+  out.checklistChecks = cF.length ? cF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
