@@ -616,6 +616,36 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const o = JSON.parse(SN); Object.assign(S, { sizing: o.sizing, boards: o.boards, loads: o.loads, circuits: o.circuits }); S.dc.include = DC0; S.project.country = C0; R = calcAll();
   dchk2('state restored', near(R.md, MD0, 1e-9));
   out.dbRegisterChecks = dF.length ? dF : 'all passed'; }
+// ---------- regional distribution board specification ----------
+{ const rF = [], rchk = (n, ok, got) => { if (!ok) rF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const C0 = S.project.country, DC0 = S.dc.include; S.dc.include = false;
+  const at = c => { S.project.country = c; R = calcAll(); return n => R.DBR.rows.find(d => d.name === n); };
+  let g = at('United Kingdom');
+  rchk('UK: BS EN standards and UK requirements', g('DB-EV').sp.std === 'BS EN 61439-3; BS 7671 Section 722' && g('DB-EV').sp.uk && g('DB-EV').sp.reqs.some(x => /722\.411\.4\.1/.test(x)) && g('DB-L1').sp.reqs.some(x => /421\.1\.7/.test(x)), g('DB-EV').sp);
+  rchk('UK: ways and 20% spare note', g('DB-L1').sp.word === 'ways' && /20% spare/.test(g('DB-L1').sp.spareNote));
+  g = at('Germany');
+  rchk('Germany: pure IEC references, no BS 7671', g('DB-EV').sp.std === 'IEC 61439-3; IEC 60364-7-722' && !g('DB-EV').sp.uk && !g('DB-EV').sp.reqs.some(x => /BS 7671|BS EN|BS 8519/.test(x)), g('DB-EV').sp);
+  g = at('United States');
+  const ev = g('DB-EV');
+  rchk('USA: UL / NEC standards and spaces', ev.sp.std === 'UL 67; NEC Article 625' && ev.sp.word === 'spaces' && ev.sp.reqs.some(x => /625\.54/.test(x)) && ev.sp.reqs.some(x => /408\.36/.test(x)));
+  rchk('USA: incomer from NEC panelboard ratings', ev.sp.inc.includes(ev.incomer) && ev.incomer >= ev.reqA, [ev.incomer, ev.reqA]);
+  rchk('USA: spaces from the NEC list', DB_REGION.NEC.ways.EV.includes(ev.ways), ev.ways);
+  rchk('USA: MCC to UL 845', g('MCC-ROOF').sp.std === 'UL 845 MCC; NEC Articles 408 and 430');
+  view = 'equipment'; render(); const h = document.querySelector('#main').innerHTML;
+  rchk('USA view: spaces column and requirements list', /<th>Spaces<\/th>/.test(h) && /regional requirements<\/summary>/.test(h) && /NEC 110\.26/.test(h));
+  const bq = boqItems().filter(i => i.sec === 'C');
+  rchk('USA BOQ: spaces and UL standard', bq.some(i => /EV charging DB .*DB-EV: TP&N, incomer \d+ A, \d+ spaces/.test(i.desc) && /UL 67; NEC Article 625/.test(i.note)), bq.map(i => [i.desc, i.note]));
+  g = at('Canada');
+  rchk('Canada: CSA / CEC and circuits', g('DB-EV').sp.std === 'CSA C22.2 No. 29; CEC Section 86' && g('DB-EV').sp.word === 'circuits' && g('DB-EV').sp.reqs.some(x => /8-104/.test(x)));
+  g = at('Australia');
+  rchk('Australia: AS/NZS 61439 and Cl. 2.6 RCD', g('DB-L1').sp.std === 'AS/NZS 61439.3 (DBO)' && g('DB-L1').sp.reqs.some(x => /2\.6\.3/.test(x)));
+  g = at('United Kingdom');
+  const rd = reportDoc(); rchk('report lists regional requirements', /Regional requirements for the boards \(BS 7671/.test(rd) && /722\.531\.3\.101/.test(rd));
+  rchk('CSV carries the requirements', /Regional requirements/.test(csvSchedules()) && /411\.3\.3/.test(csvSchedules()));
+  rchk('example still all OK in the UK', R.DBR.nBad === 0 && R.DBR.nWarn === 0);
+  S.project.country = C0; S.dc.include = DC0; R = calcAll();
+  out.dbRegionChecks = rF.length ? rF : 'all passed'; }
+
 
 
 // ---- Save project = .json + PDF ----
