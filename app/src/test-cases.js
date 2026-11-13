@@ -645,6 +645,104 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   rchk('example still all OK in the UK', R.DBR.nBad === 0 && R.DBR.nWarn === 0);
   S.project.country = C0; S.dc.include = DC0; R = calcAll();
   out.dbRegionChecks = rF.length ? rF : 'all passed'; }
+// ---------- assets & maintenance: library, register, PPM / corrective plans, depreciation and life-cycle advice ----------
+{ const aF = [], achk = (n, ok, got) => { if (!ok) aF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const A0 = JSON.stringify(S.assets || []), CF0 = JSON.stringify(S.assetCfg || {}), C0 = S.project.country, DC0 = S.dc.include;
+  S.project.country = 'United Kingdom'; S.dc.include = false; S.assets = []; S.assetCfg = { method: 'SL', residual: 0.1, year: 2026, start: 1, horizon: 10, repairPct: 0.15 }; R = calcAll();
+  achk('library covers the requested utilities and power equipment', ['hvtx', 'hvsw', 'swroom', 'lvsb', 'db', 'gen', 'lift', 'wtp', 'stp', 'storm', 'street', 'pillar'].every(k => ASSET_LIB.some(c => c.k === k)) && ASSET_LIB.every(c => c.ppm.length && c.cm.length && c.cap.o.length && c.types.length && c.life > 0 && c.ppm.every(p => FREQ[p[1]]) && c.cm.every(x => PRIORITY[x[3]])));
+  const prop = assetsFromDesign();
+  achk('design import: transformer, switchgear, room, LV board, generator, ATS, boards, lifts, pumps, PFC, PV, battery, earthing', ['tx', 'hvsw', 'room', 'lvsb', 'gen', 'ats', 'db:DB-EV', 'lift:0', 'pfc', 'pv', 'bess', 'earth'].every(k => prop.some(a => a.src === k)), prop.map(a => a.src));
+  const tx = prop.find(a => a.src === 'tx'); achk('transformer imported at the designed rating and quantity', tx.cap === R.txKva && tx.qty === R.nTx && tx.type === 'Cast resin (dry type)');
+  const lf = prop.find(a => a.src === 'lift:0'); achk('lift group imported with car count and persons', lf.qty === +S.lifts[0].n && lf.cap === 13);
+  S.assets = prop; achk('import is not repeated', assetsFromDesign().length === 0);
+  // a utility asset with full lifecycle data
+  S.assets.push({ id: 'st', src: '', cls: 'street', tag: 'SL-01', desc: 'Estate street lights', loc: 'Roads', qty: 100, cap: 60, type: 'LED on 8 m column', year: 2011, cost: 1000, life: '', cond: 2, crit: 'Medium', fails: '', maint: '' });
+  let A = calcAssets(), st = A.rows.find(r => r.a.id === 'st');
+  achk('straight-line depreciation and book value', st.cost === 100000 && near(st.dep, (100000 - 10000) / 25) && near(st.book, 100000 - 3600 * 15) && st.age === 15 && st.life === 25, [st.dep, st.book]);
+  achk('remaining life limited by condition', near(st.remAdj, Math.min(10, 25 * 0.9)) && st.replYear === 2036, [st.remAdj, st.replYear]);
+  achk('plan replacement at ≥ 70% of life', st.adv.some(x => /Plan replacement/.test(x[1])) === false && st.st === 'ok');
+  st.a.year = 2006; A = calcAssets(); st = A.rows.find(r => r.a.id === 'st');
+  achk('plan replacement advice at 80% of life', st.adv.some(x => /Plan replacement in the capital programme/.test(x[1])) && st.st === 'warn');
+  st.a.cond = 5; A = calcAssets(); st = A.rows.find(r => r.a.id === 'st');
+  achk('replace advice for very poor condition near end of life', st.adv.some(x => /^Replace:/.test(x[1])) && st.st === 'bad' && st.risk === 10, st.adv);
+  st.a.year = 2022; st.a.cond = 4; A = calcAssets(); st = A.rows.find(r => r.a.id === 'st');
+  achk('refurbish advice for poor condition early in life', st.adv.some(x => /refurbish \/ overhaul/.test(x[1])));
+  st.a.cond = 2; st.a.maint = 20000; st.a.fails = 4; A = calcAssets(); st = A.rows.find(r => r.a.id === 'st');
+  achk('repair-vs-replace and reliability advice', st.adv.some(x => /compare repair with replacement/.test(x[1])) && st.adv.some(x => /4 failures/.test(x[1])));
+  st.a.year = 2026; st.a.maint = ''; st.a.fails = '';
+  S.assetCfg.method = 'RB'; st.a.year = 2016; A = calcAssets(); st = A.rows.find(r => r.a.id === 'st');
+  const rr = 1 - Math.pow(0.1, 1 / 25); achk('reducing balance depreciation', near(st.book, 100000 * Math.pow(1 - rr, 10), 1e-6) && near(st.dep, st.book * rr, 1e-6), [st.book, st.dep]);
+  S.assetCfg.method = 'SL';
+  const g = A.rows.find(r => r.a.src === 'gen'); achk('single critical generator flagged; duty/standby booster not', g.adv.some(x => /Single point of failure/.test(x[1])) && !(A.rows.find(r => r.a.src && r.c.k === 'boost') || { adv: [] }).adv.some(x => /Single point/.test(x[1])));
+  const C = ppmCalendar(A.rows, 4); const q = C.lines.find(l => /Gully/.test(l.task) || /Night-time scouting/.test(l.task));
+  achk('PPM calendar months follow the start month', q && (q.fq.n === 'Monthly' ? q.months.length === 12 : true) && C.lines.find(l => l.fq.n === 'Quarterly').months.join() === '3,6,9,0');
+  achk('PPM visits counted per unit', calcAssets().visits >= 100 * (12 + 1 + 1 / 6 + 1 / 6 + 1));
+  st.a.year = 2006; A = calcAssets(); achk('capital forecast includes the street lights', A.capex.some(c => c.v >= 100000 && c.year === 2031), A.capex);
+  view = 'assets'; render(); const h = document.querySelector('#main').innerHTML;
+  achk('view: register, dropdowns, PPM plan, corrective guide, forecast', /Asset register/.test(h) && /data-k="qty"/.test(h) && /data-k="cap"/.test(h) && /data-k="type"/.test(h) && /12-month plan/.test(h) && /Corrective maintenance guide/.test(h) && /Capital replacement forecast/.test(h) && /LOLER/.test(h));
+  achk('rail shows the stage', VIEWS.some(v => v[0] === 'assets'));
+  const rd = reportDoc(); achk('report sections', /Asset register and life cycle/.test(rd) && /Planned preventive maintenance/.test(rd));
+  const csv = csvSchedules(); achk('CSV asset register and PPM plan', /ASSET REGISTER/.test(csv) && /PPM PLAN/.test(csv) && /Estate street lights/.test(csv));
+  achk('old projects get the asset fields', (() => { const o = upgrade({ v: 1 }); return Array.isArray(o.assets) && o.assetCfg.method === 'SL'; })());
+  S.assets = JSON.parse(A0); S.assetCfg = JSON.parse(CF0); S.project.country = C0; S.dc.include = DC0; R = calcAll();
+  out.assetChecks = aF.length ? aF : 'all passed'; }
+// ---------- FM operations: P1–P4 tickets with SLA, soft services, capital projects, general update, facilities report ----------
+{ const mF = [], mchk = (n, ok, got) => { if (!ok) mF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SV = JSON.stringify({ assets: S.assets, tickets: S.tickets, soft: S.soft, capProj: S.capProj, milestones: S.milestones, fmCfg: S.fmCfg, fmUpdate: S.fmUpdate, assetCfg: S.assetCfg }), DC0 = S.dc.include;
+  S.dc.include = false; R = calcAll();
+  S.assets = assetsFromDesign(); S.assetCfg = { method: 'SL', residual: 0.1, year: 2026, start: 1, horizon: 10, repairPct: 0.15 };
+  const gen = S.assets.find(a => a.src === 'gen'), pv = S.assets.find(a => a.src === 'pv');
+  S.fmCfg = { sla: {}, now: '2026-11-13T12:00' }; S.tickets = []; S.soft = []; S.capProj = []; S.milestones = [];
+  const T = (o) => { const t = { ...BLANK.tickets(), ...o }; S.tickets.push(t); return t; };
+  T({ no: 'T-3', pri: 'P3', target: pv.id, desc: 'Inverter fault', raised: '2026-11-10T09:00' });
+  T({ no: 'T-1', pri: 'P1', target: gen.id, desc: 'Generator fails to start', raised: '2026-11-13T06:00' });
+  T({ no: 'T-2', pri: 'P2', target: gen.id, desc: 'Coolant leak', raised: '2026-11-09T08:00', attended: '2026-11-09T10:00', done: '2026-11-10T08:00', st: 'Closed' });
+  T({ no: 'T-4', pri: 'P1', target: gen.id, desc: 'Battery alarm', raised: '2026-11-11T08:00', done: '2026-11-13T08:00', st: 'Completed' });
+  let F = calcFM();
+  mchk('tickets ordered P1 → P4, oldest first within a priority', F.tk.map(r => r.t.no).join() === 'T-4,T-1,T-2,T-3', F.tk.map(r => r.t.no));
+  const t1 = F.tk.find(r => r.t.no === 'T-1'); mchk('P1 time limits 4 h attend / 24 h fix', t1.L.attend === 4 && t1.L.fix === 24 && fmDT(t1.dueF) === '2026-11-14 06:00' && !t1.overdue && near(t1.hrsLeft, 18), t1);
+  mchk('P1 attendance late after 4 h', t1.attendMet === false);
+  const t3 = F.tk.find(r => r.t.no === 'T-3'); mchk('P3 within 7 days', !t3.overdue && t3.L.fix === 168);
+  mchk('P2 closed within SLA', F.tk.find(r => r.t.no === 'T-2').fixMet === true);
+  mchk('P1 closed late', F.tk.find(r => r.t.no === 'T-4').fixMet === false);
+  mchk('SLA compliance and MTTR', near(F.slaPct, 0.5) && near(F.mttr, (24 + 48) / 2), [F.slaPct, F.mttr]);
+  mchk('suggested priority from asset criticality', t1.sugg === 'P1' && t3.sugg === 'P3');
+  S.fmCfg.now = '2026-11-18T12:00'; F = calcFM(); mchk('overdue after the fix time', F.tk.find(r => r.t.no === 'T-1').overdue && F.tk.find(r => r.t.no === 'T-3').overdue && F.overdue === 2);
+  S.fmCfg.sla = { P3: { fix: 240 } }; F = calcFM(); mchk('contract time limits are editable', F.tk.find(r => r.t.no === 'T-3').L.fix === 240 && !F.tk.find(r => r.t.no === 'T-3').overdue);
+  S.fmCfg = { sla: {}, now: '2026-11-13T12:00' };
+  // soft services
+  S.soft = SOFT_LIB.map(c => ({ ...BLANK.soft(), svc: c.k, freq: c.freq, std: c.std[0], last: '2026-11-12' }));
+  mchk('standard soft services include the requested ones', ['clean', 'waste', 'land', 'pest', 'access'].every(k => S.soft.some(x => x.svc === k)));
+  const acc = S.soft.find(x => x.svc === 'access'); acc.func = 'Not operational'; const cl = S.soft.find(x => x.svc === 'clean'); cl.perf = 'Fair'; cl.last = '2026-11-01'; const pe = S.soft.find(x => x.svc === 'pest'); pe.kpi = 70;
+  F = calcFM();
+  mchk('access control not operational fails', F.soft.find(r => r.x.svc === 'access').st === 'bad');
+  mchk('cleaning overdue and fair performance warns', F.soft.find(r => r.x.svc === 'clean').st === 'warn' && F.soft.find(r => r.x.svc === 'clean').late);
+  mchk('KPI below 80% warns', F.soft.find(r => r.x.svc === 'pest').adv.some(a => /KPI 70%/.test(a)));
+  // asset state dropdowns
+  gen.perf = 'Significant shortfall'; gen.eff = 'Poor'; gen.ppm = 'Below 75%'; const A = calcAssets(), gr = A.rows.find(r => r.a.src === 'gen');
+  mchk('performance, efficiency and PPM advice', gr.st === 'bad' && gr.adv.some(x => /Significant shortfall/.test(x[1])) && gr.adv.some(x => /energy audit/.test(x[1])) && gr.adv.some(x => /PPM completion Below 75%/.test(x[1])));
+  // capital projects and milestones
+  const p = { ...BLANK.capProj(), name: 'Generator replacement', budget: 100000, spent: 120000, end: '2026-10-31', pct: 60 }; S.capProj.push(p);
+  S.milestones.push({ ...BLANK.milestones(), pid: p.id, name: 'Tender issued', due: '2026-09-01', st: 'Done' }, { ...BLANK.milestones(), pid: p.id, name: 'Installation', due: '2026-10-15', st: 'In progress' });
+  F = calcFM(); const pr = F.pr[0];
+  mchk('project over budget, late, auto amber, milestone late', pr.over && pr.late && pr.rag === 'Amber' && pr.msDone === 1 && pr.ms.find(o => o.m.name === 'Installation').late);
+  p.rag = 'Red'; F = calcFM(); mchk('manual RAG overrides', F.pr[0].rag === 'Red');
+  S.assets.push({ ...BLANK.assets(), cls: 'street', desc: 'Old street lights', qty: 10, cost: 500, year: 2004, cond: 3 });
+  const before = S.capProj.length; document.querySelector('#main'); const add = calcAssets().rows.filter(r => r.replYear < 2036).length;
+  mchk('assets due inside the horizon can become replacement projects', add >= 1);
+  // general update + views + report + CSV
+  S.fmUpdate = { period: 'November 2026', by: 'FM manager', summary: 'Site stable.', highlights: 'PPM recovered.', issues: 'Access control down.', next: 'Approve generator works.' };
+  view = 'fm'; render(); let h = document.querySelector('#main').innerHTML;
+  mchk('FM view: tickets, SLA table, soft services, capital projects, general update', /Helpdesk tickets – most critical first/.test(h) && /P1 – Emergency/.test(h) && /Response and fix times by priority/.test(h) && /Soft services/.test(h) && /Fumigation \/ pest control/.test(h) && /Add milestone/.test(h) && /General update/.test(h));
+  view = 'fmreport'; render(); h = document.querySelector('#main').innerHTML;
+  mchk('facilities report sections', ['Facilities management report', 'State, performance and efficiency of equipment', 'Helpdesk tickets by priority', 'Soft services', 'Capital projects and milestones', 'Life cycle and capital replacement forecast', 'Highlights, issues and next steps', 'November 2026', 'Approve generator works.'].every(x => h.includes(x)) && /Save report as PDF/.test(h));
+  const csv = csvFm(); mchk('facilities CSV', ['EQUIPMENT STATE', 'TICKETS', 'SOFT SERVICES', 'CAPITAL PROJECTS', 'MILESTONES', 'GENERAL UPDATE', 'Generator fails to start', 'Tender issued'].every(x => csv.includes(x)));
+  mchk('rail lists FM stages', VIEWS.some(v => v[0] === 'fm') && VIEWS.some(v => v[0] === 'fmreport'));
+  mchk('old projects get FM fields', (() => { const o = upgrade({ v: 1 }); return Array.isArray(o.tickets) && Array.isArray(o.soft) && Array.isArray(o.capProj) && Array.isArray(o.milestones) && o.fmUpdate && o.fmCfg; })());
+  const o = JSON.parse(SV); Object.assign(S, o); S.dc.include = DC0; R = calcAll();
+  out.fmChecks = mF.length ? mF : 'all passed'; }
+
+
 
 
 
