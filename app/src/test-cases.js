@@ -804,6 +804,47 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
     S.loads = JSON.parse(L0); S.assets = JSON.parse(A0); }
   const o2 = JSON.parse(SV); S.tickets = o2.tickets; S.fmCfg = o2.fmCfg; view = V0; R = calcAll();
   out.jobChecks = jF.length ? jF : 'all passed'; }
+// ---------- testing & commissioning: FAT, transformer, relay, SAT and commissioning tests generated from the design ----------
+{ const tF = [], tchk = (n, ok, got) => { if (!ok) tF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SV = JSON.stringify({ tc: S.tc, tcCfg: S.tcCfg, assets: S.assets }), V0 = view, DC0 = S.dc.include;
+  S.dc.include = false; R = calcAll(); S.tc = {}; S.tcCfg = { cat: '', open: '' };
+  let T = calcTC();
+  tchk('all five categories generated', ['FAT', 'TX', 'RELAY', 'SAT', 'COM'].every(k => T.byC.some(b => b.k === k && b.total > 0)), T.byC);
+  tchk('tests for transformer, HV switchgear, LV board, generator, ATS, boards, earthing, lifts', ['tc:tx:', 'tc:hvsw:', 'tc:lvsb:', 'tc:gen:', 'tc:ats:', 'tc:earth:', 'tc:lift:0:'].every(p => T.items.some(x => x.id.startsWith(p))) && T.items.some(x => x.id.startsWith('tc:db:')));
+  tchk('transformer tests: IR, ratio, vector group, winding resistance, oil', ['Insulation resistance HV', 'Turns ratio', 'Vector group', 'Winding resistance', 'breakdown voltage'].every(w => T.items.some(x => x.cat === 'TX' && x.test.includes(w))));
+  tchk('relay tests: secondary injection, CT, trip circuit, settings', ['Secondary injection', 'CT ratio', 'Trip circuit', 'coordination study'].every(w => T.items.some(x => x.cat === 'RELAY' && x.test.includes(w))));
+  tchk('every circuit has dead tests and a Zs test; RCD circuits an RCD test', R.C.every(r => T.items.some(x => x.id === 'tc:cir:' + r.k.ref + ':dead') && T.items.some(x => x.id === 'tc:cir:' + r.k.ref + ':zs')) && R.C.filter(r => r.k.rcd && r.k.rcd !== 'None').every(r => T.items.some(x => x.id === 'tc:cir:' + r.k.ref + ':rcd')));
+  tchk('ids are unique', new Set(T.items.map(x => x.id)).size === T.items.length);
+  tchk('nothing started yet', !T.started && T.done === 0 && T.fail === 0);
+  // record results through the edit handler
+  const ed = (id, k, value) => onEdit({ target: { dataset: { tc: id, k }, value, type: 'text' } }, true);
+  const c1 = R.C.find(r => r.zsMax), zid = 'tc:cir:' + c1.k.ref + ':zs', lim = 0.8 * c1.zsMax;
+  ed(zid, 'val', String(+(lim * 0.9).toFixed(3))); ed(zid, 'st', 'Pass'); ed(zid, 'by', 'J. Tester');
+  T = calcTC(); let z = T.items.find(x => x.id === zid);
+  tchk('Zs within 0.8 × design max passes', z.auto === 'ok' && z.done && !z.fail && z.v.by === 'J. Tester', z);
+  ed(zid, 'val', String(+(lim * 1.1).toFixed(3))); T = calcTC(); z = T.items.find(x => x.id === zid);
+  tchk('Zs above the limit fails even if marked Pass', z.auto === 'bad' && z.fail && !z.done && T.fail === 1);
+  ed(zid, 'val', String(+(lim * 0.9).toFixed(3)));
+  const txIR = T.items.find(x => x.id.startsWith('tc:tx:') && x.cat === 'TX'); ed(txIR.id, 'st', 'Fail'); ed(txIR.id, 'note', 'PI 1.2');
+  ed('tc:sys:0', 'st', 'Not applicable');
+  T = calcTC(); const tx = T.byC.find(b => b.k === 'TX');
+  tchk('progress and failures by category', T.started && T.done === 2 && T.fail === 1 && tx.fail === 1 && T.byC.find(b => b.k === 'COM').done === 2, [T.done, T.fail]);
+  tchk('rail shows failures', railStatus('tc') === 'bad');
+  view = 'tc'; render(); let h = document.querySelector('#main').innerHTML;
+  tchk('view: KPIs, filters, inputs, groups', /Testing &amp; commissioning|Testing & commissioning/.test(h) && /data-tc="tc:tx:0"/.test(h) && /tcCfg\.cat/.test(h) && /Fail – clear and retest/.test(h) && /Whole installation/.test(h) && /Within limit/.test(h));
+  S.tcCfg = { cat: 'RELAY', open: 'open' }; render(); h = document.querySelector('#main').innerHTML;
+  tchk('filter by category and open tests', /Secondary injection/.test(h) && !/Turns ratio on every tap/.test(h));
+  S.tcCfg = { cat: '', open: '' };
+  view = 'tcreport'; render(); h = document.querySelector('#main').innerHTML;
+  tchk('test record: summary, failures, categories, sign-off', ['Testing and commissioning record', 'Failures to clear before handover', 'PI 1.2', 'Transformer tests', 'Protection and relay tests', 'Commissioning and energisation', 'Sign-off', 'Save record as PDF'].every(w => h.includes(w)));
+  const csv = csvTc(); tchk('CSV record', /TESTING AND COMMISSIONING RECORD/.test(csv) && /"J. Tester"/.test(csv) && /"FAIL"/.test(csv));
+  tchk('stage in the rail; record reachable', VIEWS.some(v => v[0] === 'tc') && EXTRA_VIEWS.includes('tcreport'));
+  tchk('old projects get T&C fields', (() => { const o = upgrade({ v: 1 }); return o.tc && typeof o.tc === 'object' && o.tcCfg && o.tcCfg.cat === ''; })());
+  // imported assets keep their results (same key as the design item)
+  const before = calcTC().items.find(x => x.id === txIR.id); S.assets = [...(S.assets || []), ...assetsFromDesign()];
+  tchk('results kept after importing design assets', calcTC().items.find(x => x.id === txIR.id).st === 'Fail' && before.st === 'Fail');
+  const o = JSON.parse(SV); S.tc = o.tc; S.tcCfg = o.tcCfg; S.assets = o.assets; S.dc.include = DC0; view = V0; R = calcAll();
+  out.tcChecks = tF.length ? tF : 'all passed'; }
 
 
 

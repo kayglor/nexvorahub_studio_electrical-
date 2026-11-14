@@ -171,7 +171,7 @@ async function saveProjectFiles() {
 function printReport(note, which = 'report') {
   if (view !== which) { view = which; render(); }
   const title = document.title, done = () => { document.body.classList.remove('print-report'); document.title = title; window.removeEventListener('afterprint', done); };
-  document.title = `${(S.project.ref || 'project').replace(/[\\/:*?"<>|]+/g, '_')}-${which === 'boq' ? 'bill-of-quantities' : which === 'fmreport' ? 'facilities-management-report' : 'electrical-load-design-report'}`;
+  document.title = `${(S.project.ref || 'project').replace(/[\\/:*?"<>|]+/g, '_')}-${which === 'boq' ? 'bill-of-quantities' : which === 'fmreport' ? 'facilities-management-report' : which === 'tcreport' ? 'testing-and-commissioning-record' : 'electrical-load-design-report'}`;
   document.body.classList.add('print-report');
   window.addEventListener('afterprint', done);
   toast(note || 'In the print window, choose "Save as PDF" as the printer');
@@ -312,7 +312,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { S = null; }
 if (!S || S.v !== 1) S = exampleProject();
 // Projects saved before the AI data centre fields existed: fill in the new defaults.
-function upgrade(o) { if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
+function upgrade(o) { if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); if (!o.tc || typeof o.tc !== 'object' || Array.isArray(o.tc)) o.tc = {}; o.tcCfg = Object.assign({ cat: '', open: '' }, o.tcCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
 upgrade(S);
 let saveT;
 let saveWarned = false;
@@ -1404,9 +1404,9 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 /* ---------- views ---------- */
 const VIEWS = [
   ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
-  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
+  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['tc', 'Testing & commissioning'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
-const EXTRA_VIEWS = ['account'];
+const EXTRA_VIEWS = ['account', 'tcreport'];
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'project';
 let R = calcAll();
 function opt(list, sel, map = x => x) { return list.map(x => { const v = typeof x === 'object' ? x.v : x, t = typeof x === 'object' ? x.t : map(x); return `<option value="${esc(v)}"${String(v) === String(sel) ? ' selected' : ''}>${esc(t)}</option>`; }).join(''); }
@@ -1426,6 +1426,7 @@ function railStatus(id) {
   if (id === 'sizing') return R.txKva ? 'ok' : 'bad';
   if (id === 'review') return !R.RV.sheets.length ? '' : R.RV.nBad ? 'bad' : R.RV.nWarn ? 'warn' : 'ok';
   if (id === 'checklist' || id === 'facilities') { const st = clStat(id === 'facilities' ? facIds() : CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items))); return st.complete ? 'ok' : st.started ? 'warn' : ''; }
+  if (id === 'tc') { const T = calcTC(); return T.fail ? 'bad' : !T.started ? '' : T.done < T.total ? 'warn' : 'ok'; }
   if (id === 'fm') { if (!(S.tickets || []).length && !(S.soft || []).length && !(S.capProj || []).length) return ''; const F = calcFM(); return F.overdue || F.soft.some(r => r.st === 'bad') || F.pr.some(r => r.rag === 'Red') ? 'bad' : F.open || F.soft.some(r => r.st === 'warn') || F.pr.some(r => r.rag === 'Amber') ? 'warn' : 'ok'; }
   if (id === 'assets') { if (!(S.assets || []).length) return ''; const A = calcAssets(); return A.nBad ? 'bad' : A.nWarn ? 'warn' : 'ok'; }
   if (id === 'drawings') return !R.W.rooms.length ? '' : R.W.nBad ? 'bad' : R.W.nWarn ? 'warn' : 'ok';
@@ -2415,6 +2416,159 @@ function calcLift(F) {
 }
 const fmDT = t => { if (t == null) return '–'; const d = new Date(t), z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
 const fmHrs = h => h == null ? '–' : Math.abs(h) >= 48 ? f1(h / 24) + ' d' : f1(h) + ' h';
+/* ---------- Testing & commissioning: FAT, transformer tests, relay tests, SAT and commissioning generated from the design ---------- */
+const TC_CAT = [['FAT', 'Factory acceptance tests (FAT)'], ['TX', 'Transformer tests'], ['RELAY', 'Protection and relay tests'], ['SAT', 'Site acceptance and installation tests (SAT)'], ['COM', 'Commissioning and energisation']];
+const TC_ST = ['Not started', 'Pass', 'Pass with remarks', 'Fail', 'Not applicable'];
+const TC_DONE = ['Pass', 'Pass with remarks', 'Not applicable'];
+// [category, test, reference, acceptance, unit of the recorded value]
+const TC_LIB = {
+  hvtx: [
+    ['FAT', 'Routine tests at works: winding resistance, ratio and vector group, impedance and load loss, no-load loss, applied and induced voltage', 'IEC 60076-1 / -3', 'Within the guaranteed values; test certificate issued', ''],
+    ['TX', 'Insulation resistance HV–LV, HV–earth, LV–earth with polarisation index', 'IEC 60076 / IEEE 43', 'Not below the factory value; PI ≥ 2', 'MΩ'],
+    ['TX', 'Turns ratio on every tap position', 'IEC 60076-1', 'Within ±0.5 % of nameplate', '%'],
+    ['TX', 'Vector group / phase displacement check', 'IEC 60076-1', 'Matches the nameplate (e.g. Dyn11)', ''],
+    ['TX', 'Winding resistance, all phases', 'IEC 60076-1', 'Phases within 2 % of each other and of the factory value', 'mΩ'],
+    ['TX', 'Oil: breakdown voltage, moisture and DGA baseline (oil-filled)', 'IEC 60156 / IEC 60422 / IEC 60599', 'New oil ≥ 60 kV; moisture to IEC 60422', 'kV'],
+    ['TX', 'Transformer protection devices: Buchholz, winding and oil temperature, pressure relief – alarm and trip', 'Manufacturer', 'Each device alarms and trips the HV breaker', ''],
+    ['SAT', 'Installation inspection: plinth, clearances, earthing, terminations torque, bund, labels', 'IEC 61936-1 / manufacturer', 'No defects', ''],
+    ['COM', 'Energise off-load; secondary voltages and phase rotation', 'IEC 61936-1', 'Within ±2.5 % of nominal; correct rotation', 'V'],
+    ['COM', 'On-load check and thermal scan after 24 h', 'Manufacturer', 'No hot spots; temperatures normal', '°C'],
+  ],
+  hvsw: [
+    ['FAT', 'Routine tests: power-frequency withstand, main circuit resistance, mechanical operation, gas tightness', 'IEC 62271-200 / -1', 'Test certificate issued', ''],
+    ['RELAY', 'Secondary injection of overcurrent and earth-fault elements – pick-up and timing', 'IEC 60255', 'Within relay tolerance of the settings', 'ms'],
+    ['RELAY', 'CT ratio, polarity and magnetisation; primary injection', 'IEC 61869-2', 'Ratio and polarity correct', ''],
+    ['RELAY', 'Trip circuit supervision and breaker trip from every protection function', 'IEC 60255', 'Breaker trips; alarms reported', ''],
+    ['RELAY', 'Protection settings applied to the coordination study and recorded', 'Coordination study', 'Settings match the study', ''],
+    ['RELAY', 'Intertrips: transformer Buchholz / temperature and fire alarm trips reach the HV breaker', 'Design', 'Each intertrip operates', ''],
+    ['SAT', 'HV cable tests: VLF or DC withstand and outer sheath test', 'IEC 60502-2 / IEEE 400.2', 'No breakdown; sheath ≥ 1 MΩ/km', 'MΩ'],
+    ['SAT', 'Breaker contact resistance', 'IEC 62271-1', 'Within the manufacturer value', 'µΩ'],
+    ['SAT', 'Interlocks, earthing switch, padlocking and gas pressure', 'IEC 62271-200', 'All interlocks work; gas in the green zone', ''],
+    ['COM', 'Switching programme, permit and first energisation by the authorised person', 'Safety rules / BS 6626', 'Energised safely; recorded', ''],
+  ],
+  lvsb: [
+    ['FAT', 'Routine verification: dielectric, wiring, protective circuit, torque', 'IEC / BS EN 61439-1 cl. 11', 'Routine verification report issued', ''],
+    ['FAT', 'ACB and MCCB function and protection unit (L, S, I, G) settings at works', 'IEC 60947-2', 'Operate and trip as specified', ''],
+    ['RELAY', 'ACB protection unit secondary injection – long time, short time, instantaneous, earth fault', 'IEC 60947-2 / coordination study', 'Trips within the curve tolerance', 'ms'],
+    ['SAT', 'Insulation resistance of busbars and outgoing ways', 'BS 7671 643.3 / IEC 60364-6', '≥ 1 MΩ', 'MΩ'],
+    ['SAT', 'Torque check of terminations and busbar joints', 'Manufacturer', 'All marked at the correct torque', ''],
+    ['SAT', 'Main earthing terminal, protective and bonding conductor continuity', 'BS 7671 643.2', 'Continuous; low resistance', 'Ω'],
+    ['COM', 'Energise: voltage, phase rotation, metering and indication', 'BS 7671 643.9', 'Correct voltage and rotation', 'V'],
+    ['COM', 'Prospective fault current at the origin', 'BS 7671 643.7.3', 'Not above the breaking capacity of the devices', 'kA'],
+    ['COM', 'Thermal scan under load', 'Manufacturer', 'No hot spots', '°C'],
+  ],
+  db: [
+    ['FAT', 'Board routine verification and type labels', 'IEC / BS EN 61439-3', 'Routine verification report issued', ''],
+    ['SAT', 'Dead tests: protective conductor continuity, insulation resistance, polarity', 'BS 7671 643.2–643.6', 'IR ≥ 1 MΩ; polarity correct', 'MΩ'],
+    ['SAT', 'Labels, circuit chart, RCD test notice and warning notices', 'BS 7671 514', 'Fitted and correct', ''],
+    ['COM', 'Energise: Zs / Ze at the board and prospective fault current', 'BS 7671 643.7', 'Within the design values', 'Ω'],
+    ['COM', 'Schedule of test results and installation certificate', 'BS 7671 Part 6 / local law', 'Completed and signed', ''],
+  ],
+  gen: [
+    ['FAT', 'Factory load test at 25 / 50 / 75 / 100 / 110 % load with transient response', 'ISO 8528-6', 'Within the performance class', ''],
+    ['SAT', 'Installation: fuel, exhaust, ventilation, earthing, bund, neutral earthing arrangement', 'ISO 8528 / BS 7671 551', 'No defects', ''],
+    ['SAT', 'Insulation resistance of alternator and cables', 'IEC 60034 / BS 7671 643.3', '≥ 1 MΩ', 'MΩ'],
+    ['RELAY', 'Generator protection trip tests: over / under voltage and frequency, reverse power, overcurrent, earth fault', 'IEC 60255 / manufacturer', 'Each function trips', ''],
+    ['COM', 'Load bank test at rated kW (typically 4 h)', 'ISO 8528 / NFPA 110', 'Holds rated load; temperatures normal', 'kW'],
+    ['COM', 'Mains-fail start: start, run-up and transfer time', 'NFPA 110 / BS 7909', '≤ 10 s for life-safety loads (or the design value)', 's'],
+    ['COM', 'Synchronising and load sharing (multiple sets)', 'Manufacturer', 'Shares load within ±5 %', ''],
+  ],
+  ats: [
+    ['FAT', 'Factory functional test of transfer and interlocks', 'IEC 60947-6-1 / UL 1008', 'Operates as specified', ''],
+    ['COM', 'Mains-fail transfer and retransfer with timers; neutral switching checked', 'IEC 60947-6-1', 'Transfers within the set times', 's'],
+    ['COM', 'Interlocks prevent paralleling mains and generator', 'Design', 'Cannot parallel', ''],
+  ],
+  ups: [
+    ['FAT', 'Factory test: efficiency, transfer, battery discharge', 'IEC 62040-3', 'Within the guaranteed values', ''],
+    ['SAT', 'Battery installation, ventilation and cell voltages', 'IEC 62485-2', 'All cells within tolerance', 'V'],
+    ['COM', 'Mains fail and restore: no-break transfer; static and maintenance bypass', 'IEC 62040-3', 'No break to the load', ''],
+    ['COM', 'Battery autonomy test at the actual load', 'IEC 62040-3', 'At least the design autonomy', 'min'],
+    ['COM', 'Remote alarms and BMS points', 'Design', 'All alarms received', ''],
+  ],
+  pfc: [
+    ['SAT', 'Capacitor insulation and capacitance of each step', 'IEC 60831', 'Within ±5 % of rated', 'µF'],
+    ['COM', 'Controller set-up (C/k, target PF), step switching, detuning reactor temperature', 'IEC 61921', 'Reaches the target power factor', 'PF'],
+  ],
+  earth: [
+    ['SAT', 'Earth electrode resistance (fall of potential)', 'BS 7430 / IEEE 81', 'Not above the design value', 'Ω'],
+    ['SAT', 'Main and supplementary bonding continuity', 'BS 7671 643.2', '≤ 0.05 Ω between bonded parts', 'Ω'],
+    ['SAT', 'Lightning protection: down-conductor continuity and test joints', 'BS EN 62305-3 / IEC 62305-3', 'Continuous; each test joint recorded', 'Ω'],
+    ['SAT', 'Substation step and touch potential (where required)', 'IEEE 80 / BS EN 50522', 'Within the tolerable limits', 'V'],
+  ],
+  pv: [
+    ['SAT', 'String open-circuit voltage, short-circuit current, polarity and insulation resistance', 'IEC 62446-1', 'Within ±5 % of expected', 'V'],
+    ['COM', 'Inverter commissioning: grid protection / anti-islanding settings and export limit', 'IEC 62116 / G98 / G99 / local grid code', 'Settings as approved by the network operator', ''],
+  ],
+  bess: [
+    ['FAT', 'Factory test of battery management and power conversion system', 'IEC 62619 / IEC 62933', 'Test certificate issued', ''],
+    ['SAT', 'Installation: fire detection and suppression, ventilation, separation distances', 'IEC 62933-5-2 / NFPA 855', 'No defects', ''],
+    ['COM', 'Charge / discharge test and grid protection settings', 'IEC 62933 / local grid code', 'Rated power and energy achieved', 'kWh'],
+  ],
+  lift: [
+    ['SAT', 'Thorough examination / certificate before first use', 'LOLER 1998 (UK) / local law', 'Certificate issued', ''],
+    ['COM', 'Lift commissioning: safety gear, buffers, overspeed governor, brake and load test', 'EN 81-20 / EN 81-50', 'All tests passed', ''],
+    ['COM', 'Fire recall and firefighting / evacuation mode with the fire alarm', 'EN 81-72 / EN 81-73', 'Operates as designed', ''],
+    ['COM', 'Alarm and two-way communication to the rescue service', 'EN 81-28', 'Call connects and is answered', ''],
+  ],
+  esc: [['COM', 'Commissioning: safety devices, stopping distance, handrail speed', 'EN 115-1', 'All tests passed', 'm']],
+  swroom: [['SAT', 'Switch room: fire rating, ventilation, lighting and emergency lighting, access, signs, insulating mats, keys', 'IEC 61936-1 / BS 7671', 'No defects', '']],
+  firep: [['COM', 'Fire pump acceptance test: churn, rated and 150 % flow; controller transfer', 'NFPA 20 / BS EN 12845', 'Meets the pump curve', 'bar']],
+};
+const TC_GEN = [['SAT', 'Installation inspection against the drawings and manufacturer instructions', 'Manufacturer', 'No defects', ''], ['COM', 'Functional test and commissioning to the manufacturer', 'Manufacturer', 'Operates as specified', '']];
+const TC_SYS = [
+  ['COM', 'Phase rotation the same at every board and on every source', 'BS 7671 643.9', 'Consistent rotation', ''],
+  ['COM', 'Integrated systems test: mains fail → generator → ATS → UPS → restore (black-building test)', 'Design / BSRIA BG 49', 'All systems respond as designed', ''],
+  ['COM', 'Fire alarm interfaces: plant shutdown, lift recall, smoke control on standby power', 'BS 5839-1 / NFPA 72', 'All interfaces operate', ''],
+  ['SAT', 'Installation certificate issued (BS 7671 EIC / NEC inspection by the authority / local equivalent)', 'BS 7671 Part 6 / local law', 'Issued and signed', ''],
+  ['COM', 'Handover: as-built drawings, O&M manuals, test certificates and training', 'Contract / CIBSE Commissioning Code M', 'Handed over', ''],
+];
+const tcCatN = k => (TC_CAT.find(c => c[0] === k) || [k, k])[1];
+const tcEquip = () => [...(S.assets || []), ...assetsFromDesign()].map(a => ({ key: a.src || a.id, a, c: assetCls(a.cls) }));
+function calcTC() {
+  const items = [], add = (grp, key, i, t, extra) => { const id = 'tc:' + key + ':' + i, v = (S.tc || {})[id] || {}; items.push({ id, grp, cat: t[0], test: t[1], ref: t[2], acc: t[3], unit: t[4], v, st: v.st || 'Not started', zsLim: null, ...extra }); };
+  tcEquip().forEach(e => { const grp = (e.a.desc || e.c.n) + (e.a.tag ? ' (' + e.a.tag + ')' : '') + ((+e.a.qty || 1) > 1 ? ' × ' + e.a.qty : ''); (TC_LIB[e.a.cls] || TC_GEN).forEach((t, i) => add(grp, e.key, i, t)); });
+  (R.C || []).forEach(r => { const ref = r.k.ref || r.k.id, grp = 'Circuit ' + ref + (r.k.desc ? ' – ' + r.k.desc : ''), key = 'cir:' + ref;
+    add(grp, key, 'dead', ['SAT', 'Dead tests: protective conductor continuity (R1 + R2), insulation resistance, polarity', 'BS 7671 643.2–643.6 / IEC 60364-6', 'IR ≥ 1 MΩ; continuity and polarity correct', 'MΩ']);
+    add(grp, key, 'zs', ['COM', 'Earth fault loop impedance Zs, measured', 'BS 7671 643.7.3 / IEC 60364-6', r.zsMax ? 'Measured ≤ ' + f2(0.8 * r.zsMax) + ' Ω (0.8 × design maximum ' + f2(r.zsMax) + ' Ω, allowing for conductor temperature)' : 'Within the protective device limit', 'Ω'], { zsLim: r.zsMax ? 0.8 * r.zsMax : null });
+    if (r.k.rcd && r.k.rcd !== 'None') add(grp, key, 'rcd', ['COM', 'RCD operating time at IΔn and test button', 'BS 7671 643.8 / IEC 61008 / 61009', '≤ 300 ms at IΔn (≤ 40 ms at 5 × IΔn for additional protection)', 'ms']); });
+  TC_SYS.forEach((t, i) => add('Whole installation', 'sys', i, t));
+  items.forEach(x => { const n = parseFloat(x.v.val); x.auto = x.zsLim && isFinite(n) ? (n <= x.zsLim ? 'ok' : 'bad') : null; x.fail = x.st === 'Fail' || (x.auto === 'bad' && x.st !== 'Not applicable'); x.done = TC_DONE.includes(x.st) && !x.fail; });
+  const byC = TC_CAT.map(([k, n]) => { const r = items.filter(x => x.cat === k); return { k, n, total: r.length, done: r.filter(x => x.done).length, fail: r.filter(x => x.fail).length }; }).filter(b => b.total);
+  return { items, byC, total: items.length, done: items.filter(x => x.done).length, fail: items.filter(x => x.fail).length, started: items.some(x => x.st !== 'Not started' || (x.v.val ?? '') !== '') };
+}
+V.tc = () => {
+  const T = calcTC(), cfg = S.tcCfg || {};
+  const show = T.items.filter(x => (!cfg.cat || x.cat === cfg.cat) && (!cfg.open || !x.done)), grps = [...new Set(show.map(x => x.grp))];
+  const ci = (x, k, type, w, ph) => '<input type="' + type + '" style="width:' + w + 'px" data-tc="' + esc(x.id) + '" data-k="' + k + '" value="' + esc(x.v[k] ?? '') + '" placeholder="' + esc(ph || '') + '" aria-label="' + k + '">';
+  const rows = grps.map(g => '<tr><th colspan="8" style="text-align:left;padding-top:14px">' + esc(g) + '</th></tr>' + show.filter(x => x.grp === g).map(x => '<tr><td style="min-width:300px">' + esc(x.test) + '<br><span class="note">' + esc(x.ref) + '</span></td><td class="note">' + esc(tcCatN(x.cat)) + '</td><td class="note">' + esc(x.acc) + '</td>'
+    + '<td>' + (x.unit ? ci(x, 'val', 'text', 80, x.unit) + ' <span class="note">' + esc(x.unit) + '</span>' : '') + (x.auto ? '<br>' + pill(x.auto, x.auto === 'ok' ? 'Within limit' : 'Above limit') : '') + '</td>'
+    + '<td><select data-tc="' + esc(x.id) + '" data-k="st" aria-label="status">' + opt(TC_ST, x.st) + '</select>' + (x.fail ? '<br>' + pill('bad', 'Fail – clear and retest') : x.done ? '<br>' + pill('ok', 'Done') : '') + '</td>'
+    + '<td>' + ci(x, 'date', 'date', 140) + '</td><td>' + ci(x, 'by', 'text', 130, 'Tested / witnessed by') + '</td><td>' + ci(x, 'note', 'text', 180, 'Remarks') + '</td></tr>').join('')).join('');
+  return '<section class="sheet">' + head('T&C', 'Testing & commissioning', 'Factory acceptance, transformer, protection relay, site acceptance and commissioning tests generated from the design – every transformer, switchboard, board, generator, ATS, UPS, earthing system, lift and circuit. Record the measured value, status, date and who tested or witnessed it; circuit Zs readings are checked against the design limit.', '<a class="btn primary" href="#tcreport">Open the test record</a><button class="btn" data-act="dl-tc-csv">Save record (.csv)</button>')
+    + '<div class="kpis">' + [['All tests', pct(T.total ? T.done / T.total : 0), T.done + ' of ' + T.total + ' done' + (T.fail ? ' · ' + T.fail + ' failed' : '')], ...T.byC.map(b => [b.n.replace(/ \(.*\)$/, ''), pct(b.done / b.total), b.done + ' of ' + b.total + (b.fail ? ' · ' + b.fail + ' failed' : '')])].map(([a, b, c]) => '<div class="kpi"><span>' + esc(a) + '</span><b>' + b + '</b><small>' + c + '</small></div>').join('') + '</div>'
+    + '<div class="grid" style="margin-top:10px">' + fld('Show', sel('tcCfg.cat', [{ v: '', t: 'All categories' }, ...TC_CAT.map(([v, t]) => ({ v, t }))], cfg.cat || '')) + fld('Filter', sel('tcCfg.open', [{ v: '', t: 'All tests' }, { v: 'open', t: 'Only tests still open or failed' }], cfg.open || '')) + '</div>'
+    + (show.length ? '<div class="tbl-wrap"><table><thead><tr><th>Test</th><th>Category</th><th>Acceptance</th><th>Measured</th><th>Status</th><th>Date</th><th>Tested / witnessed by</th><th>Remarks</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="note">' + (T.total ? 'No tests match the filter.' : 'Add the design (supply, boards, circuits) or assets first – tests are generated from them.') + '</p>')
+    + '<p class="note">Test lists are typical for each item of equipment; add project-specific tests in the remarks or follow the manufacturer\'s commissioning procedures. Measured Zs is compared with 0.8 × the design maximum to allow for conductor temperature (rule of thumb, IET Guidance Note 3). HV switching and testing only by an authorised person under a permit to work.</p></section>';
+};
+function tcBody() {
+  const p = S.project, T = calcTC(); let n = 0; const sec = t => '<h2>' + (++n) + '. ' + t + '</h2>';
+  const val = x => (x.v.val ?? '') !== '' ? esc(x.v.val) + ' ' + esc(x.unit) : '–';
+  return '<div class="tb"><div class="tb-t"><div class="tb-k">Testing and commissioning record</div><div class="tb-n">' + esc(p.name) + '</div></div><div class="tb-g">' + [['Client', p.client], ['Site', p.site], ['Reference', p.ref], ['Prepared by', p.designer || '—'], ['Date', new Date().toISOString().slice(0, 10)], ['Progress', pct(T.total ? T.done / T.total : 0)]].map(([a, b]) => '<div><span>' + a + '</span>' + esc(b) + '</div>').join('') + '</div></div>'
+    + sec('Summary') + tbl(['Category', 'Tests', 'Completed', 'Failed', 'Progress'], [...T.byC.map(b => [esc(b.n), b.total, b.done, b.fail, pct(b.done / b.total)]), ['<b>All tests</b>', T.total, T.done, T.fail, pct(T.total ? T.done / T.total : 0)]])
+    + (T.fail ? sec('Failures to clear before handover') + tbl(['Equipment / circuit', 'Test', 'Measured', 'Acceptance', 'Remarks'], T.items.filter(x => x.fail).map(x => [esc(x.grp), esc(x.test), val(x), esc(x.acc), esc(x.v.note || '')])) : '')
+    + T.byC.map(b => sec(esc(b.n)) + tbl(['Equipment / circuit', 'Test', 'Reference', 'Measured', 'Status', 'Date', 'By', 'Remarks'], T.items.filter(x => x.cat === b.k).map(x => [esc(x.grp), esc(x.test), esc(x.ref), val(x), x.fail ? '<b>FAIL</b>' : esc(x.st), esc(x.v.date || ''), esc(x.v.by || ''), esc(x.v.note || '')]))).join('')
+    + sec('Sign-off') + tbl(['Role', 'Name', 'Company', 'Signature', 'Date'], [['Tested by', '', '', '', ''], ['Witnessed by (client / engineer)', '', '', '', ''], ['Accepted for handover', '', '', '', '']])
+    + '<p class="s">Generated by NexvoraHub Studio from the design and the recorded results. This record supports, but does not replace, the statutory installation certificate and the manufacturers\' test certificates.</p>';
+}
+V.tcreport = () => '<section class="sheet">' + head('T&C', 'Testing and commissioning record', 'Summary, failures to clear, results by category and sign-off. Save it as a PDF to issue with the handover file.', '<button class="btn primary" data-act="dl-tc-pdf">Save record as PDF</button><button class="btn" data-act="dl-tc-csv">Save record (.csv)</button><a class="btn" href="#tc">Back to testing & commissioning</a>') + '<div class="paper" id="paper">' + tcBody() + '</div></section>';
+function csvTc() {
+  const q = v => { let t = String(v ?? ''); if (/^[=+\-@\t\r]/.test(t) && !/^-?[\d.]+$/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
+  const T = calcTC(), L = [q('TESTING AND COMMISSIONING RECORD – ' + (S.project.name || '')), ''];
+  L.push(['Category', 'Tests', 'Completed', 'Failed'].map(q).join(',')); T.byC.forEach(b => L.push([b.n, b.total, b.done, b.fail].map(q).join(',')));
+  L.push(''); L.push(['Category', 'Equipment / circuit', 'Test', 'Reference', 'Acceptance', 'Measured', 'Unit', 'Status', 'Check', 'Date', 'By', 'Remarks'].map(q).join(','));
+  T.items.forEach(x => L.push([tcCatN(x.cat), x.grp, x.test, x.ref, x.acc, x.v.val, x.unit, x.st, x.fail ? 'FAIL' : x.done ? 'Done' : 'Open', x.v.date, x.v.by, x.v.note].map(q).join(',')));
+  return L.join('\r\n');
+}
 V.assets = () => {
   const A = calcAssets(), cfg = A.cfg, prop = assetsFromDesign();
   const selA = (i, k, list, v) => '<select data-arr="assets" data-i="' + i + '" data-k="' + k + '" aria-label="' + k + '">' + opt(list, v) + '</select>';
@@ -2913,6 +3067,7 @@ function onEdit(e, immediate) {
   else if (el.dataset.rvarea) { S.review.areas[el.dataset.rvarea] = castVal(el); }
   else if (el.dataset.comp) { const i = el.dataset.comp; S.compliance[i] = S.compliance[i] || {}; S.compliance[i][el.dataset.k] = el.value; }
   else if (el.dataset.cl) { S.cl = S.cl || {}; const it = S.cl[el.dataset.cl] = S.cl[el.dataset.cl] || {}; it[el.dataset.k] = el.value; }
+  else if (el.dataset.tc) { S.tc = S.tc || {}; S.tc[el.dataset.tc] = Object.assign({}, S.tc[el.dataset.tc], { [el.dataset.k]: el.value }); }
   else return;
   S.project.example = S.project.example && !(el.dataset.p === 'project.name');
   persist();
@@ -2934,6 +3089,8 @@ document.addEventListener('click', async e => {
   if (act === 'soft-defaults') { S.soft = SOFT_LIB.map(c => ({ ...BLANK.soft(), svc: c.k, freq: c.freq, std: c.std[0] })); persist(); render(); toast('Added ' + S.soft.length + ' soft services'); return; }
   if (act === 'ms-add') { S.milestones = S.milestones || []; S.milestones.push({ ...BLANK.milestones(), pid: b.dataset.pid }); persist(); render(); return; }
   if (act === 'cap-from-assets') { const A = calcAssets(), add = A.rows.filter(r => r.replYear < A.yr + (+A.cfg.horizon || 10) && !(S.capProj || []).some(p => p.src === 'asset:' + r.a.id)).map(r => ({ ...BLANK.capProj(), src: 'asset:' + r.a.id, name: 'Replace ' + (r.a.desc || r.c.n) + (r.a.tag ? ' (' + r.a.tag + ')' : ''), cat: CAP_CAT[0], asset: r.a.id, budget: r.cost || '', end: r.replYear + '-12-31', summary: r.adv.map(x => x[1]).join('; ') })); S.capProj = [...(S.capProj || []), ...add]; persist(); render(); toast('Added ' + add.length + ' replacement projects'); return; }
+  if (act === 'dl-tc-pdf') { printReport('In the print window, choose "Save as PDF" as the printer for the test record', 'tcreport'); return; }
+  if (act === 'dl-tc-csv') { save(`${(S.project.ref || 'project').replace(/[\\/:*?"<>|]+/g, '_')}-testing-commissioning.csv`, csvTc(), 'Testing and commissioning record'); return; }
   if (act === 'dl-fm-pdf') { printReport('In the print window, choose "Save as PDF" as the printer for the facilities report', 'fmreport'); return; }
   if (act === 'dl-fm-csv') { save(`${(S.project.ref || 'project').replace(/[\\/:*?"<>|]+/g, '_')}-facilities-report.csv`, csvFm(), 'Facilities report'); return; }
   if (act === 'lift-import') { const add = assetsFromDesign().filter(a => a.cls === 'lift' || a.cls === 'esc'); S.assets = [...(S.assets || []), ...add]; persist(); render(); toast('Added ' + add.length + ' lifts / escalators from the design'); return; }
