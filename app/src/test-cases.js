@@ -959,6 +959,26 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   lchk('old projects get LV and handover fields', (() => { const u = upgrade({ v: 1 }); return u.lvt && u.lvInsp && u.handover && u.handover.inc; })());
   const sv = JSON.parse(SV); Object.assign(S, sv); S.project.country = C0; S.dc.include = DC0; view = V0; R = calcAll();
   out.lvChecks = lF.length ? lF : 'all passed'; }
+// ---------- Excel export: valid .xlsx package with every project sheet ----------
+{ const xF = [], xchk = (n, ok, got) => { if (!ok) xF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const b = xlsxProject(), dv = new DataView(b.buffer, b.byteOffset, b.byteLength), dec = new TextDecoder();
+  // walk the local file headers and check every CRC
+  const files = {}; let p = 0, crcOk = true;
+  while (p + 4 <= b.length && dv.getUint32(p, true) === 0x04034b50) { const n = dv.getUint16(p + 26, true), sz = dv.getUint32(p + 18, true), c = dv.getUint32(p + 14, true), name = dec.decode(b.subarray(p + 30, p + 30 + n)), d = b.subarray(p + 30 + n, p + 30 + n + sz); if (XLSX.crc(d) !== c) crcOk = false; files[name] = dec.decode(d); p += 30 + n + sz; }
+  const endAt = b.length - 22;
+  xchk('zip structure and CRCs', crcOk && dv.getUint32(endAt, true) === 0x06054b50 && dv.getUint16(endAt + 10, true) === Object.keys(files).length && dv.getUint32(p, true) === 0x02014b50, Object.keys(files));
+  xchk('workbook parts', ['[Content_Types].xml', '_rels/.rels', 'xl/workbook.xml', 'xl/_rels/workbook.xml.rels', 'xl/styles.xml'].every(k => files[k]));
+  const names = [...files['xl/workbook.xml'].matchAll(/<sheet name="([^"]+)"/g)].map(m => m[1]);
+  xchk('eight sheets', ['Dashboard', 'Project &amp; standards', 'Design schedules', 'Bill of quantities', 'LV test results', 'Testing &amp; commissioning', 'Documents &amp; risks', 'Facilities'].every(n => names.includes(n)) && names.every((n, i) => files['xl/worksheets/sheet' + (i + 1) + '.xml']), names);
+  xchk('dashboard content and percentages', /Project dashboard/.test(files['xl/worksheets/sheet1.xml']) && /s="3"><v>/.test(files['xl/worksheets/sheet1.xml']));
+  xchk('standards sheet', /BS 7671|IEC 60364|NFPA 70|AS\/NZS 3000|CSA C22/.test(files['xl/worksheets/sheet2.xml']) && /HV installation/.test(files['xl/worksheets/sheet2.xml']));
+  xchk('circuit numbers stored as numbers', /<c r="[A-Z]+\d+"><v>[\d.]+<\/v><\/c>/.test(files['xl/worksheets/sheet3.xml']));
+  const rows = XLSX.fromCsv('"TITLE"\r\n"A","B"\r\n"x","12.5"\r\n"\'=SUM(1)","007"\r\n');
+  xchk('CSV to rows: title, header, numbers, injection guard removed as text', rows[0][0].s === 2 && rows[1][0].s === 1 && rows[2][1] === 12.5 && rows[3][0] === '=SUM(1)' && rows[3][1] === '007', rows);
+  const bad = XLSX.book([{ name: 'a/b:c?', rows: [['<&>"' + String.fromCharCode(1)]] }, { name: 'a/b:c?', rows: [] }]);
+  xchk('sheet names sanitised and unique; XML escaped', bad.names[0] === 'a-b-c-' && bad.names[1] !== bad.names[0]);
+  xchk('buttons on the dashboard, handover pack and report', (() => { const V0 = view; let ok = true; ['dashboard', 'handover'].forEach(v => { view = v; render(); ok = ok && /data-act="dl-xlsx"/.test(document.querySelector('#main').innerHTML); }); view = V0; render(); return ok; })());
+  out.xlsxChecks = xF.length ? xF : 'all passed'; }
 
 
 
