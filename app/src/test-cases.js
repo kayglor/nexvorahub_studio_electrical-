@@ -741,6 +741,38 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   mchk('old projects get FM fields', (() => { const o = upgrade({ v: 1 }); return Array.isArray(o.tickets) && Array.isArray(o.soft) && Array.isArray(o.capProj) && Array.isArray(o.milestones) && o.fmUpdate && o.fmCfg; })());
   const o = JSON.parse(SV); Object.assign(S, o); S.dc.include = DC0; R = calcAll();
   out.fmChecks = mF.length ? mF : 'all passed'; }
+// ---------- reactive maintenance directory: domestic / commercial issues by trade on helpdesk tickets ----------
+{ const jF = [], jchk = (n, ok, got) => { if (!ok) jF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SV = JSON.stringify({ tickets: S.tickets, fmCfg: S.fmCfg }), V0 = view;
+  { const need = ['elec', 'plumb', 'carp', 'hvac', 'pool', 'gym', 'rec']; jchk('directory has all the requested trades', need.every(k => jobCls(k)) && JOB_LIB.every(c => c.issues.length >= 8 && c.issues.every(j => SLA_DEF[j[2]] && j[3] && j[4] && j[5] > 0 && /^[BRC]$/.test(j[6])))); }
+  jchk('requested issues are listed', ['bulb', 'nolight', 'trip', 'socket'].every(k => jobOf('elec', k)) && ['lock', 'wardrobe', 'door'].every(k => jobOf('carp', k)) && jobOf('pool', 'chem') && jobOf('gym', 'tread') && jobOf('hvac', 'noac') && jobOf('plumb', 'burst') && jobOf('rec', 'play'));
+  jchk('issue ids unique within a trade', JOB_LIB.every(c => new Set(c.issues.map(j => j[0])).size === c.issues.length));
+  jchk('residential filter hides commercial-only issues', !jobIssues('plumb', 'Residential').some(j => j[6] === 'C') && jobIssues('plumb', 'Residential').some(j => j[0] === 'burst') && !jobIssues('carp', 'Commercial').some(j => j[0] === 'wardrobe') && jobIssues('carp', '').some(j => j[0] === 'wardrobe'));
+  jchk('current issue stays in the list after the filter changes', jobIssues('carp', 'Commercial', 'wardrobe').some(j => j[0] === 'wardrobe'));
+  S.fmCfg = { sla: {}, now: '2026-11-13T12:00' }; S.tickets = [];
+  const add = (o) => { const t = { ...BLANK.tickets(), ...o }; S.tickets.push(t); return S.tickets.length - 1; };
+  const ed = (i, k, value) => onEdit({ target: { dataset: { arr: 'tickets', i: String(i), k }, value, type: 'select-one' } }, true);
+  const a = add({ raised: '2026-11-13T10:00' }); ed(a, 'prop', 'Residential'); ed(a, 'trade', 'elec'); ed(a, 'issue', 'bulb');
+  jchk('picking an issue sets priority, fault text and type', S.tickets[a].pri === 'P4' && S.tickets[a].desc === 'Bulb / lamp replacement' && S.tickets[a].kind === 'Reactive breakdown', S.tickets[a]);
+  ed(a, 'issue', 'trip'); jchk('changing the issue updates the default text and priority', S.tickets[a].pri === 'P2' && S.tickets[a].desc === 'MCB / RCD keeps tripping');
+  S.tickets[a].desc = 'Kitchen ring trips when kettle on'; ed(a, 'issue', 'burn'); jchk('own fault text is kept', S.tickets[a].desc === 'Kitchen ring trips when kettle on' && S.tickets[a].pri === 'P1');
+  ed(a, 'trade', 'plumb'); jchk('changing the trade clears the issue', S.tickets[a].issue === '');
+  ed(a, 'issue', 'burst'); S.tickets[a].loc = 'Flat 12';
+  const b = add({ raised: '2026-11-12T09:00', trade: 'pool', issue: 'chem', pri: 'P1', prop: 'Commercial' });
+  const c = add({ raised: '2026-11-01T09:00', trade: 'gym', issue: 'tread', pri: 'P3', done: '2026-11-03T09:00', st: 'Closed' });
+  add({ raised: '2026-11-13T09:00', pri: 'P3', desc: 'Plant fault' });
+  let F = calcFM(); const ra = F.tk.find(r => r.i === a);
+  jchk('job details on the ticket', ra.job && ra.job.trade === 'Plumbing' && ra.sugg === 'P1' && ra.target === 'Plumbing – Flat 12' && ra.L.fix === 24, ra.target);
+  jchk('pool chemistry is P1 with 24 h fix', F.tk.find(r => r.i === b).L.fix === 24 && F.tk[0].pri === 'P1');
+  const tr = k => F.byT.find(x => x.k === k);
+  jchk('tickets summarised by trade', tr('plumb').raised === 1 && tr('pool').open === 1 && tr('gym').met === 1 && tr('').raised === 1 && !tr('carp') && near(tr('gym').hrs, 1.5), F.byT);
+  view = 'fm'; render(); let h = document.querySelector('#main').innerHTML;
+  jchk('FM view: trade dropdowns, issue list, directory', /data-k="trade"/.test(h) && /data-k="issue"/.test(h) && /data-k="prop"/.test(h) && /data-k="loc"/.test(h) && /Reactive maintenance directory/.test(h) && /Wardrobe door/.test(h) && /Treadmill/.test(h) && /Swimming pool/.test(h) && /about 2 h on site/.test(h));
+  view = 'fmreport'; render(); h = document.querySelector('#main').innerHTML;
+  jchk('report: by-trade table and trade on open tickets', /Reactive maintenance by trade/.test(h) && /Gym &amp; fitness equipment/.test(h) && /Plumbing: Burst pipe/.test(h));
+  const csv = csvFm(); jchk('CSV: trade columns and by-trade section', /TICKETS BY TRADE/.test(csv) && /"Residential","Plumbing","Burst pipe \/ flooding","Flat 12"/.test(csv), csv.split('\r\n').filter(l => /Flat 12/.test(l)));
+  const o = JSON.parse(SV); S.tickets = o.tickets; S.fmCfg = o.fmCfg; view = V0; R = calcAll();
+  out.jobChecks = jF.length ? jF : 'all passed'; }
 
 
 

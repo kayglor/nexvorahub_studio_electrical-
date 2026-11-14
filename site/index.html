@@ -2240,6 +2240,122 @@ const RAG = ['Green', 'Amber', 'Red'], MS_ST = ['Not started', 'In progress', 'D
 const PCT_OPTS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 const fmNow = () => (S.fmCfg && S.fmCfg.now ? new Date(S.fmCfg.now).getTime() : Date.now());
 const tDate = v => { const t = v ? new Date(v).getTime() : NaN; return isFinite(t) ? t : null; };
+/* ---------- Reactive maintenance directory: domestic to commercial issues by trade (issue, default priority, typical action, trade, typical hours on site, B both / R residential / C commercial) ---------- */
+const PROP_T = [{ v: '', t: 'Any property' }, { v: 'Residential', t: 'Residential (house / flat)' }, { v: 'Commercial', t: 'Commercial (office / retail / hotel)' }];
+const JOB_LIB = [
+  { k: 'elec', n: 'Electrical (small works)', issues: [
+    ['nopower', 'No power to the whole unit / board', 'P1', 'Check main switch, meter and incoming supply; call the network operator if the supply is off; restore safely and test', 'Electrician', 2, 'B'],
+    ['burn', 'Burning smell / scorched socket or switch', 'P1', 'Isolate at once; replace the accessory and damaged cable ends; inspect and test the circuit', 'Electrician', 1.5, 'B'],
+    ['shock', 'Electric shock reported', 'P1', 'Isolate the circuit; check earthing, bonding and RCD; do not re-energise until tested', 'Electrician', 2, 'B'],
+    ['trip', 'MCB / RCD keeps tripping', 'P2', 'Unplug appliances and split circuits to find the faulty appliance or cable; insulation test; replace the device if faulty', 'Electrician', 2, 'B'],
+    ['nolight', 'No light in a room / lighting circuit dead', 'P3', 'Check lamp, switch and MCB; trace the fault on the lighting circuit; test', 'Electrician', 1.5, 'B'],
+    ['bulb', 'Bulb / lamp replacement', 'P4', 'Isolate and replace with the same type and colour (LED); check the fitting', 'Handyman / electrician', 0.5, 'B'],
+    ['socket', 'Damaged / loose socket outlet', 'P3', 'Isolate; replace the socket; check terminations and polarity; test', 'Electrician', 1, 'B'],
+    ['switch', 'Faulty light switch / dimmer', 'P3', 'Isolate; replace the switch or dimmer (LED-compatible); test', 'Electrician', 1, 'B'],
+    ['fitting', 'Light fitting / downlight replacement', 'P3', 'Isolate; replace the fitting (fire-rated where in a fire-stopped ceiling); test', 'Electrician', 1, 'B'],
+    ['fan', 'Extractor fan not working', 'P3', 'Check fused spur and timer; clean or replace the fan', 'Electrician', 1, 'B'],
+    ['cooker', 'Cooker / oven / hob circuit fault', 'P2', 'Check cooker switch, MCB and terminations; test the appliance', 'Electrician', 1.5, 'R'],
+    ['shower', 'Electric shower not working', 'P2', 'Check pull-cord isolator and MCB; check element and pressure switch; replace the unit if needed', 'Electrician', 2, 'R'],
+    ['heater', 'Immersion / water heater not heating', 'P2', 'Check element, thermostat and timer; replace faulty parts', 'Electrician', 1.5, 'B'],
+    ['alarm', 'Smoke / heat / CO alarm beeping or faulty', 'P2', 'Replace the battery or alarm head; test the interlink', 'Electrician', 0.5, 'B'],
+    ['emlight', 'Emergency light failed its test', 'P3', 'Replace battery or lamp; retest the full duration; update the log book', 'Electrician', 1, 'C'],
+    ['entry', 'Door entry / intercom fault', 'P3', 'Check power supply, handset and wiring; reprogram or replace', 'Electrician / security engineer', 1.5, 'B'],
+    ['outdoor', 'External / security light fault', 'P3', 'Check PIR / photocell, lamp and supply; replace faulty parts', 'Electrician', 1, 'B'],
+    ['ev', 'EV charger not charging', 'P3', 'Check supply, RCD / PEN protection and the charger fault log; reset or call the manufacturer', 'Electrician', 1.5, 'B'],
+    ['meter', 'Prepayment / sub-meter fault', 'P2', 'Check meter display and supply; contact the supplier or replace the sub-meter', 'Electrician', 1, 'B'],
+    ['tv', 'TV aerial / data point fault', 'P4', 'Check outlet, cable and amplifier; re-terminate', 'Aerial / data engineer', 1, 'B'],
+  ] },
+  { k: 'plumb', n: 'Plumbing', issues: [
+    ['burst', 'Burst pipe / flooding', 'P1', 'Turn off the stopcock, contain the water, make electrics safe, repair or cap the pipe', 'Plumber', 2, 'B'],
+    ['gas', 'Gas smell', 'P1', 'Evacuate, turn off at the meter, call the gas emergency number; registered gas engineer only', 'Gas engineer', 1, 'B'],
+    ['sewer', 'Blocked drain / sewage backing up', 'P1', 'Jet the drain; clean and disinfect; CCTV survey if it recurs', 'Drainage engineer', 2, 'B'],
+    ['leak', 'Leaking pipe, joint or valve', 'P2', 'Isolate; remake the joint or replace the section or valve', 'Plumber', 1.5, 'B'],
+    ['wcblock', 'WC blocked', 'P2', 'Plunge or rod; jet if it recurs', 'Plumber', 1, 'B'],
+    ['nohot', 'No hot water', 'P2', 'Check water heater / boiler, immersion, valves and thermostat', 'Plumber / heating engineer', 1.5, 'B'],
+    ['nowater', 'No water / low water pressure', 'P2', 'Check stopcock, booster pump, pressure reducing valve and the utility supply', 'Plumber', 1.5, 'B'],
+    ['boiler', 'Boiler / central heating failure', 'P2', 'Check pressure, fault code, ignition and controls (registered gas engineer for gas work)', 'Heating engineer', 2, 'B'],
+    ['cylinder', 'Hot water cylinder / water heater leaking', 'P2', 'Isolate; check the relief valve, expansion vessel and cylinder; replace if corroded', 'Plumber', 2, 'B'],
+    ['pump', 'Booster / sump pump failure', 'P2', 'Check supply, float switch and pump; switch to standby; repair or replace', 'Plumber / pump engineer', 1.5, 'C'],
+    ['grease', 'Grease trap full / kitchen drain odour', 'P2', 'Empty and clean the grease trap using a licensed waste carrier', 'Drainage contractor', 2, 'C'],
+    ['flush', 'WC not flushing / cistern running', 'P3', 'Replace the flush valve, fill valve or button', 'Plumber', 1, 'B'],
+    ['sink', 'Blocked sink / basin / shower / bath', 'P3', 'Clear the trap and waste; rod the pipe', 'Plumber', 1, 'B'],
+    ['radiator', 'Radiator cold or leaking', 'P3', 'Bleed, balance, or replace the valve', 'Plumber', 1, 'B'],
+    ['odour', 'Drain odour inside', 'P3', 'Refill dry traps, check vents and seals, clean', 'Plumber', 1, 'B'],
+    ['urinal', 'Urinal / sensor tap fault', 'P3', 'Check sensor, battery or solenoid and the flush controller', 'Plumber', 1, 'C'],
+    ['tap', 'Dripping / faulty tap', 'P4', 'Replace the washer, cartridge or tap', 'Plumber', 1, 'B'],
+    ['seal', 'Shower / bath sealant or grout failed', 'P4', 'Remove and re-apply silicone; regrout', 'Handyman', 1, 'B'],
+  ] },
+  { k: 'carp', n: 'Carpentry & joinery', issues: [
+    ['lockout', 'Locked out / key lost', 'P2', 'Gain entry without damage; change the cylinder; update the key register', 'Locksmith', 1, 'B'],
+    ['lock', 'Change of lock / faulty lock', 'P2', 'Replace the cylinder or lock case; issue keys; update the key register', 'Locksmith / carpenter', 1, 'B'],
+    ['firedoor', 'Fire door not closing / damaged seals', 'P2', 'Adjust the closer, replace intumescent and smoke seals, keep gaps 2–4 mm', 'Carpenter (fire door trained)', 1.5, 'B'],
+    ['window', 'Window will not close / broken handle or restrictor', 'P2', 'Replace handle or restrictor; adjust hinges and locks', 'Carpenter / glazier', 1, 'B'],
+    ['glass', 'Broken glass', 'P2', 'Make safe or board up; reglaze with safety glass where required', 'Glazier', 2, 'B'],
+    ['handrail', 'Loose handrail / balustrade', 'P2', 'Make safe, refix and check it is secure', 'Carpenter', 1.5, 'B'],
+    ['door', 'Door sticking, dropped or loose hinges', 'P3', 'Adjust or replace hinges, ease the door, re-hang', 'Carpenter', 1.5, 'B'],
+    ['closer', 'Door closer faulty', 'P3', 'Adjust or replace the closer', 'Carpenter', 1, 'B'],
+    ['floor', 'Loose / damaged floorboard or skirting', 'P3', 'Refix or replace the board or skirting', 'Carpenter', 1.5, 'B'],
+    ['ceiling', 'Ceiling tile damaged or missing', 'P3', 'Replace the tile; investigate any leak above', 'Carpenter', 0.5, 'C'],
+    ['wardrobe', 'Wardrobe door / sliding track / hinge', 'P4', 'Realign the track, replace runners or hinges, adjust doors', 'Carpenter', 1, 'R'],
+    ['kitchen', 'Kitchen cupboard door / drawer runner', 'P4', 'Replace hinges or runners; adjust doors', 'Carpenter', 1, 'R'],
+    ['shelf', 'Shelf / curtain rail / blind fixing', 'P4', 'Refix with suitable plugs and fixings', 'Handyman', 1, 'B'],
+    ['furniture', 'Office furniture repair', 'P4', 'Repair or replace the part', 'Carpenter', 1, 'C'],
+  ] },
+  { k: 'hvac', n: 'HVAC / air conditioning', issues: [
+    ['server', 'Server / comms room cooling failure', 'P1', 'Start the standby unit or temporary cooling; alert IT; repair', 'HVAC engineer', 2, 'C'],
+    ['noac', 'Air conditioning not cooling', 'P2', 'Check power, filters, controls, compressor and refrigerant charge (F-gas engineer)', 'HVAC engineer', 2, 'B'],
+    ['noheat', 'No heating from the system', 'P2', 'Check controls, valves, heat pump or boiler and the distribution pumps', 'HVAC engineer', 2, 'B'],
+    ['vent', 'Ventilation / extract not working', 'P2', 'Check the fan, belt, isolator and controls; repair', 'HVAC engineer', 1.5, 'B'],
+    ['refleak', 'Refrigerant leak suspected', 'P2', 'F-gas certified engineer: leak test, repair, record in the F-gas log', 'F-gas engineer', 2, 'B'],
+    ['plant', 'Chiller / AHU tripped', 'P2', 'Read the alarm, reset if safe, find the cause, repair', 'HVAC engineer', 2, 'C'],
+    ['drip', 'AC unit leaking water', 'P3', 'Clear the condensate drain or pump; check the tray', 'HVAC engineer', 1, 'B'],
+    ['noise', 'Noisy / vibrating unit', 'P3', 'Check fan, bearings and mountings; tighten or replace', 'HVAC engineer', 1.5, 'B'],
+    ['smell', 'Bad smell from vents', 'P3', 'Clean coils, filters and drain tray; antimicrobial treatment', 'HVAC engineer', 1.5, 'B'],
+    ['stat', 'Thermostat / controller fault', 'P3', 'Check batteries, wiring and setpoints; replace or recalibrate', 'HVAC engineer', 1, 'B'],
+    ['fcu', 'Fan coil unit fault', 'P3', 'Check fan, valve actuator and controls; repair', 'HVAC engineer', 1.5, 'C'],
+    ['filter', 'Filter change / cleaning due', 'P4', 'Replace or clean filters; record pressure drop', 'HVAC technician', 1, 'B'],
+  ] },
+  { k: 'pool', n: 'Swimming pool', issues: [
+    ['chem', 'Water chemistry out of range (pH / chlorine)', 'P1', 'Close the pool; correct dosing; retest and record before reopening (PWTAG)', 'Pool technician', 1, 'B'],
+    ['safety', 'Pool alarm / lifesaving equipment faulty or missing', 'P1', 'Close or supervise the pool; replace or repair the equipment', 'Pool operator', 1, 'B'],
+    ['circ', 'Circulation pump / filter fault', 'P2', 'Check pump, strainer, priming and motor; backwash the filter; close the pool if no circulation', 'Pool technician', 2, 'B'],
+    ['cloudy', 'Cloudy / green water', 'P2', 'Shock dose, check the filter, backwash, retest', 'Pool technician', 2, 'B'],
+    ['dosing', 'Chemical dosing / controller fault', 'P2', 'Check and calibrate probes; refill chemicals safely (COSHH)', 'Pool technician', 1, 'B'],
+    ['tiles', 'Broken / sharp tiles or grating', 'P2', 'Close the area; replace the tile or grate', 'Pool contractor', 2, 'B'],
+    ['loss', 'Water loss / pool leak', 'P2', 'Bucket test and dye test; repair the leak', 'Pool contractor', 3, 'B'],
+    ['room', 'Plant room ventilation / chemical store problem', 'P2', 'Make safe; ventilate; separate chemicals; repair', 'Pool technician', 1, 'B'],
+    ['light', 'Pool lighting fault', 'P3', 'Isolate; check the SELV transformer and lamp (BS 7671 Section 702 / IEC 60364-7-702)', 'Electrician', 1.5, 'B'],
+    ['heat', 'Pool heater / heat pump fault', 'P3', 'Check flow, controls and heater; repair', 'Pool technician', 1.5, 'B'],
+  ] },
+  { k: 'gym', n: 'Gym & fitness equipment', issues: [
+    ['cable', 'Weight machine cable frayed / pulley damaged', 'P1', 'Take out of use; replace the cable and pulleys', 'Fitness equipment technician', 1.5, 'B'],
+    ['free', 'Free weights / rack / bench frame damaged', 'P2', 'Take out of use; repair or replace', 'Fitness equipment technician', 1, 'B'],
+    ['floor', 'Gym flooring damaged / trip hazard', 'P2', 'Cordon off; replace the tiles or matting', 'Flooring contractor', 1.5, 'B'],
+    ['mirror', 'Mirror cracked or loose', 'P2', 'Make safe; refix or replace with safety mirror', 'Glazier', 1, 'B'],
+    ['hot', 'Gym too hot / poor ventilation', 'P2', 'Check AC and extract; adjust setpoints; repair', 'HVAC engineer', 1.5, 'B'],
+    ['tread', 'Treadmill not working / belt slipping', 'P3', 'Check power, emergency stop key, belt tension and lubrication, motor controller', 'Fitness equipment technician', 1.5, 'B'],
+    ['cardio', 'Cross-trainer / bike / rower noise or fault', 'P3', 'Check bearings, resistance unit and console; repair', 'Fitness equipment technician', 1, 'B'],
+    ['upholstery', 'Bench / pad upholstery torn', 'P4', 'Re-cover or replace the pad', 'Upholsterer', 1, 'B'],
+    ['av', 'Gym TV / audio fault', 'P4', 'Check source, wiring and settings; repair', 'AV technician', 1, 'B'],
+    ['service', 'Equipment service due', 'P4', 'Planned service to the manufacturer schedule (BS EN ISO 20957)', 'Fitness equipment technician', 2, 'B'],
+  ] },
+  { k: 'rec', n: 'Recreational areas', issues: [
+    ['play', 'Playground equipment damaged', 'P1', 'Cordon off; repair to BS EN 1176; record the inspection', 'Play equipment inspector', 2, 'B'],
+    ['sauna', 'Sauna / steam room fault', 'P2', 'Isolate; check heater, controls and steam generator (BS 7671 Section 703)', 'Electrician', 1.5, 'B'],
+    ['surface', 'Safety surfacing worn or loose', 'P2', 'Cordon off; repair surfacing to BS EN 1177', 'Play equipment contractor', 3, 'B'],
+    ['gate', 'Gate / barrier / fence damaged', 'P2', 'Make safe; repair hinges, closers and panels', 'Mechanical / fencing contractor', 2, 'B'],
+    ['recelec', 'Clubhouse / recreation room electrical fault', 'P2', 'Find and repair the fault; test', 'Electrician', 1.5, 'B'],
+    ['flood', 'Sports court / floodlight fault', 'P3', 'Check lamps, control gear, timer and supply; repair', 'Electrician', 2, 'B'],
+    ['recplumb', 'Recreation toilets / showers plumbing fault', 'P3', 'Repair the leak, blockage or tap; check water hygiene', 'Plumber', 1.5, 'B'],
+    ['feature', 'Fountain / water feature pump fault', 'P3', 'Clean the strainer; check pump and RCD; repair', 'Pump engineer', 1.5, 'B'],
+    ['irrig', 'Irrigation leak or controller fault', 'P3', 'Repair the leak; reset the controller', 'Landscaper', 1.5, 'B'],
+    ['court', 'Court nets / goal posts / fixtures', 'P3', 'Repair and secure the fixtures (anchor goals)', 'Handyman', 1, 'B'],
+    ['bbq', 'BBQ area / shelter / seating damaged', 'P4', 'Repair or replace', 'Handyman', 1, 'B'],
+  ] },
+];
+const jobCls = k => JOB_LIB.find(x => x.k === k) || null;
+const jobOf = (trade, issue) => { const c = jobCls(trade), j = c && c.issues.find(x => x[0] === issue); return j ? { k: j[0], n: j[1], p: j[2], act: j[3], who: j[4], hrs: j[5], where: j[6], trade: c.n } : null; };
+const jobIssues = (trade, prop, cur) => { const c = jobCls(trade); if (!c) return []; return c.issues.filter(j => j[0] === cur || !prop || j[6] === 'B' || (prop === 'Residential' ? j[6] === 'R' : j[6] === 'C')); };
 function calcFM() {
   const now = fmNow(), sla = k => Object.assign({}, SLA_DEF[k] || SLA_DEF.P3, ((S.fmCfg || {}).sla || {})[k] || {});
   const assetById = id => (S.assets || []).find(a => a.id === id);
@@ -2251,12 +2367,13 @@ function calcFM() {
     const attendMet = dueA == null ? null : (att != null ? att <= dueA : now <= dueA ? null : false);
     const fixMet = dueF == null ? null : closed ? (done != null ? done <= dueF : null) : now <= dueF ? null : false;
     const overdue = !closed && dueF != null && now > dueF, hrsLeft = !closed && dueF != null ? (dueF - now) / 3600e3 : null;
-    const cls = a ? assetCls(a.cls) : null, sugg = a ? (a.crit === 'High' || (!a.crit && cls.crit === 'High') ? 'P1' : (a.crit || cls.crit) === 'Medium' ? 'P2' : 'P3') : so ? 'P3' : null;
-    const target = a ? (a.desc || cls.n) + (a.tag ? ' (' + a.tag + ')' : '') : so ? softCls(so.svc).n : '–';
+    const job = jobOf(t.trade, t.issue), cls = a ? assetCls(a.cls) : null, sugg = job ? job.p : a ? (a.crit === 'High' || (!a.crit && cls.crit === 'High') ? 'P1' : (a.crit || cls.crit) === 'Medium' ? 'P2' : 'P3') : so ? 'P3' : null;
+    const target = a ? (a.desc || cls.n) + (a.tag ? ' (' + a.tag + ')' : '') : so ? softCls(so.svc).n : job ? job.trade + (t.loc ? ' – ' + t.loc : '') : (t.loc || '–');
     const ttr = closed && done != null && raised != null ? (done - raised) / 3600e3 : null;
-    return { t, i, pri, L, raised, dueA, dueF, attendMet, fixMet, overdue, hrsLeft, closed, sugg, target, ttr, st: overdue ? 'bad' : fixMet === false || attendMet === false ? 'warn' : closed ? 'ok' : 'na' };
+    return { t, i, job, pri, L, raised, dueA, dueF, attendMet, fixMet, overdue, hrsLeft, closed, sugg, target, ttr, st: overdue ? 'bad' : fixMet === false || attendMet === false ? 'warn' : closed ? 'ok' : 'na' };
   }).sort((x, y) => x.pri.localeCompare(y.pri) || (x.raised ?? 0) - (y.raised ?? 0));
   const byP = Object.keys(SLA_DEF).map(p => { const r = tk.filter(x => x.pri === p); return { p, n: r.length, open: r.filter(x => !x.closed).length, overdue: r.filter(x => x.overdue).length, met: r.filter(x => x.fixMet === true).length, missed: r.filter(x => x.fixMet === false).length }; });
+  const byT = [...JOB_LIB.map(c => ({ k: c.k, name: c.n })), { k: '', name: 'Plant, equipment and other' }].map(o => { const r = tk.filter(x => (jobCls(x.t.trade) ? x.t.trade : '') === o.k); return { ...o, raised: r.length, open: r.filter(x => !x.closed).length, overdue: r.filter(x => x.overdue).length, met: r.filter(x => x.fixMet === true).length, missed: r.filter(x => x.fixMet === false).length, hrs: r.reduce((a, x) => a + (x.job ? x.job.hrs : 0), 0) }; }).filter(o => o.raised);
   const judged = tk.filter(x => x.fixMet != null), slaPct = judged.length ? judged.filter(x => x.fixMet).length / judged.length : null;
   const ttrs = tk.filter(x => x.ttr != null), mttr = ttrs.length ? ttrs.reduce((a, x) => a + x.ttr, 0) / ttrs.length : null;
   const soft = (S.soft || []).map((x, i) => {
@@ -2271,7 +2388,7 @@ function calcFM() {
     const over = budget > 0 && spent > budget, rag = p.rag || (over || late || ms.some(o => o.late) ? 'Amber' : 'Green');
     return { p, i, ms, budget, spent, late, over, rag, msDone: ms.filter(o => o.m.st === 'Done').length };
   });
-  return { now, tk, byP, slaPct, mttr, open: tk.filter(x => !x.closed).length, overdue: tk.filter(x => x.overdue).length, soft, pr, budget: pr.reduce((a, x) => a + x.budget, 0), spent: pr.reduce((a, x) => a + x.spent, 0) };
+  return { now, tk, byP, byT, slaPct, mttr, open: tk.filter(x => !x.closed).length, overdue: tk.filter(x => x.overdue).length, soft, pr, budget: pr.reduce((a, x) => a + x.budget, 0), spent: pr.reduce((a, x) => a + x.spent, 0) };
 }
 const fmDT = t => { if (t == null) return '–'; const d = new Date(t), z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
 const fmHrs = h => h == null ? '–' : Math.abs(h) >= 48 ? f1(h / 24) + ' d' : f1(h) + ' h';
@@ -2308,7 +2425,8 @@ V.fm = () => {
   const sA = (arr, i, k, list, v, w) => '<select data-arr="' + arr + '" data-i="' + i + '" data-k="' + k + '"' + (w ? ' style="min-width:' + w + 'px"' : '') + ' aria-label="' + k + '">' + opt(list, v ?? '') + '</select>';
   const iA = (arr, i, k, v, type = 'text', w = 110, ph = '') => '<input type="' + type + '"' + (type === 'number' ? ' step="any"' : '') + ' style="width:' + w + 'px" data-arr="' + arr + '" data-i="' + i + '" data-k="' + k + '" value="' + esc(v ?? '') + '" placeholder="' + esc(ph) + '" aria-label="' + k + '">';
   const targets = [{ v: '', t: '– choose asset or service –' }, ...(S.assets || []).map(a => ({ v: a.id, t: 'Asset: ' + (a.desc || assetCls(a.cls).n) + (a.tag ? ' (' + a.tag + ')' : '') })), ...(S.soft || []).map(x => ({ v: x.id, t: 'Soft: ' + softCls(x.svc).n + (x.scope ? ' – ' + x.scope : '') }))];
-  const tkRows = F.tk.map(r => '<tr><td><b>' + esc(r.t.no || '') + '</b><br>' + sA('tickets', r.i, 'pri', Object.keys(SLA_DEF).map(p => ({ v: p, t: PRI_TXT[p] })), r.pri, 150) + (r.sugg && r.sugg !== r.pri ? '<br><span class="note">Suggested ' + r.sugg + ' from criticality</span>' : '') + '</td>'
+  const tkRows = F.tk.map(r => '<tr><td><b>' + esc(r.t.no || '') + '</b><br>' + sA('tickets', r.i, 'pri', Object.keys(SLA_DEF).map(p => ({ v: p, t: PRI_TXT[p] })), r.pri, 150) + (r.sugg && r.sugg !== r.pri ? '<br><span class="note">Suggested ' + r.sugg + (r.job ? ' for this issue' : ' from criticality') + '</span>' : '') + '</td>'
+    + '<td>' + sA('tickets', r.i, 'prop', PROP_T, r.t.prop || '', 170) + '<br>' + sA('tickets', r.i, 'trade', [{ v: '', t: '– trade –' }, ...JOB_LIB.map(c => ({ v: c.k, t: c.n }))], r.t.trade || '', 170) + (r.t.trade ? '<br>' + sA('tickets', r.i, 'issue', [{ v: '', t: '– choose the issue –' }, ...jobIssues(r.t.trade, r.t.prop, r.t.issue).map(j => ({ v: j[0], t: j[1] + ' (' + j[2] + ')' }))], r.t.issue || '', 240) : '') + '<br>' + iA('tickets', r.i, 'loc', r.t.loc, 'text', 170, 'Unit / room / area') + (r.job ? '<span class="note" style="display:block;max-width:260px">' + esc(r.job.act) + ' · ' + esc(r.job.who) + ' · about ' + r.job.hrs + ' h on site</span>' : '') + '</td>'
     + '<td>' + sA('tickets', r.i, 'target', targets, r.t.target, 180) + '<br>' + iA('tickets', r.i, 'desc', r.t.desc, 'text', 200, 'Fault / request') + '</td>'
     + '<td>' + sA('tickets', r.i, 'kind', TK_KIND, r.t.kind, 130) + '<br>' + iA('tickets', r.i, 'who', r.t.who, 'text', 130, 'Assigned to') + '</td>'
     + '<td>' + iA('tickets', r.i, 'raised', r.t.raised, 'datetime-local', 170) + '</td><td class="n">attend ' + r.L.attend + ' h<br>fix ' + fmHrs(r.L.fix) + '<br><span class="note">due ' + fmDT(r.dueF) + '</span></td>'
@@ -2333,11 +2451,12 @@ V.fm = () => {
     + (r.ms.length ? '<div class="tbl-wrap"><table><thead><tr><th>Milestone</th><th>Due</th><th>Status</th><th></th><th></th></tr></thead><tbody>' + r.ms.map(o => '<tr><td>' + iA('milestones', o.j, 'name', o.m.name, 'text', 260) + '</td><td>' + iA('milestones', o.j, 'due', o.m.due, 'date', 150) + '</td><td>' + sA('milestones', o.j, 'st', MS_ST, o.m.st || 'Not started') + '</td><td>' + (o.late ? pill('bad', 'Late') : o.m.st === 'Done' ? pill('ok', 'Done') : '') + '</td><td><button class="btn small ghost" data-del="milestones" data-i="' + o.j + '">Remove</button></td></tr>').join('') + '</tbody></table></div>' : '')
     + '<div class="row" style="margin-top:6px"><button class="btn small" data-act="ms-add" data-pid="' + esc(r.p.id) + '">Add milestone</button><button class="btn small ghost" data-del="capProj" data-i="' + r.i + '">Remove project</button></div></div>').join('');
   const dueAssets = A.rows.filter(r => r.replYear < A.yr + (+A.cfg.horizon || 10) && !(S.capProj || []).some(p => p.src === 'asset:' + r.a.id)).length;
-  return '<section class="sheet">' + head('FM', 'FM operations', 'Helpdesk tickets prioritised P1 (critical) to P4 (planned) with response and fix times, soft services, capital projects with milestones, and the general update for the facilities report.', '<a class="btn primary" href="#fmreport">Open the facilities report</a>')
+  return '<section class="sheet">' + head('FM', 'FM operations', 'Helpdesk tickets for plant and for everyday domestic and commercial repairs (electrical, plumbing, carpentry, HVAC, swimming pool, gym and recreational areas), prioritised P1 (critical) to P4 (planned) with response and fix times, soft services, capital projects with milestones, and the general update for the facilities report.', '<a class="btn primary" href="#fmreport">Open the facilities report</a>')
     + '<div class="kpis">' + [['Open tickets', F.open, F.byP.map(b => b.p + ' ' + b.open).join(' · ')], ['Overdue', F.overdue, 'past the fix time'], ['SLA compliance', F.slaPct == null ? '–' : pct(F.slaPct), 'tickets judged against the fix time'], ['Mean time to repair', F.mttr == null ? '–' : fmHrs(F.mttr), 'closed tickets'], ['Capital programme', f0(F.budget) + ' ' + cur, F.pr.length + ' projects · ' + (F.budget ? pct(F.spent / F.budget) : '0%') + ' spent']].map(([a, b, c]) => '<div class="kpi"><span>' + a + '</span><b>' + b + '</b><small>' + c + '</small></div>').join('') + '</div>'
     + '<h3>Helpdesk tickets – most critical first</h3><div class="row" style="margin-bottom:8px"><button class="btn small" data-add="tickets">Raise ticket</button></div>'
-    + (F.tk.length ? '<div class="tbl-wrap"><table><thead><tr><th>No. / priority</th><th>Asset or service / fault</th><th>Type / assigned</th><th>Raised</th><th>Time limit</th><th>Attended / completed</th><th>Status</th><th>SLA</th><th></th></tr></thead><tbody>' + tkRows + '</tbody></table></div>' : '<p class="note">No tickets yet.</p>')
+    + (F.tk.length ? '<div class="tbl-wrap"><table><thead><tr><th>No. / priority</th><th>Property / trade / issue / location</th><th>Asset or service (optional) / fault</th><th>Type / assigned</th><th>Raised</th><th>Time limit</th><th>Attended / completed</th><th>Status</th><th>SLA</th><th></th></tr></thead><tbody>' + tkRows + '</tbody></table></div>' : '<p class="note">No tickets yet. Use <b>Raise ticket</b>, then pick the property type, trade and issue – the priority and time limits follow.</p>')
     + '<details style="margin-top:8px"><summary><b>Response and fix times by priority</b> (hours – edit to match the contract)</summary><div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Priority</th><th>Attend within (h)</th><th>Fix within (h)</th></tr></thead><tbody>' + slaRows + '</tbody></table></div></details>'
+    + '<details style="margin-top:8px"><summary><b>Reactive maintenance directory</b> – ' + JOB_LIB.reduce((a, c) => a + c.issues.length, 0) + ' common domestic and commercial issues with default priority and typical fix</summary>' + JOB_LIB.map(c => '<h4 style="margin:10px 0 4px">' + esc(c.n) + '</h4><div class="tbl-wrap"><table><thead><tr><th>Issue</th><th>Priority</th><th>Typical action</th><th>Trade</th><th>Hours on site</th><th>Property</th></tr></thead><tbody>' + c.issues.map(j => '<tr><td>' + esc(j[1]) + '</td><td>' + j[2] + '</td><td class="note">' + esc(j[3]) + '</td><td>' + esc(j[4]) + '</td><td class="n">' + j[5] + '</td><td>' + ({ B: 'Both', R: 'Residential', C: 'Commercial' })[j[6]] + '</td></tr>').join('') + '</tbody></table></div>').join('') + '<p class="note">Default priorities are typical; change the priority on the ticket where the site risk is higher or lower (for example a vulnerable resident, a server room or a closed pool). Gas, F-gas and electrical work must be done by suitably registered people under local law.</p></details>'
     + '<h3>Soft services</h3><div class="row" style="margin-bottom:8px"><button class="btn small" data-add="soft">Add service</button>' + ((S.soft || []).length ? '' : '<button class="btn small" data-act="soft-defaults">Add the standard services</button>') + '</div>'
     + (F.soft.length ? '<div class="tbl-wrap"><table><thead><tr><th>Service / scope</th><th>Provider</th><th>Frequency</th><th>Standard / KPIs</th><th>Performance</th><th>Functionality</th><th>Last done</th><th>KPI %</th><th>Cost</th><th>Status</th><th></th></tr></thead><tbody>' + softRows + '</tbody></table></div>' : '<p class="note">Cleaning, refuse disposal, landscaping, fumigation / pest control, access control, security and water hygiene.</p>')
     + '<h3>Capital projects and milestones</h3><div class="row" style="margin-bottom:8px"><button class="btn small" data-add="capProj">Add project</button>' + (dueAssets ? '<button class="btn small" data-act="cap-from-assets">Add ' + dueAssets + ' replacement projects from the asset forecast</button>' : '') + '</div>' + (prRows || '<p class="note">No capital projects yet.</p>')
@@ -2354,7 +2473,8 @@ function fmBody() {
     + (u.summary ? '<p>' + esc(u.summary) + '</p>' : '')
     + sec('State, performance and efficiency of equipment') + (A.rows.length ? tbl(['Equipment', 'Qty', 'Capacity', 'Condition', 'Performance', 'Efficiency', 'PPM completed', 'Remaining life', 'Advice'], A.rows.sort((x, y) => y.risk - x.risk).map(r => [esc(r.a.desc || r.c.n) + (r.a.tag ? ' (' + esc(r.a.tag) + ')' : ''), r.qty, (r.a.cap || r.c.cap.o[0]) + ' ' + esc(r.c.cap.u), COND[r.cond - 1].t, esc(r.a.perf || PERF_A[0]), esc(r.a.eff || EFF_A[1]), esc(r.a.ppm || PPM_PCT[0]), f1(r.remAdj) + ' yrs', esc(r.adv.map(x => x[1]).join('; '))])) + tbl(['Performance', 'Units'], cnt(PERF_A, 'perf')) : '<p class="s">No assets recorded.</p>')
     + sec('Helpdesk tickets by priority') + tbl(['Priority', 'Raised', 'Open', 'Overdue', 'Fixed in time', 'Fixed late'], F.byP.map(b => [esc(PRI_TXT[b.p]), b.n, b.open, b.overdue, b.met, b.missed]))
-    + (F.tk.filter(r => !r.closed).length ? tbl(['No.', 'Priority', 'Asset / service', 'Fault', 'Raised', 'Fix due', 'Status'], F.tk.filter(r => !r.closed).map(r => [esc(r.t.no || ''), r.pri, esc(r.target), esc(r.t.desc || ''), fmDT(r.raised), fmDT(r.dueF), r.overdue ? 'OVERDUE' : esc(r.t.st || 'Open')])) : '')
+    + (F.byT.length ? '<p class="s"><b>Reactive maintenance by trade</b></p>' + tbl(['Trade', 'Raised', 'Open', 'Overdue', 'Fixed in time', 'Fixed late', 'Typical hours on site'], F.byT.map(b => [esc(b.name), b.raised, b.open, b.overdue, b.met, b.missed, b.hrs ? f1(b.hrs) : '–'])) : '')
+    + (F.tk.filter(r => !r.closed).length ? tbl(['No.', 'Priority', 'Trade / issue', 'Asset / service / location', 'Fault', 'Raised', 'Fix due', 'Status'], F.tk.filter(r => !r.closed).map(r => [esc(r.t.no || ''), r.pri, r.job ? esc(r.job.trade + ': ' + r.job.n) : '–', esc(r.target), esc(r.t.desc || ''), fmDT(r.raised), fmDT(r.dueF), r.overdue ? 'OVERDUE' : esc(r.t.st || 'Open')])) : '')
     + sec('Soft services') + (F.soft.length ? tbl(['Service', 'Provider', 'Frequency', 'Performance', 'Functionality', 'KPI %', 'Next due', 'Remarks'], F.soft.map(r => [esc(r.c.n) + (r.x.scope ? ' – ' + esc(r.x.scope) : ''), esc((r.x.prov || 'Contractor') + (r.x.who ? ' – ' + r.x.who : '')), esc(r.x.freq || r.c.freq), esc(r.x.perf || 'Good'), esc(r.x.func || 'Fully operational'), r.x.kpi || '–', r.next ? fmDT(r.next).slice(0, 10) : '–', esc(r.adv.join('; '))])) : '<p class="s">No soft services recorded.</p>')
     + sec('Capital projects and milestones') + (F.pr.length ? tbl(['Project', 'Category', 'Stage', '% complete', 'Budget', 'Spent', 'Completion', 'RAG', 'Milestones'], F.pr.map(r => [esc(r.p.name || '—'), esc(r.p.cat || ''), esc(r.p.stage || 'Concept'), (+r.p.pct || 0) + '%', f0(r.budget), f0(r.spent), esc(r.p.end || '–'), r.rag, r.msDone + ' / ' + r.ms.length])) + F.pr.map(r => (r.p.summary || r.p.update || r.ms.length) ? '<p class="s"><b>' + esc(r.p.name || '—') + '</b>' + (r.p.summary ? ' – ' + esc(r.p.summary) : '') + (r.p.update ? ' <i>Update:</i> ' + esc(r.p.update) : '') + '</p>' + (r.ms.length ? '<ul class="s">' + r.ms.map(o => '<li>' + esc(o.m.name || '') + ' – ' + esc(o.m.due || 'no date') + ' – ' + esc(o.m.st || 'Not started') + (o.late ? ' (LATE)' : '') + '</li>').join('') + '</ul>' : '') : '').join('') : '<p class="s">No capital projects recorded.</p>')
     + sec('Life cycle and capital replacement forecast') + (A.rows.length ? tbl(['Year', 'Assets due', 'Replacement cost'], A.capex.map(c => [c.year, c.n, f0(c.v)])) + '<p class="s">Book value ' + f0(A.book) + ' ' + esc(cur) + '; depreciation ' + f0(A.dep) + ' a year (' + (A.cfg.method === 'RB' ? 'reducing balance' : 'straight line') + ').</p>' : '<p class="s">No assets recorded.</p>')
@@ -2368,8 +2488,10 @@ function csvFm() {
   L.push(q('FACILITIES MANAGEMENT REPORT – ' + (S.project.name || '') + ' – ' + (u.period || '')));
   L.push(''); L.push(q('EQUIPMENT STATE')); L.push(['Equipment', 'Tag', 'Qty', 'Capacity', 'Unit', 'Condition', 'Performance', 'Efficiency', 'PPM completed', 'Remaining life yrs', 'Replace by', 'Advice'].map(q).join(','));
   A.rows.forEach(r => L.push([r.a.desc || r.c.n, r.a.tag, r.qty, r.a.cap || r.c.cap.o[0], r.c.cap.u, r.cond, r.a.perf || PERF_A[0], r.a.eff || EFF_A[1], r.a.ppm || PPM_PCT[0], r.remAdj, r.replYear, r.adv.map(x => x[1]).join(' | ')].map(q).join(',')));
-  L.push(''); L.push(q('TICKETS')); L.push(['No.', 'Priority', 'Asset / service', 'Type', 'Fault', 'Assigned', 'Raised', 'Attend due', 'Fix due', 'Attended', 'Completed', 'Status', 'SLA'].map(q).join(','));
-  F.tk.forEach(r => L.push([r.t.no, r.pri, r.target, r.t.kind, r.t.desc, r.t.who, fmDT(r.raised), fmDT(r.dueA), fmDT(r.dueF), r.t.attended, r.t.done, r.t.st || 'Open', r.overdue ? 'Overdue' : r.fixMet === true ? 'Met' : r.fixMet === false ? 'Missed' : 'Open'].map(q).join(',')));
+  L.push(''); L.push(q('TICKETS')); L.push(['No.', 'Priority', 'Property', 'Trade', 'Issue', 'Location', 'Asset / service', 'Type', 'Fault', 'Assigned', 'Raised', 'Attend due', 'Fix due', 'Attended', 'Completed', 'Status', 'SLA'].map(q).join(','));
+  F.tk.forEach(r => L.push([r.t.no, r.pri, r.t.prop || '', r.job ? r.job.trade : '', r.job ? r.job.n : '', r.t.loc || '', r.target, r.t.kind, r.t.desc, r.t.who, fmDT(r.raised), fmDT(r.dueA), fmDT(r.dueF), r.t.attended, r.t.done, r.t.st || 'Open', r.overdue ? 'Overdue' : r.fixMet === true ? 'Met' : r.fixMet === false ? 'Missed' : 'Open'].map(q).join(',')));
+  L.push(''); L.push(q('TICKETS BY TRADE')); L.push(['Trade', 'Raised', 'Open', 'Overdue', 'Fixed in time', 'Fixed late', 'Typical hours on site'].map(q).join(','));
+  F.byT.forEach(b => L.push([b.name, b.raised, b.open, b.overdue, b.met, b.missed, b.hrs].map(q).join(',')));
   L.push(''); L.push(q('SOFT SERVICES')); L.push(['Service', 'Scope', 'Provider', 'Frequency', 'Standard', 'Performance', 'Functionality', 'Last done', 'Next due', 'KPI %', 'Cost/yr', 'Remarks'].map(q).join(','));
   F.soft.forEach(r => L.push([r.c.n, r.x.scope, (r.x.prov || '') + (r.x.who ? ' ' + r.x.who : ''), r.x.freq || r.c.freq, r.x.std || r.c.std[0], r.x.perf || 'Good', r.x.func || 'Fully operational', r.x.last, r.next ? fmDT(r.next).slice(0, 10) : '', r.x.kpi, r.x.cost, r.adv.join(' | ')].map(q).join(',')));
   L.push(''); L.push(q('CAPITAL PROJECTS')); L.push(['Project', 'Category', 'Stage', '% complete', 'Budget', 'Spent', 'Start', 'Completion', 'RAG', 'Summary', 'Update'].map(q).join(','));
@@ -2749,7 +2871,9 @@ let rT;
 function onEdit(e, immediate) {
   const el = e.target;
   if (el.dataset.p) { let v = castVal(el); if (NUM_PATHS.test(el.dataset.p) && v === '') return; setPath(el.dataset.p, v); if (el.dataset.p === 'project.country') { S.project.vllOverride = ''; S.project.vlnOverride = ''; S.project.dregOverride = ''; } if (el.dataset.p === 'dc.platform') applyPlatform(v); }
-  else if (el.dataset.arr) { const v = castVal(el); S[el.dataset.arr][+el.dataset.i][el.dataset.k] = el.dataset.k === 'cable' || el.dataset.k === 'ph' ? +v : v; if (el.dataset.arr === 'assets' && el.dataset.k === 'cls') { const a = S.assets[+el.dataset.i], c = assetCls(v); a.cap = c.cap.o[0]; a.type = c.types[0]; a.crit = c.crit; a.life = ''; } }
+  else if (el.dataset.arr) { const v = castVal(el); S[el.dataset.arr][+el.dataset.i][el.dataset.k] = el.dataset.k === 'cable' || el.dataset.k === 'ph' ? +v : v; if (el.dataset.arr === 'tickets' && el.dataset.k === 'trade') S.tickets[+el.dataset.i].issue = '';
+    if (el.dataset.arr === 'tickets' && el.dataset.k === 'issue') { const t = S.tickets[+el.dataset.i], j = jobOf(t.trade, v); if (j) { t.pri = j.p; if (!t.desc || JOB_LIB.some(c => c.issues.some(x => x[1] === t.desc))) t.desc = j.n; t.kind = 'Reactive breakdown'; } }
+    if (el.dataset.arr === 'assets' && el.dataset.k === 'cls') { const a = S.assets[+el.dataset.i], c = assetCls(v); a.cap = c.cap.o[0]; a.type = c.types[0]; a.crit = c.crit; a.life = ''; } }
   else if (el.dataset.signoff) { S.signoff = S.signoff || { items: {} }; S.signoff.items = S.signoff.items || {}; const it = S.signoff.items[el.dataset.signoff] = S.signoff.items[el.dataset.signoff] || {}; it[el.dataset.k] = el.value; }
   else if (el.dataset.board) { S.boards = S.boards || {}; const b = S.boards[el.dataset.board] = S.boards[el.dataset.board] || {}; b[el.dataset.k] = castVal(el); }
   else if (el.dataset.rvmap) { const m = S.review.map[el.dataset.rvmap] = S.review.map[el.dataset.rvmap] || {}; m[el.dataset.k] = el.dataset.k === 'w' ? castVal(el) : el.value; }
@@ -2764,7 +2888,7 @@ function onEdit(e, immediate) {
 }
 document.addEventListener('input', e => { if (e.target.matches('input:not([type=checkbox]),textarea')) onEdit(e, false); });
 document.addEventListener('change', e => { if (e.target.matches('select,input[type=checkbox],input[type=date]')) onEdit(e, true); });
-const BLANK = { tickets: () => ({ id: uid(), no: 'T-' + String((S.tickets || []).length + 1).padStart(4, '0'), pri: 'P3', target: '', desc: '', kind: 'Reactive breakdown', who: '', raised: new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), attended: '', done: '', st: 'Open' }), soft: () => ({ id: uid(), svc: 'clean', scope: '', prov: 'Contractor', who: '', freq: '', std: '', perf: 'Good', func: 'Fully operational', last: '', kpi: '', cost: '' }), capProj: () => ({ id: uid(), src: '', name: 'New capital project', cat: CAP_CAT[0], asset: '', stage: 'Concept', pct: 0, rag: '', budget: '', spent: '', start: '', end: '', summary: '', update: '' }), milestones: () => ({ id: uid(), pid: '', name: 'Milestone', due: '', st: 'Not started' }), assets: () => ({ id: uid(), src: '', cls: 'wtp', tag: '', desc: '', loc: '', qty: 1, cap: '', type: '', year: new Date().getFullYear(), cost: '', life: '', cond: 1, crit: '', fails: '', maint: '' }), essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: (R && R.DBR && R.DBR.rows[0] && R.DBR.rows[0].name) || 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', uf: '', ku: '', df: '', lf: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
+const BLANK = { tickets: () => ({ id: uid(), no: 'T-' + String((S.tickets || []).length + 1).padStart(4, '0'), pri: 'P3', prop: '', trade: '', issue: '', loc: '', target: '', desc: '', kind: 'Reactive breakdown', who: '', raised: new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), attended: '', done: '', st: 'Open' }), soft: () => ({ id: uid(), svc: 'clean', scope: '', prov: 'Contractor', who: '', freq: '', std: '', perf: 'Good', func: 'Fully operational', last: '', kpi: '', cost: '' }), capProj: () => ({ id: uid(), src: '', name: 'New capital project', cat: CAP_CAT[0], asset: '', stage: 'Concept', pct: 0, rag: '', budget: '', spent: '', start: '', end: '', summary: '', update: '' }), milestones: () => ({ id: uid(), pid: '', name: 'Milestone', due: '', st: 'Not started' }), assets: () => ({ id: uid(), src: '', cls: 'wtp', tag: '', desc: '', loc: '', qty: 1, cap: '', type: '', year: new Date().getFullYear(), cost: '', life: '', cond: 1, crit: '', fails: '', maint: '' }), essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: (R && R.DBR && R.DBR.rows[0] && R.DBR.rows[0].name) || 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', uf: '', ku: '', df: '', lf: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
 let armedNew = false;
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
