@@ -25,7 +25,20 @@
   --ok:#5fc08a; --ok-soft:#183324; --warn:#e0b14e; --warn-soft:#33290f; --bad:#f07d73; --bad-soft:#3b1a17;
   --input:#1f2421; --input-line:#5a5236; color-scheme:dark}
 *{box-sizing:border-box}
-/* Role workspaces */
+/* Role workspaces, registration and My tasks */
+.rolegrid label.role{position:relative;display:flex;flex-direction:column;gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer}
+.rolegrid label.role input{position:absolute;opacity:0;pointer-events:none}
+.rolegrid label.role:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.rolegrid label.role:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.rolegrid label.role b{font-family:var(--f-display);font-size:20px}.rolegrid label.role span{font-size:13.5px;color:var(--muted)}.rolegrid label.role small{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-top:auto}
+ol.tasks{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+ol.tasks li{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:6px;padding:9px 12px;background:var(--panel)}
+ol.tasks li.bad{border-left-color:var(--bad)}ol.tasks li.warn{border-left-color:var(--warn)}ol.tasks li.info{border-left-color:var(--accent)}
+ol.tasks b{font-size:14.5px}ol.tasks p{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+ol.tasks .tm{display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap;font-size:13px}
+ol.tasks .tm a{font-weight:600;color:var(--accent)}ol.tasks .due{font-family:var(--f-mono);color:var(--muted)}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+@media (max-width:600px){ol.tasks li{flex-direction:column}ol.tasks .tm{align-items:flex-start;flex-direction:row;gap:12px}}
 .rolegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px}
 .rolegrid .role{display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:inherit;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer}
 .rolegrid .role:hover{border-color:var(--line-strong)}
@@ -524,7 +537,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { S = null; }
 if (!S || S.v !== 1) S = exampleProject();
 // Projects saved before the AI data centre fields existed: fill in the new defaults.
-function upgrade(o) { if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); if (!o.tc || typeof o.tc !== 'object' || Array.isArray(o.tc)) o.tc = {}; ['docs', 'risks'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); ['lvt', 'lvInsp', 'lvCert'].forEach(k => { if (!o[k] || typeof o[k] !== 'object' || Array.isArray(o[k])) o[k] = {}; }); o.handover = Object.assign({}, o.handover || {}); o.handover.inc = Object.assign({}, o.handover.inc || {}); o.tcCfg = Object.assign({ cat: '', open: '' }, o.tcCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
+function upgrade(o) { if (!Array.isArray(o.tasks)) o.tasks = []; if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); if (!o.tc || typeof o.tc !== 'object' || Array.isArray(o.tc)) o.tc = {}; ['docs', 'risks'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); ['lvt', 'lvInsp', 'lvCert'].forEach(k => { if (!o[k] || typeof o[k] !== 'object' || Array.isArray(o[k])) o[k] = {}; }); o.handover = Object.assign({}, o.handover || {}); o.handover.inc = Object.assign({}, o.handover.inc || {}); o.tcCfg = Object.assign({ cat: '', open: '' }, o.tcCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
 upgrade(S);
 let saveT;
 let saveWarned = false;
@@ -1615,7 +1628,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 
 /* ---------- views ---------- */
 const VIEWS = [
-  ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
+  ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['tasks', 'My tasks'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
   ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport', 'regreport'];
@@ -1629,7 +1642,7 @@ function der(v) { return `<div class="derived">${v}</div>`; }
 function pill(s, t) { return `<span class="pill ${s}">${esc(t)}</span>`; }
 
 function renderBand() {
-  $('#bandProj').textContent = `${S.project.name || 'Untitled project'} · ${S.project.ref || ''}`; $('#roleChip').textContent = roleOf()[1];
+  $('#bandProj').textContent = `${S.project.name || 'Untitled project'} · ${S.project.ref || ''}`; $('#roleChip').textContent = REG ? REG.name + ' · ' + roleOf()[1] : 'Not registered – register';
   $('#readouts').innerHTML = [['Region', `${esc(S.project.country)}`], ['Supply', `${R.X.vln}/${R.X.vll} V ${R.X.c.hz} Hz`], ['Max demand', `${f0(R.md)} kVA`, 'main'], ['Current', `${f0(R.amps)} A`], ['Transformer', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA` : 'Review']].map(([l, v, c]) => `<div class="ro ${c || ''}"><span>${l}</span><b>${v}</b></div>`).join('');
 }
 function railStatus(id) {
@@ -3242,6 +3255,8 @@ const vName = id => (VIEWS.find(v => v[0] === id) || [id, id])[1];
 function advNext() {
   const out = [], p = S.project, add = (s, t, d, v) => out.push({ s, t, d, v });
   const T = calcTC(), L = calcLV(), G = calcRegs(), F = calcFM(), A = calcAssets();
+  if (ROLE.id === 'guest') add('warn', 'Register with your role', 'The app is view only until you register on the Welcome page. Your role decides which stages you can edit and fills in your task dashboard.', 'home');
+  { const tt = roleTasks().filter(o => o.v === 'tasks' && o.s !== 'info'); if (tt.length) add(tt[0].s, tt.length + ' team task' + (tt.length > 1 ? 's' : '') + ' due or in progress', tt.slice(0, 3).map(o => o.t).join('; '), 'tasks'); }
   if (p.example) add('info', 'You are looking at the worked example', 'Every stage is filled in so you can see what good output looks like. When you are ready, start a new blank project from the left menu and work through the stages in order.', 'home');
   if (!p.name || !p.designer || !p.checker) add('warn', 'Complete the project details', 'Project name, designer and checker appear on every report, certificate and export. Fill them in first.', 'project');
   if (!(S.zones || []).length && !(S.loads || []).length) add('bad', 'Add the loads', 'Nothing will size until there are loads. Add floor areas by building type, or list the equipment with its kW.', 'area');
@@ -3275,6 +3290,7 @@ function advNext() {
 }
 // A short guide to each page: what it is for, how to use it, and how to get the best result from it.
 const ADV_PAGE = {
+  tasks: ['Your task dashboard: what needs doing in your stages, most urgent first, plus team tasks assigned to your role.', ['Work from the top – urgent first.', 'Each task links to the page that clears it; fix the cause and the task disappears.', 'Add team tasks for anything the app cannot see, and update their status.'], ['Save and share the project file so team tasks reach everyone.', 'The project lead sees every role in the team overview.']],
   home: ['The starting point. It shows where the project stands in each stage and links straight into it.', ['Watch the intro for a 35-second tour.', 'Explore the worked example to see every stage filled in.', 'Start a new project when you are ready – your work saves in this browser as you go.'], ['Save a .json copy of the project regularly and keep it with your project files.']],
   dashboard: ['A live red/amber/green view of design, testing, registers, maintenance and assets, plus the HV standards for the region.', ['Read the overall status, then open any amber or red stage.', 'Use it at project meetings as the one-page summary.'], ['The colours are calculated – fix the cause in its stage and the dashboard follows.']],
   project: ['Sets the region, which drives voltage, frequency, voltage-drop limits, wiring rules and the factor set used everywhere.', ['Choose the country first.', 'Fill in name, reference, client, designer and checker – they appear on every output.', 'Only override the voltage if the supply really differs.'], ['Changing the country resets voltage overrides – set the region before entering loads.']],
@@ -3324,7 +3340,9 @@ const ADV_HELP = [
   ['How do I export to Excel?', 'The project workbook (.xlsx) is on the Project dashboard, Handover pack and Design report; Facilities report and FM operations have the facilities workbook. CSV exports are on each register and schedule.', 'report'],
   ['How do I print or save a PDF?', 'Use the save-as-PDF buttons on the report pages, then choose "Save as PDF" as the printer in your browser’s print window.', 'report'],
   ['Is this a certified design?', 'No. Results are a design pre-check, not certification. Confirm standards and limits with the local authority and network operator, and certify the design yourself.', 'coverage'],
-  ['How do roles work?', 'Pick your role on the Welcome page: design engineer, implementation & deployment, facilities engineer, facility manager, energy manager, asset manager or project lead. The menu, Welcome page and Advisor follow it, and stages owned by other roles open view only. The role is kept in your browser, not in the project file.', 'home'],
+  ['How do I register?', 'On the Welcome page enter your name and pick your role, then press Register. It stays in this browser and nothing is sent anywhere. Until you register the app is view only.', 'home'],
+  ['Where are my tasks?', 'My tasks shows what needs doing in your stages, worked out from the project, and the team tasks assigned to your role.', 'tasks'],
+  ['How do roles work?', 'Register your role on the Welcome page: design engineer, implementation & deployment, facilities engineer, facility manager, energy manager, asset manager or project lead. The menu, Welcome page and Advisor follow it, and stages owned by other roles open view only. The role is kept in your browser, not in the project file.', 'home'],
   ['Is my data private?', 'Yes. The project stays in this browser – nothing is uploaded. Share it only by saving files yourself.', 'home'],
   ['Data centre sizing', 'Data centre sizes by area, racks or IT load with Tier redundancy. Pick a platform to fill density and liquid cooling, then review UPS and generators.', 'data-centre'],
   ['Lifts and escalators', 'Lifts & pumps sizes motors and group demand. Maintenance, call-outs and lift assets are added from the design on FM operations and Assets & maintenance.', 'lifts-pumps'],
@@ -3392,36 +3410,135 @@ const ROLES = [
     ['dashboard', 'assets', 'fm', 'fmreport', 'handover', 'registers', 'report'],
     ['assets', 'fm', 'fmreport']],
 ];
-const ROLE_KEY = 'nexvorahub-role';
-let ROLE = { id: 'lead', all: false };
-try { const r = JSON.parse(localStorage.getItem(ROLE_KEY) || 'null'); if (r && ROLES.some(x => x[0] === r.id)) ROLE = { id: r.id, all: !!r.all }; } catch (e) { }
-function roleSave() { try { localStorage.setItem(ROLE_KEY, JSON.stringify(ROLE)); } catch (e) { } }
-function roleOf(id = ROLE.id) { return ROLES.find(r => r[0] === id) || ROLES[0]; }
-function roleShows(v, id) { const r = roleOf(id); return !r[3] || v === 'home' || r[3].includes(v); }
-function canEdit(v = view, id) { const r = roleOf(id); return !r[4] || v === 'home' || v === 'dashboard' || EXTRA_VIEWS.includes(v) || r[4].includes(v); }
+const ROLE_KEY = 'nexvorahub-role', REG_KEY = 'nexvorahub-user';
+// Registration: name and role, kept in this browser. The registered role decides which stages open for editing.
+const GUEST = ['guest', 'Guest – not registered', 'Explore the app and the worked example. Register to start working.', null, []];
+let REG = null, REG_EDIT = false, ROLE = { id: 'guest', all: false };
+try { const u = JSON.parse(localStorage.getItem(REG_KEY) || 'null'); if (u && u.name && ROLES.some(x => x[0] === u.role)) REG = u; } catch (e) { }
+try { const r = JSON.parse(localStorage.getItem(ROLE_KEY) || 'null'); if (r) ROLE.all = !!r.all; } catch (e) { }
+if (REG) ROLE.id = REG.role;
+function roleSave() { try { localStorage.setItem(ROLE_KEY, JSON.stringify({ all: ROLE.all })); if (REG) localStorage.setItem(REG_KEY, JSON.stringify(REG)); else localStorage.removeItem(REG_KEY); } catch (e) { } }
+function roleOf(id = ROLE.id) { return id === 'guest' ? GUEST : ROLES.find(r => r[0] === id) || GUEST; }
+function roleShows(v, id) { const r = roleOf(id); return !r[3] || v === 'home' || v === 'tasks' || r[3].includes(v); }
+function canEdit(v = view, id) { const r = roleOf(id); return !r[4] || v === 'home' || v === 'tasks' || v === 'dashboard' || EXTRA_VIEWS.includes(v) || r[4].includes(v); }
 function roleOwners(v) { return ROLES.filter(r => r[4] && r[4].includes(v)).map(r => r[1]); }
 function roleRail() { return VIEWS.map((v, i) => [v, i]).filter(([v]) => ROLE.all || roleShows(v[0])); }
 // Buttons that only read, export or navigate stay live on a view-only page.
 function roleSafe(b) { const a = b.dataset.act || ''; return !b.dataset.add && !b.dataset.del && (!a || /^(dl-|copy-report|save-json|intro-|adv-|role-)/.test(a)); }
 function roleBanner() {
   if (canEdit()) return '';
+  if (ROLE.id === 'guest') return '<p class="callout ro-note" role="note"><b>You are not registered, so this page is view only.</b> <a href="#home">Register on the Welcome page</a> with your role to start working – it takes a few seconds and stays in this browser.</p>';
   const o = roleOwners(view);
-  return '<p class="callout ro-note" role="note"><b>View only for your role (' + esc(roleOf()[1]) + ').</b> ' + (o.length ? 'Edited by: ' + esc(o.join(', ')) + ' and the project lead. ' : '') + 'Exports and reports still work. <a href="#home">Change role on the Welcome page</a>.</p>';
+  return '<p class="callout ro-note" role="note"><b>View only for your role (' + esc(roleOf()[1]) + ').</b> ' + (o.length ? 'Edited by: ' + esc(o.join(', ')) + ' and the project lead. ' : '') + 'Exports and reports still work. <a href="#home">Change your registration on the Welcome page</a>.</p>';
 }
 function roleLock() {
   const main = $('#main'); if (!main || !main.querySelectorAll || canEdit()) return;
   main.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = true; });
   main.querySelectorAll('button').forEach(b => { if (!roleSafe(b)) { b.disabled = true; b.title = 'View only for your role'; } });
 }
+function regWorkspace() {
+  const r = roleOf(); if (!r[3]) return '<p class="note">Project lead: every stage is open to you.</p>';
+  return '<div class="yours"><h3>Your workspace</h3><div class="chain">' + ['tasks', ...r[3]].map(v => '<a href="#' + v + '" class="' + (canEdit(v) ? 'ed' : 'vo') + '">' + esc(vName(v)) + (canEdit(v) ? '' : ' <i>view</i>') + '</a>').join('') + '</div></div>';
+}
 function rolePicker() {
-  return '<div class="sheet roles" id="roles"><h3 style="margin-top:0">Your role</h3><p class="note" style="margin-top:0">Pick the role you work in. The menu, this page and the Advisor follow it, and stages owned by other roles open view only. It is remembered in this browser – the project file is shared by everyone.</p>'
-    + '<div class="rolegrid" role="radiogroup" aria-label="Your role">' + ROLES.map(r => '<button class="role' + (r[0] === ROLE.id ? ' on' : '') + '" role="radio" aria-checked="' + (r[0] === ROLE.id) + '" data-act="role-set" data-role="' + r[0] + '"><b>' + esc(r[1]) + '</b><span>' + esc(r[2]) + '</span>' + (r[4] ? '<small>Edits ' + r[4].length + ' stage' + (r[4].length > 1 ? 's' : '') + ' · views ' + r[3].length + '</small>' : '<small>Edits every stage</small>') + '</button>').join('') + '</div>'
-    + (roleOf()[4] ? '<div class="yours"><h3>Your workspace</h3><div class="chain">' + roleOf()[3].map(v => '<a href="#' + v + '" class="' + (canEdit(v) ? 'ed' : 'vo') + '">' + esc(vName(v)) + (canEdit(v) ? '' : ' <i>view</i>') + '</a>').join('') + '</div></div>' : '') + '</div>';
+  if (REG && !REG_EDIT) return '<div class="sheet roles" id="roles"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">Registered as ' + esc(REG.name) + '</h3><p class="note" style="margin:4px 0 0">' + esc(roleOf()[1]) + (REG.org ? ' · ' + esc(REG.org) : '') + (REG.qual ? ' · ' + esc(REG.qual) : '') + '</p></div><div class="row"><a class="btn primary" href="#tasks">My tasks</a><button class="btn" data-act="role-edit">Edit registration</button><button class="btn ghost" data-act="role-signout">Sign out</button></div></div>' + regWorkspace() + '</div>';
+  const pick = (REG && REG.role) || '';
+  return '<div class="sheet roles" id="roles"><h3 style="margin-top:0">' + (REG ? 'Edit your registration' : 'Register to start working') + '</h3><p class="note" style="margin-top:0">Your role decides which stages open for you to edit – the rest open view only, and your task dashboard and the Advisor follow it. Registration stays in this browser; nothing is sent anywhere. Each person on the team registers on their own device, and the project file is shared between you.</p>'
+    + '<div class="grid">' + fld('Your name', '<input id="regName" autocomplete="name" value="' + esc((REG && REG.name) || '') + '" required>') + fld('Organisation', '<input id="regOrg" autocomplete="organization" value="' + esc((REG && REG.org) || '') + '">', 'Optional') + fld('Qualification / registration', '<input id="regQual" value="' + esc((REG && REG.qual) || '') + '" placeholder="e.g. IEng MIET">', 'Optional – shown on your task dashboard') + '</div>'
+    + '<fieldset class="rolegrid" style="border:0;padding:0;margin:12px 0 0"><legend class="note" style="margin-bottom:8px">Your role</legend>' + ROLES.map(r => '<label class="role"><input type="radio" name="regRole" value="' + r[0] + '"' + (r[0] === pick ? ' checked' : '') + '><b>' + esc(r[1]) + '</b><span>' + esc(r[2]) + '</span>' + (r[4] ? '<small>Edits ' + r[4].length + ' stage' + (r[4].length > 1 ? 's' : '') + ' · views ' + r[3].length + '</small>' : '<small>Edits every stage</small>') + '</label>').join('') + '</fieldset>'
+    + '<div class="row" style="margin-top:12px"><button class="btn primary" data-act="role-register">' + (REG ? 'Save registration' : 'Register') + '</button>' + (REG ? '<button class="btn ghost" data-act="role-cancel">Cancel</button>' : '') + '<span class="note" id="regMsg" role="status"></span></div></div>';
 }
 function roleAct(act, b) {
-  if (act === 'role-set') { ROLE.id = b.dataset.role; roleSave(); render(); toast('Workspace set for ' + roleOf()[1]); const f = document.querySelector('[data-role="' + ROLE.id + '"]'); if (f && f.focus) f.focus(); }
+  if (act === 'role-register') {
+    const v = id => { const e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }, ch = document.querySelector('input[name="regRole"]:checked'), role = ch ? ch.value : '', name = v('regName');
+    const m = document.getElementById('regMsg');
+    if (!name || !role) { if (m) m.textContent = !name ? 'Enter your name.' : 'Pick your role.'; const f = document.getElementById(!name ? 'regName' : 'roles'); if (f && f.focus) f.focus(); return; }
+    REG = { name, org: v('regOrg'), qual: v('regQual'), role, at: (REG && REG.at) || new Date().toISOString().slice(0, 10) }; ROLE.id = role; REG_EDIT = false; roleSave(); render(); toast('Welcome, ' + name + ' – your workspace is set for ' + roleOf()[1]); return;
+  }
+  if (act === 'role-edit') { REG_EDIT = true; render(); const f = document.getElementById('regName'); if (f && f.focus) f.focus(); }
+  if (act === 'role-cancel') { REG_EDIT = false; render(); }
+  if (act === 'role-signout') { REG = null; ROLE.id = 'guest'; REG_EDIT = false; roleSave(); render(); toast('Signed out – the app is view only until you register'); }
   if (act === 'role-all') { ROLE.all = !ROLE.all; roleSave(); renderRail(); }
 }
+/* ---------- My tasks: each role's task dashboard, worked out from the project, plus team tasks assigned to a role ---------- */
+const TASK_ST = ['To do', 'In progress', 'Done'];
+function roleTasks(id = ROLE.id) {
+  const out = [], add = (s, t, d, v, due) => out.push({ s, t, d: d || '', v, due: due || '' }), want = ks => id === 'lead' || ks.includes(id);
+  const T = calcTC(), L = calcLV(), G = calcRegs(), F = calcFM(), A = calcAssets(), iso = ms => ms == null || !isFinite(ms) ? '' : new Date(ms).toISOString().slice(0, 10);
+  if (want(['design'])) {
+    if (!(S.zones || []).length && !(S.loads || []).length) add('bad', 'Add the loads', 'Nothing sizes until there are area or equipment loads.', 'area');
+    if (!R.txKva) add('bad', 'Transformer not selected', 'Review demand, diversity and the transformer range.', 'sizing');
+    R.C.filter(c => c.fail && c.fail !== 'REVIEW').forEach(c => add('bad', 'Fix circuit ' + c.k.ref + ' – ' + c.fail, (c.k.desc || '') + (c.k.from ? ' · from ' + c.k.from : ''), 'circuits'));
+    R.C.filter(c => c.fail === 'REVIEW').forEach(c => add('warn', 'Review circuit ' + c.k.ref, (c.k.desc || '') + ' – needs information or a judgement before it can pass', 'circuits'));
+    CHECKS.forEach(c => { const [txt, st] = c[2](R); if (st === 'bad' || st === 'warn') add(st, 'Compliance: ' + c[0], txt, 'compliance'); });
+    const cl = clStat(CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items))); if (!cl.complete) add('info', 'Design checklist – ' + (cl.app - cl.done) + ' item' + (cl.app - cl.done === 1 ? '' : 's') + ' to confirm', cl.done + ' of ' + cl.app + ' done', 'checklist');
+    if (R.W.nBad) add('warn', R.W.nBad + ' drawing room check' + (R.W.nBad > 1 ? 's' : '') + ' failing', 'Lux level or socket count below the room type.', 'drawings');
+  }
+  if (want(['impl'])) {
+    if (!G.docs.length) add('info', 'Start the document register', 'Add the deliverables from the design.', 'registers');
+    G.docs.forEach(x => { const d = x.d, n = (d.no || '') + ' ' + (d.title || 'Untitled');
+      if (x.overdue) add('bad', 'Document overdue: ' + n, 'Status ' + (d.st || '') + (d.to ? ' · with ' + d.to : ''), 'registers', d.due);
+      else if (x.waiting) add('warn', 'Awaiting review: ' + n, 'Chase the response' + (d.to ? ' from ' + d.to : ''), 'registers', d.due);
+      else if (d.code === 'C') add('warn', 'Rejected (code C): ' + n, 'Revise and resubmit', 'registers', d.due); });
+    G.risks.filter(x => x.open && (x.cur >= 10 || x.late)).forEach(x => add(x.cur >= 15 ? 'bad' : 'warn', 'Risk ' + (x.r.no || '') + ': ' + (x.r.title || 'Untitled'), 'Score ' + x.cur + ' (' + x.band + ') · owner ' + (x.r.owner || 'unassigned') + (x.late ? ' · action overdue' : ''), 'registers', x.r.due));
+    L.rows.filter(o => o.res === 'FAIL').forEach(o => add('bad', 'LV test failed: ' + o.ref, 'Failing: ' + o.fails.join(', ') + ' – correct and re-test', 'lvcert'));
+    const lvTodo = L.rows.filter(o => o.res !== 'PASS' && o.res !== 'FAIL').length; if (lvTodo) add('info', lvTodo + ' circuit' + (lvTodo > 1 ? 's' : '') + ' to test', 'Enter readings on the schedule of test results', 'lvcert');
+    if (L.inspFail) add('bad', L.inspFail + ' inspection item' + (L.inspFail > 1 ? 's' : '') + ' failed', 'Schedule of inspections', 'lvcert');
+    T.items.filter(x => x.fail).forEach(x => add('bad', 'Commissioning test failed: ' + x.test, x.ref, 'tc'));
+    T.byC.forEach(b => { const n = b.total - b.done - b.fail; if (n > 0) add('info', n + ' ' + b.n.replace(/ \(.*\)$/, '').replace(/ tests?$/i, '').toLowerCase() + ' test' + (n > 1 ? 's' : '') + ' open', b.done + ' of ' + b.total + ' done', 'tc'); });
+  }
+  if (want(['faceng', 'fm'])) {
+    F.tk.filter(x => !x.closed).sort((a, b) => String(a.pri).localeCompare(String(b.pri))).forEach(x => add(x.overdue ? 'bad' : x.pri === 'P1' || x.pri === 'P2' ? 'warn' : 'info', x.pri + ' · ' + (x.t.no ? x.t.no + ' ' : '') + (x.t.desc || x.t.issue || 'Ticket'), (x.t.loc ? x.t.loc + ' · ' : '') + (x.t.st || 'Open') + (x.overdue ? ' · past the fix time' : ''), 'fm', iso(x.dueF)));
+    F.soft.filter(r => r.st !== 'ok').forEach(r => add(r.st, 'Soft service: ' + r.c.n, r.adv.join('; '), 'fm', iso(r.next)));
+  }
+  if (want(['fm', 'asset'])) F.pr.forEach(o => { if (o.rag === 'Red' || o.rag === 'Amber') add(o.rag === 'Red' ? 'bad' : 'warn', 'Capital project ' + o.rag.toLowerCase() + ': ' + (o.p.name || ''), [o.late && 'past its end date', o.over && 'over budget', o.ms.some(m => m.late) && 'milestone overdue'].filter(Boolean).join(', ') || 'Status ' + o.rag, 'fm', o.p.end); o.ms.filter(m => m.late).forEach(m => add('warn', 'Milestone overdue: ' + (m.m.name || ''), o.p.name, 'fm', m.m.due)); });
+  if (want(['asset', 'faceng'])) A.rows.filter(r => r.st !== 'ok').forEach(r => add(r.st, (r.a.desc || r.c.n) + (r.a.tag ? ' (' + r.a.tag + ')' : ''), r.adv.map(x => x[1]).join('; '), 'assets', r.replYear <= A.yr + 1 ? String(r.replYear) : ''));
+  if (want(['asset'])) {
+    if (!A.rows.length) add('info', 'Build the asset register', 'Add assets from the design.', 'assets');
+    const due = A.rows.filter(r => r.replYear <= A.yr + 1 && !(S.capProj || []).some(p => p.src === 'asset:' + r.a.id));
+    if (due.length) add('warn', due.length + ' asset' + (due.length > 1 ? 's' : '') + ' due for replacement with no capital project', 'Use "Add replacement projects from the asset forecast" on FM operations', 'fm');
+  }
+  if (want(['energy'])) {
+    const e = S.energy || {}, E = R.E || {};
+    if (!+e.tariff) add('warn', 'Set the electricity tariff', 'Cost and savings cannot be worked out without it.', 'energy');
+    if (isFinite(E.eui) && +e.benchmark && E.eui > +e.benchmark) add('warn', 'Energy use above benchmark', f0(E.eui) + ' kWh/m² a year against ' + f0(+e.benchmark) + ' – review measures and controls', 'energy');
+    const off = Object.entries(e.m || {}).filter(([, v]) => !v).length; if (off) add('info', off + ' efficiency measure' + (off > 1 ? 's' : '') + ' not selected', 'Check whether they can be delivered on this project', 'energy');
+    if (!+e.pv) add('info', 'Consider solar PV', 'No PV is included yet.', 'energy');
+    if (+e.pfUn && +e.pfTg && +e.pfUn < +e.pfTg && E.q > 0) add('info', 'Power factor correction', 'About ' + f0(E.bank) + ' kvar to raise ' + e.pfUn + ' to ' + e.pfTg, 'energy');
+  }
+  const today = new Date().toISOString().slice(0, 10), wk = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  (S.tasks || []).forEach(t => { if (t.st === 'Done' || (id !== 'lead' && t.role !== id)) return; add(t.due && t.due < today ? 'bad' : t.due && t.due <= wk || t.st === 'In progress' ? 'warn' : 'info', t.title || 'Untitled team task', 'Team task' + (t.by ? ' from ' + t.by : '') + (id === 'lead' ? ' · ' + roleOf(t.role)[1] : '') + (t.note ? ' · ' + t.note : ''), 'tasks', t.due); });
+  const rank = { bad: 0, warn: 1, info: 2 };
+  return out.sort((a, b) => rank[a.s] - rank[b.s] || (a.due && b.due ? a.due.localeCompare(b.due) : a.due ? -1 : b.due ? 1 : 0));
+}
+function roleKpis(id = ROLE.id) {
+  const cur = esc(S.energy.currency || ''), F = () => calcFM(), A = () => calcAssets();
+  switch (id) {
+    case 'design': return [['Maximum demand', f0(R.md) + ' kVA', R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : 'transformer to review'], ['Circuits passing', R.C.filter(c => !c.fail).length + ' / ' + R.C.length, R.C.filter(c => c.fail && c.fail !== 'REVIEW').length + ' failing'], ['Compliance', CHECKS.filter(c => c[2](R)[1] === 'ok').length + ' / ' + CHECKS.length, 'items met']];
+    case 'impl': { const G = calcRegs(), T = calcTC(), L = calcLV(); return [['Documents approved', G.docPct == null ? '–' : pct(G.docPct), G.live.length + ' live'], ['Circuits certified', L.rows.filter(o => o.res === 'PASS').length + ' / ' + L.rows.length, L.fail ? L.fail + ' failing' : 'LV tests'], ['Commissioning', pct(T.total ? T.done / T.total : 0), T.done + ' of ' + T.total + ' tests']]; }
+    case 'faceng': case 'fm': { const f = F(); return [['Open tickets', f.open, f.overdue + ' overdue'], ['SLA', f.slaPct == null ? '–' : pct(f.slaPct), 'fixed within target'], ['Soft services', f.soft.filter(r => r.st === 'ok').length + ' / ' + f.soft.length, 'performing']]; }
+    case 'energy': { const E = R.E || {}; return [['Annual import', f0(E.imp || 0) + ' kWh', 'after measures and PV'], ['Carbon', (E.tco2 || 0).toFixed(1) + ' t CO₂e', 'a year'], ['Energy cost', f0(E.cost || 0) + ' ' + cur, 'a year']]; }
+    case 'asset': { const a = A(); return [['Assets', a.rows.reduce((s, r) => s + r.qty, 0), a.nBad + ' poor or end of life'], ['Book value', f0(a.book) + ' ' + cur, 'replacement ' + f0(a.value) + ' ' + cur], ['Due within a year', a.rows.filter(r => r.replYear <= a.yr + 1).length, 'replacements']]; }
+    default: { const D = calcDash(); return [['Overall status', D.overall, 'project dashboard'], ['Maximum demand', f0(R.md) + ' kVA', R.C.length + ' circuits']]; }
+  }
+}
+V.tasks = () => {
+  const r = roleOf();
+  if (ROLE.id === 'guest') return '<section class="sheet">' + head('Tasks', 'My tasks', 'Your task dashboard: what needs doing in your stages, most urgent first, worked out live from the project.') + '<p class="callout">Register with your role on the Welcome page to see your tasks.</p><a class="btn primary" href="#home">Register</a>'
+    + '<h3>What each role sees</h3><div class="tgrid">' + ROLES.filter(x => x[4]).map(x => { const t = roleTasks(x[0]); return '<div class="kpi"><span>' + esc(x[1]) + '</span><b>' + t.length + '</b><small>' + t.filter(o => o.s === 'bad').length + ' urgent</small></div>'; }).join('') + '</div></section>';
+  const all = roleTasks(), grp = [['bad', 'Urgent'], ['warn', 'Needs attention'], ['info', 'To do']];
+  const mine = (S.tasks || []).map((t, i) => ({ t, i })).filter(o => ROLE.id === 'lead' || o.t.role === ROLE.id);
+  const row = o => '<li class="' + o.s + '"><div><b>' + esc(o.t) + '</b>' + (o.d ? '<p>' + esc(o.d) + '</p>' : '') + '</div><div class="tm">' + (o.due ? '<span class="due">' + esc(o.due) + '</span>' : '') + (o.v !== 'tasks' ? '<a href="#' + o.v + '">' + esc(vName(o.v)) + ' →</a>' : '') + '</div></li>';
+  const lead = ROLE.id === 'lead' ? '<h3>Team overview</h3><table><thead><tr><th>Role</th><th>Urgent</th><th>Needs attention</th><th>To do</th><th>Team tasks open</th></tr></thead><tbody>' + ROLES.filter(x => x[4]).map(x => { const t = roleTasks(x[0]); return '<tr><td>' + esc(x[1]) + '</td><td>' + (t.filter(o => o.s === 'bad').length || '–') + '</td><td>' + (t.filter(o => o.s === 'warn').length || '–') + '</td><td>' + (t.filter(o => o.s === 'info').length || '–') + '</td><td>' + ((S.tasks || []).filter(o => o.role === x[0] && o.st !== 'Done').length || '–') + '</td></tr>'; }).join('') + '</tbody></table>' : '';
+  const team = '<h3>Team tasks</h3><p class="note">' + (ROLE.id === 'lead' ? 'Assign tasks to any role. They travel with the project file, so each person sees theirs on their own dashboard.' : 'Tasks assigned to your role. Add your own, or update the status as you go – they are saved in the project file.') + '</p>'
+    + (mine.length ? '<table><thead><tr><th>Task</th><th>Role</th><th>Due</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody>' + mine.map(({ t, i }) => '<tr><td class="wide"><input data-arr="tasks" data-i="' + i + '" data-k="title" value="' + esc(t.title) + '" aria-label="Task"></td><td><select data-arr="tasks" data-i="' + i + '" data-k="role" aria-label="Role">' + opt(ROLES.map(x => ({ v: x[0], t: x[1] })), t.role) + '</select></td><td><input type="date" data-arr="tasks" data-i="' + i + '" data-k="due" value="' + esc(t.due) + '" aria-label="Due"></td><td><select data-arr="tasks" data-i="' + i + '" data-k="st" aria-label="Status">' + opt(TASK_ST, t.st) + '</select></td><td><input data-arr="tasks" data-i="' + i + '" data-k="note" value="' + esc(t.note) + '" aria-label="Notes"></td><td><button class="btn small ghost" data-del="tasks" data-i="' + i + '" aria-label="Delete task">✕</button></td></tr>').join('') + '</tbody></table>' : '<p class="note">No team tasks yet.</p>')
+    + '<button class="btn small" data-add="tasks" style="margin-top:8px">Add a task</button>';
+  return '<section class="sheet">' + head('Tasks', 'My tasks – ' + esc(r[1]), 'Hello ' + esc(REG ? REG.name : '') + (REG && REG.qual ? ' (' + esc(REG.qual) + ')' : '') + '. What needs doing in your stages, most urgent first – worked out live from the project, so a task clears itself when the cause is fixed.', '<button class="btn small" data-act="adv-open" data-tab="next">Ask the Advisor</button>')
+    + '<div class="kpis">' + [['Urgent', all.filter(o => o.s === 'bad').length, 'act now'], ['Needs attention', all.filter(o => o.s === 'warn').length, 'this week'], ['To do', all.filter(o => o.s === 'info').length, 'planned'], ...roleKpis()].map(([a, b, c]) => '<div class="kpi"><span>' + esc(a) + '</span><b>' + esc(String(b)) + '</b><small>' + esc(String(c)) + '</small></div>').join('') + '</div>'
+    + grp.map(([s, t]) => { const g = all.filter(o => o.s === s); return g.length ? '<h3>' + t + ' <span class="note">(' + g.length + ')</span></h3><ol class="tasks">' + g.slice(0, 40).map(row).join('') + (g.length > 40 ? '<li class="info"><div><b>… and ' + (g.length - 40) + ' more</b></div></li>' : '') + '</ol>' : ''; }).join('')
+    + (all.length ? '' : '<p class="callout" style="border-left-color:var(--ok);background:var(--ok-soft)">Nothing outstanding in your stages. Well done.</p>')
+    + lead + team + '</section>';
+};
 /* ---------- Welcome page: one connected life cycle – design, implement, commission, maintain, manage assets ---------- */
 V.home = () => {
   const p = S.project, D = calcDash(), G = calcRegs(), T = D.T, F = D.F, A = D.A, L = calcLV(), cur = esc(S.energy.currency || '');
@@ -3441,7 +3558,7 @@ V.home = () => {
     + '<div class="hero"><div class="k">NexvoraHub Studio · electrical engineering platform</div>'
     + '<h1>Design it. Build it. Prove it. <em>Keep it running.</em></h1>'
     + '<p class="lead">One connected workspace for the whole life of an electrical installation – from the first load schedule through construction, testing and handover to everyday maintenance and long-term asset planning. Every stage shares one model, so a change in the design flows through to the bill of quantities, the test schedule, the asset register and the maintenance plan.</p>'
-    + '<div class="acts"><a class="btn primary" href="#dashboard">Open the project dashboard</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button><button class="btn" data-act="adv-open" data-tab="next">Ask the Advisor</button></div>'
+    + '<div class="acts"><a class="btn primary" href="#dashboard">Open the project dashboard</a><a class="btn" href="#tasks">My tasks</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button><button class="btn" data-act="adv-open" data-tab="next">Ask the Advisor</button></div>'
     + bus
     + '<div class="snap"><span>Project <b>' + esc(p.name || 'Untitled') + '</b></span><span>Region <b>' + esc(p.country || '') + '</b></span><span>Status <b>' + esc(rag) + '</b></span><span>Transformer <b>' + (R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : '–') + '</b></span></div></div>'
     + introHtml() + rolePicker() + '<div class="life">' + stages.map(s => '<a class="card" href="' + s[4] + '"><span class="n">' + s[0] + ' / 05</span><h3>' + s[1] + '</h3><p>' + esc(s[2]) + '</p><span class="fig">' + esc(s[3]) + '</span><span class="go">' + s[5] + ' →</span></a>').join('') + '</div>'
@@ -3962,6 +4079,7 @@ document.addEventListener('input', e => { if (e.target.matches('input:not([type=
 document.addEventListener('change', e => { if (e.target.matches('select,input[type=checkbox],input[type=date]')) onEdit(e, true); });
 const BLANK = { docs: () => ({ id: uid(), src: '', no: docPre() + '-' + String((S.docs || []).length + 1).padStart(3, '0'), title: '', type: 'Drawing', disc: 'Electrical – general', rev: 'P01', st: 'Work in progress', date: '', to: '', due: '', code: '', by: '', note: '' }), risks: () => ({ id: uid(), src: '', no: 'R-' + String((S.risks || []).length + 1).padStart(3, '0'), cat: 'Design', title: '', cause: '', l: 3, i: 3, mit: '', owner: '', rl: '', ri: '', st: 'Open', due: '' }), tickets: () => ({ id: uid(), no: 'T-' + String((S.tickets || []).length + 1).padStart(4, '0'), pri: 'P3', prop: '', trade: '', issue: '', loc: '', target: '', desc: '', kind: 'Reactive breakdown', who: '', raised: new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), attended: '', done: '', st: 'Open' }), soft: () => ({ id: uid(), svc: 'clean', scope: '', prov: 'Contractor', who: '', freq: '', std: '', perf: 'Good', func: 'Fully operational', last: '', kpi: '', cost: '' }), capProj: () => ({ id: uid(), src: '', name: 'New capital project', cat: CAP_CAT[0], asset: '', stage: 'Concept', pct: 0, rag: '', budget: '', spent: '', start: '', end: '', summary: '', update: '' }), milestones: () => ({ id: uid(), pid: '', name: 'Milestone', due: '', st: 'Not started' }), assets: () => ({ id: uid(), src: '', cls: 'wtp', tag: '', desc: '', loc: '', qty: 1, cap: '', type: '', year: new Date().getFullYear(), cost: '', life: '', cond: 1, crit: '', fails: '', maint: '' }), essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: (R && R.DBR && R.DBR.rows[0] && R.DBR.rows[0].name) || 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', uf: '', ku: '', df: '', lf: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
 let armedNew = false;
+BLANK.tasks = () => ({ id: uid(), title: '', role: ROLE.id === 'lead' || ROLE.id === 'guest' ? 'design' : ROLE.id, due: '', st: 'To do', by: REG ? REG.name : '', note: '' });
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.add) { S[b.dataset.add].push(BLANK[b.dataset.add]()); persist(); render(); return; }

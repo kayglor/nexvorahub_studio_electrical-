@@ -1,3 +1,5 @@
+// tests run registered as the project lead
+REG = { name: 'Test', role: 'lead' }; ROLE.id = 'lead';
 const out = {};
 out.md = +R.md.toFixed(1); out.areaKva = +R.Z.kva.toFixed(1); out.zones = R.Z.rows.map(r => [r.z.type.slice(0, 24), r.dens, +r.kva.toFixed(1)]); out.equip = +R.Lo.kva.toFixed(1);
 out.lifts = R.Li.rows.map(r => [r.load, r.v, +r.kw.toFixed(2), r.motor, +r.grp.toFixed(1), r.hcp && +r.hcp.toFixed(3), Math.round(r.interval)]);
@@ -1029,12 +1031,12 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const R0 = { ...ROLE }, V0 = view;
   rchk('seven roles, lead edits everything', ROLES.length === 7 && ROLE.id === 'lead' && VIEWS.every(v => canEdit(v[0], 'lead') && roleShows(v[0], 'lead')));
   rchk('every role stage is a real page and edit ⊂ view', ROLES.filter(r => r[3]).every(r => r[3].concat(r[4]).every(v => VIEWS.some(x => x[0] === v)) && r[4].every(v => r[3].includes(v))));
-  rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
+  rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'tasks', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
   rchk('design engineer edits circuits, not FM', canEdit('circuits', 'design') && !canEdit('fm', 'design') && !roleShows('fm', 'design'));
   rchk('energy manager edits energy, views sizing', canEdit('energy', 'energy') && roleShows('sizing', 'energy') && !canEdit('sizing', 'energy'));
   rchk('home and dashboard open to all', ROLES.every(r => canEdit('home', r[0]) && canEdit('dashboard', r[0])));
   ROLE.id = 'energy'; ROLE.all = false; view = 'home'; render(); let h = document.querySelector('#main').innerHTML;
-  rchk('role picker on the welcome page', /role="radiogroup"/.test(h) && /data-role="energy"/.test(h) && /aria-checked="true" data-act="role-set" data-role="energy"/.test(h) && /Your workspace/.test(h));
+  rchk('registration panel on the welcome page', /Registered as Test/.test(h) && /Energy manager/.test(h) && /Your workspace/.test(h) && /data-act="role-edit"/.test(h));
   const rail = document.querySelector('#rail').innerHTML;
   rchk('menu shows only the role stages', rail.includes('#energy') && !rail.includes('href="#circuits"') && /Show all stages/.test(rail));
   view = 'sizing'; render(); h = document.querySelector('#main').innerHTML;
@@ -1043,6 +1045,27 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const keep = S.project.name; onEdit({ target: { dataset: { p: 'project.name' }, value: 'X', type: 'text', closest: () => true } }, true); rchk('edits blocked on a view-only page', S.project.name === keep);
   ROLE.id = 'design'; view = 'circuits'; render(); h = document.querySelector('#main').innerHTML; rchk('owner edits normally', !/View only/.test(h));
   rchk('safe buttons stay live', roleSafe({ dataset: { act: 'dl-xlsx' } }) && !roleSafe({ dataset: { act: 'docs-import' } }) && !roleSafe({ dataset: { add: 'tickets' } }));
+  // registration and My tasks
+  REG_EDIT = true; view = 'home'; render(); h = document.querySelector('#main').innerHTML;
+  rchk('registration form with every role', /id="regName"/.test(h) && ROLES.every(r => h.includes('name="regRole" value="' + r[0] + '"')) && /data-act="role-register"/.test(h));
+  document.getElementById('regName').value = 'Ada Engineer'; document.querySelector('input[name="regRole"]:checked').value = 'impl'; roleAct('role-register');
+  rchk('registering sets the role', REG.name === 'Ada Engineer' && ROLE.id === 'impl' && !REG_EDIT && canEdit('lvcert') && !canEdit('circuits'));
+  roleAct('role-signout'); rchk('signed out = guest, view only', ROLE.id === 'guest' && !REG && !canEdit('circuits') && !canEdit('fm') && canEdit('home') && canEdit('tasks'));
+  view = 'circuits'; render(); rchk('guest banner', /You are not registered/.test(document.querySelector('#main').innerHTML));
+  view = 'tasks'; render(); rchk('guest tasks page asks to register', /Register with your role on the Welcome page/.test(document.querySelector('#main').innerHTML));
+  REG = { name: 'Test', role: 'lead' };
+  const S0 = S; S = exampleProject(); upgrade(S); S.circuits[0].icn = 1; S.tasks = [{ id: 'a', title: 'Witness generator load test', role: 'impl', due: '2020-01-01', st: 'To do', by: 'Lead', note: '' }, { id: 'b', title: 'Old task', role: 'impl', due: '', st: 'Done', by: '', note: '' }]; R = calcAll();
+  const dT = roleTasks('design');
+  rchk('design tasks: failing circuit urgent first', dT[0].s === 'bad' && dT.some(o => /Fix circuit C01/.test(o.t)) && !dT.some(o => /Witness/.test(o.t)), dT.slice(0, 2));
+  const iT = roleTasks('impl');
+  rchk('implementation tasks: overdue team task, open tests', iT.some(o => o.t === 'Witness generator load test' && o.s === 'bad') && !iT.some(o => o.t === 'Old task') && iT.some(o => /test/.test(o.t) && o.v === 'tc'), iT.map(o => o.t).slice(0, 5));
+  rchk('every role has KPIs and real links', ROLES.every(r => roleKpis(r[0]).length >= 2 && roleTasks(r[0]).every(o => VIEWS.some(v => v[0] === o.v))));
+  ROLE.id = 'impl'; view = 'tasks'; render(); h = document.querySelector('#main').innerHTML;
+  rchk('implementation dashboard', /My tasks – Implementation &amp; deployment/.test(h) && /Witness generator load test/.test(h) && /data-add="tasks"/.test(h) && /Urgent/.test(h) && !/Team overview/.test(h));
+  ROLE.id = 'lead'; render(); h = document.querySelector('#main').innerHTML;
+  rchk('lead sees the team overview', /Team overview/.test(h) && ROLES.filter(r => r[4]).every(r => h.includes(r[1].replace('&', '&amp;'))));
+  S.tasks.push(BLANK.tasks()); rchk('new team task defaults', S.tasks[2].st === 'To do' && S.tasks[2].by === 'Test');
+  S = S0; R = calcAll();
   Object.assign(ROLE, R0); view = V0; render();
   out.roleChecks = rF.length ? rF : 'all passed'; }
 
