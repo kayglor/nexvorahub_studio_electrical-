@@ -1005,6 +1005,25 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   hchk('integration chain and disclaimer', /One model, every stage/.test(h) && /design pre-check, not certification/.test(h));
   view = V0; render();
   out.homeChecks = hF.length ? hF : 'all passed'; }
+// ---------- intro film and advisor ----------
+{ const aF = [], achk = (n, ok, got) => { if (!ok) aF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const V0 = view; view = 'home'; render(); const h = document.querySelector('#main').innerHTML;
+  achk('intro player on the welcome page', /class="intro/.test(h) && /data-act="intro-play"/.test(h) && /Watch the 35-second intro/.test(h));
+  const sc = introScenes();
+  achk('seven scenes with live figures', sc.length === 7 && sc[0].cap.includes(f0(R.md) + ' kVA') && sc.every(x => /<b>/.test(x.cap) && x.svg.length > 100), sc.length);
+  INTRO.i = 0; INTRO.started = false; introAct('intro-next'); achk('next scene', INTRO.i === 1 && INTRO.started); introAct('intro-prev'); achk('previous scene', INTRO.i === 0); introStop();
+  achk('advisor button on the welcome page', /data-act="adv-open"/.test(h));
+  const N = advNext();
+  achk('next steps ranked and linked', N.steps.length > 0 && N.steps.every(x => ['bad', 'warn', 'info', 'ok'].includes(x.s) && VIEWS.some(v => v[0] === x.v)) && N.steps.map(x => x.s).join() === N.steps.map(x => x.s).sort((p, q) => ['bad', 'warn', 'info', 'ok'].indexOf(p) - ['bad', 'warn', 'info', 'ok'].indexOf(q)).join(), N.steps);
+  achk('worked example noted', N.steps.some(x => /worked example/.test(x.t)));
+  { const S0 = S; S = exampleProject(); upgrade(S); S.circuits[0].icn = 1; R = calcAll(); const st = advNext().steps, k = st.findIndex(x => x.v === 'circuits' && /failing/.test(x.t)); achk('a failing circuit is raised as urgent', k >= 0 && st[k].s === 'bad' && st[k].d.includes(S.circuits[0].ref) && st.slice(0, k).every(x => x.s === 'bad'), st.slice(0, 3)); S = S0; R = calcAll(); }
+  achk('a guide for every stage', VIEWS.every(v => ADV_PAGE[v[0]] && ADV_PAGE[v[0]][1].length && ADV_PAGE[v[0]][2].length), VIEWS.filter(v => !ADV_PAGE[v[0]]).map(v => v[0]));
+  achk('help links to real pages', ADV_HELP.every(x => VIEWS.some(v => v[0] === x[2])));
+  achk('help search finds the answer', /circuit/i.test(advSearch('why is my circuit failing')[0][0]) && /Excel/.test(advSearch('excel export')[0][0]) && /save/i.test(advSearch('save my work')[0][0]), advSearch('save my work')[0]);
+  ADV.open = true; ['next', 'page', 'ask'].forEach(k => { ADV.tab = k; renderAdvisor(); const x = document.getElementById('advisor').innerHTML; achk('advisor tab ' + k, /Advisor/.test(x) && /adv-close/.test(x) && x.length > 400, x.length); });
+  ADV.open = false; ADV.tab = 'next'; renderAdvisor();
+  view = V0; render();
+  out.advisorChecks = aF.length ? aF : 'all passed'; }
 
 
 
