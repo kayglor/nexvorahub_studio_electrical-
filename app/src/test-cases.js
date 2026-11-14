@@ -792,7 +792,16 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
     jchk('FM view: lift programme and call-outs', /Lift and escalator maintenance programme and call-outs/.test(h) && /Thorough examination by competent person/.test(h) && /1 not attended within 1 h/.test(h) && /Passenger trapped/.test(h));
     view = 'fmreport'; render(); h = document.querySelector('#main').innerHTML;
     jchk('report and CSV: lift call-outs', /Lifts and escalators – call-outs/.test(h) && /LIFTS AND ESCALATORS/.test(csvFm()));
-    S.assets = JSON.parse(A0); }
+    // add from the design: lifts from Lifts & pumps, escalators from the equipment loads
+    S.assets = []; const L0 = JSON.stringify(S.loads); S.loads.push({ ...BLANK.loads(), id: 'ESC1', desc: 'Mall escalators', cat: 'Escalators / travelators', qty: 4, kw: 11 });
+    view = 'fm'; render(); h = document.querySelector('#main').innerHTML;
+    const nLift = S.lifts.reduce((a, L) => a + (+L.n || 1), 0);
+    jchk('FM lift panel offers lifts and escalators from the design', h.includes('data-act="lift-import"') && h.includes('Add ' + (nLift + 4) + ' lifts / escalators from the design'));
+    const lp = assetsFromDesign().filter(a => a.cls === 'lift' || a.cls === 'esc'); S.assets = lp;
+    jchk('escalator imported with quantity and type', lp.some(a => a.cls === 'esc' && a.qty === 4 && a.type === 'Escalator') && lp.some(a => a.cls === 'lift'));
+    view = 'fm'; render(); h = document.querySelector('#main').innerHTML;
+    jchk('button gone once imported; programme shows escalator tasks', !h.includes('data-act="lift-import"') && /Step chain and drive inspection/.test(h));
+    S.loads = JSON.parse(L0); S.assets = JSON.parse(A0); }
   const o2 = JSON.parse(SV); S.tickets = o2.tickets; S.fmCfg = o2.fmCfg; view = V0; R = calcAll();
   out.jobChecks = jF.length ? jF : 'all passed'; }
 
