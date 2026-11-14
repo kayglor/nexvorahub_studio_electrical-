@@ -744,7 +744,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
 // ---------- reactive maintenance directory: domestic / commercial issues by trade on helpdesk tickets ----------
 { const jF = [], jchk = (n, ok, got) => { if (!ok) jF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const SV = JSON.stringify({ tickets: S.tickets, fmCfg: S.fmCfg }), V0 = view;
-  { const need = ['elec', 'hv', 'standby', 'lv', 'tvnet', 'plumb', 'carp', 'hvac', 'pool', 'gym', 'rec']; jchk('directory has all the requested trades', need.every(k => jobCls(k)) && JOB_LIB.every(c => c.issues.length >= 8 && c.issues.every(j => SLA_DEF[j[2]] && j[3] && j[4] && j[5] > 0 && /^[BRC]$/.test(j[6])))); }
+  { const need = ['elec', 'hv', 'standby', 'lift', 'lv', 'tvnet', 'plumb', 'carp', 'hvac', 'pool', 'gym', 'rec']; jchk('directory has all the requested trades', need.every(k => jobCls(k)) && JOB_LIB.every(c => c.issues.length >= 8 && c.issues.every(j => SLA_DEF[j[2]] && j[3] && j[4] && j[5] > 0 && /^[BRC]$/.test(j[6])))); }
   jchk('requested issues are listed', ['bulb', 'nolight', 'trip', 'socket'].every(k => jobOf('elec', k)) && ['lock', 'wardrobe', 'door'].every(k => jobOf('carp', k)) && jobOf('pool', 'chem') && jobOf('gym', 'tread') && jobOf('hvac', 'noac') && jobOf('plumb', 'burst') && jobOf('rec', 'play'));
   jchk('cable TV and internet issues listed', ['nonet', 'slow', 'wifi', 'router', 'data', 'notv', 'pixel', 'ibs', 'dish'].every(k => jobOf('tvnet', k)) && jobOf('tvnet', 'netdown').p === 'P1' && !jobOf('elec', 'tv'));
   jchk('LV distribution and street lighting issues listed', ['pillarloss', 'feederfuse', 'feedercable', 'strike', 'hotjoint', 'slpanel', 'slone', 'column', 'inspect'].every(k => jobOf('lv', k)) && jobOf('lv', 'exposed').p === 'P1' && jobOf('lv', 'slone').p === 'P3');
@@ -776,6 +776,24 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   jchk('report: by-trade table and trade on open tickets', /Reactive maintenance by trade/.test(h) && /Gym &amp; fitness equipment/.test(h) && /Plumbing: Burst pipe/.test(h));
   const csv = csvFm(); jchk('CSV: trade columns and by-trade section', /TICKETS BY TRADE/.test(csv) && /"Residential","Plumbing","Burst pipe \/ flooding","Flat 12"/.test(csv), csv.split('\r\n').filter(l => /Flat 12/.test(l)));
   const o = JSON.parse(SV); S.tickets = o.tickets; S.fmCfg = o.fmCfg; view = V0; R = calcAll();
+  // lifts: entrapment attendance target, call-out stats, programme panel
+  { const A0 = JSON.stringify(S.assets || []); S.assets = [{ ...BLANK.assets(), id: 'L1', cls: 'lift', desc: 'Passenger lifts', tag: 'L1-L2', qty: 2, type: 'Traction – machine-room-less (MRL)' }];
+    S.tickets = []; S.fmCfg = { sla: {}, now: '2026-11-13T12:00' };
+    const T = o => S.tickets.push({ ...BLANK.tickets(), trade: 'lift', ...o });
+    T({ issue: 'trapped', pri: 'P1', target: 'L1', raised: '2026-11-13T10:00', attended: '2026-11-13T11:30', done: '2026-11-13T12:00', st: 'Closed' });
+    T({ issue: 'doors', pri: 'P2', target: 'L1', raised: '2026-11-12T10:00', attended: '2026-11-12T14:00' });
+    T({ issue: 'buttons', pri: 'P3', target: '', raised: '2025-06-01T10:00', done: '2025-06-02T10:00', st: 'Closed' });
+    let F = calcFM(), tr = F.tk.find(r => r.t.issue === 'trapped');
+    jchk('entrapment attend within 1 h, fix by P1 time', tr.L.attend === 1 && tr.L.fix === 24 && tr.attendMet === false, tr.L);
+    jchk('other lift issues keep the priority times', F.tk.find(r => r.t.issue === 'doors').L.attend === 24);
+    const Lf = calcLift(F);
+    jchk('lift call-out statistics', Lf.units === 2 && Lf.calls === 2 && near(Lf.rate, 1) && Lf.trapped === 1 && Lf.trapLate === 1 && Lf.open === 1 && Lf.unlinked === 1 && near(Lf.attAvg, 2.75) && Lf.rows[0].st === 'warn', Lf);
+    view = 'fm'; render(); let h = document.querySelector('#main').innerHTML;
+    jchk('FM view: lift programme and call-outs', /Lift and escalator maintenance programme and call-outs/.test(h) && /Thorough examination by competent person/.test(h) && /1 not attended within 1 h/.test(h) && /Passenger trapped/.test(h));
+    view = 'fmreport'; render(); h = document.querySelector('#main').innerHTML;
+    jchk('report and CSV: lift call-outs', /Lifts and escalators – call-outs/.test(h) && /LIFTS AND ESCALATORS/.test(csvFm()));
+    S.assets = JSON.parse(A0); }
+  const o2 = JSON.parse(SV); S.tickets = o2.tickets; S.fmCfg = o2.fmCfg; view = V0; R = calcAll();
   out.jobChecks = jF.length ? jF : 'all passed'; }
 
 
