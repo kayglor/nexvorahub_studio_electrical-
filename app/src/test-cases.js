@@ -979,6 +979,22 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   xchk('sheet names sanitised and unique; XML escaped', bad.names[0] === 'a-b-c-' && bad.names[1] !== bad.names[0]);
   xchk('buttons on the dashboard, handover pack and report', (() => { const V0 = view; let ok = true; ['dashboard', 'handover'].forEach(v => { view = v; render(); ok = ok && /data-act="dl-xlsx"/.test(document.querySelector('#main').innerHTML); }); view = V0; render(); return ok; })());
   out.xlsxChecks = xF.length ? xF : 'all passed'; }
+// ---------- facilities report as Excel ----------
+{ const yF = [], ychk = (n, ok, got) => { if (!ok) yF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SV = JSON.stringify({ assets: S.assets, tickets: S.tickets, soft: S.soft, capProj: S.capProj, milestones: S.milestones, fmUpdate: S.fmUpdate });
+  S.assets = assetsFromDesign(); S.soft = SOFT_LIB.map(c => ({ ...BLANK.soft(), svc: c.k, freq: c.freq, std: c.std[0] }));
+  S.tickets = [{ ...BLANK.tickets(), trade: 'elec', issue: 'trip', pri: 'P2', desc: 'MCB trips', raised: '2026-11-10T08:00' }];
+  const p = { ...BLANK.capProj(), name: 'Generator replacement', budget: 1000 }; S.capProj = [p]; S.milestones = [{ ...BLANK.milestones(), pid: p.id, name: 'Tender' }];
+  S.fmUpdate = { period: 'November 2026', summary: 'Stable', highlights: 'x', issues: 'y', next: 'z' };
+  const sh = fmSheets(), names = sh.map(x => x.name);
+  ychk('one sheet per report section', ['Summary', 'Equipment state', 'Tickets', 'Tickets by trade', 'Soft services', 'Capital projects', 'Milestones', 'General update', 'Asset register', 'PPM plan'].every(n => names.includes(n)), names);
+  ychk('summary values', sh[0].rows.some(r => r[0] === 'Open P2 tickets' && r[1] === 1) && sh[0].rows.some(r => r[0] === 'Assets in the register' && r[1] > 0));
+  ychk('ticket sheet has the trade and issue', JSON.stringify(sh.find(x => x.name === 'Tickets').rows).includes('MCB / RCD keeps tripping'));
+  const b = xlsxFm(); ychk('valid workbook bytes', b[0] === 0x50 && b[1] === 0x4b && b.length > 3000);
+  const V0 = view; let ok = true; ['fm', 'fmreport'].forEach(v => { view = v; render(); ok = ok && /data-act="dl-fm-xlsx"/.test(document.querySelector('#main').innerHTML); }); view = V0; render();
+  ychk('buttons on FM operations and the facilities report', ok);
+  Object.assign(S, JSON.parse(SV));
+  out.fmXlsxChecks = yF.length ? yF : 'all passed'; }
 
 
 
