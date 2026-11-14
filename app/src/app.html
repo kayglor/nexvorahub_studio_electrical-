@@ -25,6 +25,21 @@
   --ok:#5fc08a; --ok-soft:#183324; --warn:#e0b14e; --warn-soft:#33290f; --bad:#f07d73; --bad-soft:#3b1a17;
   --input:#1f2421; --input-line:#5a5236; color-scheme:dark}
 *{box-sizing:border-box}
+/* Role workspaces */
+.rolegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px}
+.rolegrid .role{display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:inherit;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer}
+.rolegrid .role:hover{border-color:var(--line-strong)}
+.rolegrid .role.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.rolegrid .role b{font-family:var(--f-display);font-size:20px}
+.rolegrid .role span{font-size:13.5px;color:var(--muted)}
+.rolegrid .role small{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-top:auto}
+.roles .yours{margin-top:14px}.roles .yours h3{margin:0 0 6px}
+.roles .chain a{background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px;color:var(--ink);text-decoration:none}
+.roles .chain a.ed{border-color:var(--accent)}.roles .chain a i{font-style:normal;font-size:11.5px;color:var(--muted);font-family:var(--f-mono)}
+.role-chip{font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;border:1px solid var(--line);border-radius:99px;padding:3px 10px}
+nav.rail a .lk{font-style:normal;font-size:11px;color:var(--muted)}
+.ro-note{margin:0 0 12px}
+main input:disabled,main select:disabled,main textarea:disabled{opacity:.75;cursor:not-allowed}
 /* Intro player: a short animated film of the life cycle, drawn in SVG and played scene by scene */
 .intro{border-radius:10px;overflow:hidden;background:#0a1210;border:1px solid #24322d;color:#e9f1ec}
 .intro .stage{position:relative;aspect-ratio:16/7.5;background:radial-gradient(120% 140% at 80% 0%,#1d342e 0%,#0d1916 55%,#0a1210 100%)}
@@ -234,7 +249,7 @@ tr.total td{font-weight:600;background:var(--sunk)}
 
 <div class="band gutter">
   <div class="band-in">
-    <div class="brand"><h1>NexvoraHub Studio</h1><span class="proj" id="bandProj"></span></div>
+    <div class="brand"><h1>NexvoraHub Studio</h1><span class="proj" id="bandProj"></span><a class="role-chip" id="roleChip" href="#home" title="Your role – change it on the Welcome page"></a></div>
     <div class="readouts" id="readouts"></div>
     <button class="btn small adv-btn" id="advBtn" data-act="adv-open" aria-controls="advisor" aria-expanded="false" title="Next steps, a guide to this page and help">Advisor <span class="c" id="advCount"></span></button>
   </div>
@@ -1538,7 +1553,7 @@ function der(v) { return `<div class="derived">${v}</div>`; }
 function pill(s, t) { return `<span class="pill ${s}">${esc(t)}</span>`; }
 
 function renderBand() {
-  $('#bandProj').textContent = `${S.project.name || 'Untitled project'} · ${S.project.ref || ''}`;
+  $('#bandProj').textContent = `${S.project.name || 'Untitled project'} · ${S.project.ref || ''}`; $('#roleChip').textContent = roleOf()[1];
   $('#readouts').innerHTML = [['Region', `${esc(S.project.country)}`], ['Supply', `${R.X.vln}/${R.X.vll} V ${R.X.c.hz} Hz`], ['Max demand', `${f0(R.md)} kVA`, 'main'], ['Current', `${f0(R.amps)} A`], ['Transformer', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA` : 'Review']].map(([l, v, c]) => `<div class="ro ${c || ''}"><span>${l}</span><b>${v}</b></div>`).join('');
 }
 function railStatus(id) {
@@ -1557,7 +1572,7 @@ function railStatus(id) {
   return '';
 }
 function renderRail() {
-  $('#rail').innerHTML = VIEWS.map(([id, t], i) => `<a href="#${id}" ${id === view ? 'aria-current="page"' : ''}><span class="k">${String(i + 1).padStart(2, '0')}</span><span>${t}</span><i class="dot ${railStatus(id)}"></i></a>`).join('') +
+  $('#rail').innerHTML = roleRail().map(([[id, t], i]) => `<a href="#${id}" ${id === view ? 'aria-current="page"' : ''}${canEdit(id) ? '' : ' title="View only for your role"'}><span class="k">${String(i + 1).padStart(2, '0')}</span><span>${t}${canEdit(id) ? '' : ' <i class="lk">· view</i>'}</span><i class="dot ${railStatus(id)}"></i></a>`).join('') + (roleOf()[3] ? `<button class="btn small ghost" data-act="role-all" style="margin-top:6px">${ROLE.all ? 'Show my stages only' : 'Show all stages'}</button>` : '') +
     `<div class="rail-foot">${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json" title="Saves the project (.json) and the report as PDF">Save project (.json + PDF)</button><button class="btn small ghost" data-act="save-json-only" title="Project file only">Save .json only</button><button class="btn small" data-act="load-json" title="Open a saved .json project file to continue editing">Open project (.json)</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
 }
 function head(eb, title, sub, right = '') { return `<div class="sheet-head"><div><div class="eyebrow">${eb}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div><div class="row">${right}</div></div>`; }
@@ -3174,9 +3189,11 @@ function advNext() {
   if (!(S.assets || []).length) add('info', 'Build the asset register', 'Add assets from the design to get planned maintenance, depreciation and the replacement forecast.', 'assets');
   else if (A.nBad) add('warn', A.nBad + ' asset' + (A.nBad > 1 ? 's' : '') + ' in poor condition or at end of life', 'Plan repair or replacement – they can go straight into capital projects.', 'assets');
   if (F.overdue) add('bad', F.overdue + ' helpdesk ticket' + (F.overdue > 1 ? 's' : '') + ' overdue', 'Attend or re-assign to recover the SLA.', 'fm');
-  const stages = ['project', 'sizing', 'circuits', 'compliance', 'checklist', 'lvcert', 'tc', 'registers', 'assets'];
+  const TRACK = ['project', 'sizing', 'circuits', 'compliance', 'checklist', 'drawings', 'facilities', 'lvcert', 'tc', 'registers', 'assets', 'fm'], mine = roleOf()[4];
+  const stages = mine ? TRACK.filter(v => mine.includes(v)) : ['project', 'sizing', 'circuits', 'compliance', 'checklist', 'lvcert', 'tc', 'registers', 'assets'];
+  for (let k = out.length - 1; k >= 0; k--) if (!roleShows(out[k].v)) out.splice(k, 1);
   const done = stages.filter(v => v === 'project' ? !!(p.name && p.designer) : railStatus(v) === 'ok').length;
-  if (!out.some(o => o.s === 'bad' || o.s === 'warn')) add('ok', 'Nothing urgent – issue the deliverables', 'Save the project (.json), then issue the design report, the Excel workbook and, after testing, the handover pack.', 'report');
+  if (!out.some(o => o.s === 'bad' || o.s === 'warn')) add('ok', 'Nothing urgent in your stages', mine ? 'Keep your stages current – ' + mine.slice(0, 4).map(vName).join(', ') + ' – and save the project (.json) to share with the team.' : 'Save the project (.json), then issue the design report, the Excel workbook and, after testing, the handover pack.', mine ? mine[0] : 'report');
   const rank = { bad: 0, warn: 1, info: 2, ok: 3 };
   return { steps: out.sort((a, b) => rank[a.s] - rank[b.s]), done, total: stages.length };
 }
@@ -3231,6 +3248,7 @@ const ADV_HELP = [
   ['How do I export to Excel?', 'The project workbook (.xlsx) is on the Project dashboard, Handover pack and Design report; Facilities report and FM operations have the facilities workbook. CSV exports are on each register and schedule.', 'report'],
   ['How do I print or save a PDF?', 'Use the save-as-PDF buttons on the report pages, then choose "Save as PDF" as the printer in your browser’s print window.', 'report'],
   ['Is this a certified design?', 'No. Results are a design pre-check, not certification. Confirm standards and limits with the local authority and network operator, and certify the design yourself.', 'coverage'],
+  ['How do roles work?', 'Pick your role on the Welcome page: design engineer, implementation & deployment, facilities engineer, facility manager, energy manager, asset manager or project lead. The menu, Welcome page and Advisor follow it, and stages owned by other roles open view only. The role is kept in your browser, not in the project file.', 'home'],
   ['Is my data private?', 'Yes. The project stays in this browser – nothing is uploaded. Share it only by saving files yourself.', 'home'],
   ['Data centre sizing', 'Data centre sizes by area, racks or IT load with Tier redundancy. Pick a platform to fill density and liquid cooling, then review UPS and generators.', 'data-centre'],
   ['Lifts and escalators', 'Lifts & pumps sizes motors and group demand. Maintenance, call-outs and lift assets are added from the design on FM operations and Assets & maintenance.', 'lifts-pumps'],
@@ -3246,12 +3264,12 @@ function advHelpHtml(q) { const r = advSearch(q); return r.length ? r.map(h => '
 function advBody() {
   if (ADV.tab === 'page') {
     const g = ADV_PAGE[view] || ['Reports and records generated from the project.', ['Check the content, then save or print.'], ['Correct the inputs in their stage – reports follow automatically.']];
-    return '<h3>' + esc(vName(view)) + '</h3><p style="margin:0 0 6px">' + esc(g[0]) + '</p><h3>How to use it</h3><ul>' + g[1].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul><h3>Get the best result</h3><ul>' + g[2].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
+    return '<h3>' + esc(vName(view)) + '</h3>' + (canEdit() ? '' : '<p class="callout" style="margin:0 0 8px">View only for ' + esc(roleOf()[1]) + '. Use it for reference and exports; ' + esc(roleOwners(view).join(', ') || 'the project lead') + ' keep' + (roleOwners(view).length === 1 ? 's' : '') + ' it up to date.</p>') + '<p style="margin:0 0 6px">' + esc(g[0]) + '</p><h3>How to use it</h3><ul>' + g[1].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul><h3>Get the best result</h3><ul>' + g[2].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
   }
   if (ADV.tab === 'ask') return '<label for="advQ" class="note">Type a question or a few words</label><input id="advQ" class="q" type="search" autocomplete="off" placeholder="e.g. why is my circuit failing" value="' + esc(ADV.q) + '">'
     + '<div class="chips">' + ['voltage drop', 'Zs', 'certificate', 'Excel', 'save', 'ticket'].map(c => '<button data-act="adv-chip" data-q="' + c + '">' + c + '</button>').join('') + '</div><div id="advRes">' + advHelpHtml(ADV.q) + '</div>';
   const N = advNext();
-  return '<div class="score"><span class="note" style="margin:0">Progress</span><div class="bar"><i style="width:' + Math.round(N.done / N.total * 100) + '%;background:var(--ok)"></i></div><b>' + N.done + ' / ' + N.total + '</b></div>'
+  return '<p class="note" style="margin:0 0 8px">Workspace: <b>' + esc(roleOf()[1]) + '</b> · <a href="#home">change</a></p>' + (N.total ? '<div class="score"><span class="note" style="margin:0">Progress</span><div class="bar"><i style="width:' + Math.round(N.done / N.total * 100) + '%;background:var(--ok)"></i></div><b>' + N.done + ' / ' + N.total + '</b></div>' : '')
     + '<ol class="steps">' + N.steps.map(s => '<li class="' + s.s + '"><b>' + esc(s.t) + '</b><p>' + esc(s.d) + '</p>' + (s.v !== view ? '<a href="#' + s.v + '">Open ' + esc(vName(s.v)) + ' →</a>' : '') + '</li>').join('') + '</ol>';
 }
 function advCount() { try { return advNext().steps.filter(s => s.s === 'bad' || s.s === 'warn').length; } catch (e) { return 0; } }
@@ -3275,6 +3293,59 @@ function advAct(act, b) {
 }
 document.addEventListener('input', e => { if (e.target && e.target.id === 'advQ') { ADV.q = e.target.value; const r = document.getElementById('advRes'); if (r) r.innerHTML = advHelpHtml(ADV.q); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ADV.open) { ADV.open = false; renderAdvisor(); const ab = document.getElementById('advBtn'); if (ab && ab.focus) ab.focus(); } });
+/* ---------- Role workspaces: each person picks their role; the menu, welcome page and Advisor follow it, and stages owned by other roles are view only.
+   Kept in this browser only (not in the project file), so one project can be shared between people working in different roles. It guides – it is not security. ---------- */
+const ROLES = [
+  ['lead', 'Project lead', 'Every stage, from first design to asset planning – full access.', null, null],
+  ['design', 'Design engineer', 'Loads, supply, cables and protection, compliance, drawings, BOQ and the design report.',
+    ['dashboard', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
+    ['project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'compliance', 'checklist', 'drawings', 'review', 'boq', 'report']],
+  ['impl', 'Implementation & deployment', 'Construction and commissioning: drawings, BOQ, document and risk registers, LV tests, T&C and handover.',
+    ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'report'],
+    ['drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover']],
+  ['faceng', 'Facilities engineer', 'Building services planning, planned and reactive maintenance, plant condition and the facilities report.',
+    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'energy', 'lvcert', 'tc', 'handover'],
+    ['facilities', 'assets', 'fm', 'fmreport']],
+  ['fm', 'Facility manager', 'Helpdesk and SLA, soft services, capital projects and the monthly facilities report.',
+    ['dashboard', 'fm', 'fmreport', 'facilities', 'assets', 'handover', 'energy'],
+    ['fm', 'fmreport', 'facilities']],
+  ['energy', 'Energy manager', 'Annual energy, cost and carbon, efficiency measures, solar PV and the demand behind them.',
+    ['dashboard', 'energy', 'sizing', 'data-centre', 'fmreport', 'assets', 'report'],
+    ['energy']],
+  ['asset', 'Asset manager', 'Asset register, condition and risk, depreciation, life cycle and the capital replacement forecast.',
+    ['dashboard', 'assets', 'fm', 'fmreport', 'handover', 'registers', 'report'],
+    ['assets', 'fm', 'fmreport']],
+];
+const ROLE_KEY = 'nexvorahub-role';
+let ROLE = { id: 'lead', all: false };
+try { const r = JSON.parse(localStorage.getItem(ROLE_KEY) || 'null'); if (r && ROLES.some(x => x[0] === r.id)) ROLE = { id: r.id, all: !!r.all }; } catch (e) { }
+function roleSave() { try { localStorage.setItem(ROLE_KEY, JSON.stringify(ROLE)); } catch (e) { } }
+function roleOf(id = ROLE.id) { return ROLES.find(r => r[0] === id) || ROLES[0]; }
+function roleShows(v, id) { const r = roleOf(id); return !r[3] || v === 'home' || r[3].includes(v); }
+function canEdit(v = view, id) { const r = roleOf(id); return !r[4] || v === 'home' || v === 'dashboard' || EXTRA_VIEWS.includes(v) || r[4].includes(v); }
+function roleOwners(v) { return ROLES.filter(r => r[4] && r[4].includes(v)).map(r => r[1]); }
+function roleRail() { return VIEWS.map((v, i) => [v, i]).filter(([v]) => ROLE.all || roleShows(v[0])); }
+// Buttons that only read, export or navigate stay live on a view-only page.
+function roleSafe(b) { const a = b.dataset.act || ''; return !b.dataset.add && !b.dataset.del && (!a || /^(dl-|copy-report|save-json|intro-|adv-|role-)/.test(a)); }
+function roleBanner() {
+  if (canEdit()) return '';
+  const o = roleOwners(view);
+  return '<p class="callout ro-note" role="note"><b>View only for your role (' + esc(roleOf()[1]) + ').</b> ' + (o.length ? 'Edited by: ' + esc(o.join(', ')) + ' and the project lead. ' : '') + 'Exports and reports still work. <a href="#home">Change role on the Welcome page</a>.</p>';
+}
+function roleLock() {
+  const main = $('#main'); if (!main || !main.querySelectorAll || canEdit()) return;
+  main.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = true; });
+  main.querySelectorAll('button').forEach(b => { if (!roleSafe(b)) { b.disabled = true; b.title = 'View only for your role'; } });
+}
+function rolePicker() {
+  return '<div class="sheet roles" id="roles"><h3 style="margin-top:0">Your role</h3><p class="note" style="margin-top:0">Pick the role you work in. The menu, this page and the Advisor follow it, and stages owned by other roles open view only. It is remembered in this browser – the project file is shared by everyone.</p>'
+    + '<div class="rolegrid" role="radiogroup" aria-label="Your role">' + ROLES.map(r => '<button class="role' + (r[0] === ROLE.id ? ' on' : '') + '" role="radio" aria-checked="' + (r[0] === ROLE.id) + '" data-act="role-set" data-role="' + r[0] + '"><b>' + esc(r[1]) + '</b><span>' + esc(r[2]) + '</span>' + (r[4] ? '<small>Edits ' + r[4].length + ' stage' + (r[4].length > 1 ? 's' : '') + ' · views ' + r[3].length + '</small>' : '<small>Edits every stage</small>') + '</button>').join('') + '</div>'
+    + (roleOf()[4] ? '<div class="yours"><h3>Your workspace</h3><div class="chain">' + roleOf()[3].map(v => '<a href="#' + v + '" class="' + (canEdit(v) ? 'ed' : 'vo') + '">' + esc(vName(v)) + (canEdit(v) ? '' : ' <i>view</i>') + '</a>').join('') + '</div></div>' : '') + '</div>';
+}
+function roleAct(act, b) {
+  if (act === 'role-set') { ROLE.id = b.dataset.role; roleSave(); render(); toast('Workspace set for ' + roleOf()[1]); const f = document.querySelector('[data-role="' + ROLE.id + '"]'); if (f && f.focus) f.focus(); }
+  if (act === 'role-all') { ROLE.all = !ROLE.all; roleSave(); renderRail(); }
+}
 /* ---------- Welcome page: one connected life cycle – design, implement, commission, maintain, manage assets ---------- */
 V.home = () => {
   const p = S.project, D = calcDash(), G = calcRegs(), T = D.T, F = D.F, A = D.A, L = calcLV(), cur = esc(S.energy.currency || '');
@@ -3297,7 +3368,7 @@ V.home = () => {
     + '<div class="acts"><a class="btn primary" href="#dashboard">Open the project dashboard</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button><button class="btn" data-act="adv-open" data-tab="next">Ask the Advisor</button></div>'
     + bus
     + '<div class="snap"><span>Project <b>' + esc(p.name || 'Untitled') + '</b></span><span>Region <b>' + esc(p.country || '') + '</b></span><span>Status <b>' + esc(rag) + '</b></span><span>Transformer <b>' + (R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : '–') + '</b></span></div></div>'
-    + introHtml() + '<div class="life">' + stages.map(s => '<a class="card" href="' + s[4] + '"><span class="n">' + s[0] + ' / 05</span><h3>' + s[1] + '</h3><p>' + esc(s[2]) + '</p><span class="fig">' + esc(s[3]) + '</span><span class="go">' + s[5] + ' →</span></a>').join('') + '</div>'
+    + introHtml() + rolePicker() + '<div class="life">' + stages.map(s => '<a class="card" href="' + s[4] + '"><span class="n">' + s[0] + ' / 05</span><h3>' + s[1] + '</h3><p>' + esc(s[2]) + '</p><span class="fig">' + esc(s[3]) + '</span><span class="go">' + s[5] + ' →</span></a>').join('') + '</div>'
     + '<div class="sheet"><h3 style="margin-top:0">One model, every stage</h3><div class="chain"><span>Load schedule</span><i>→</i><span>Transformer, generator and cables</span><i>→</i><span>Bill of quantities</span><i>→</i><span>Test schedule</span><i>→</i><span>Handover pack</span><i>→</i><span>Asset register</span><i>→</i><span>Maintenance plan</span><i>→</i><span>Capital forecast</span></div>'
     + '<div class="why" style="margin-top:14px"><div><b>Regional by default</b>' + COUNTRIES.length + ' countries and regions: wiring rules, certificates and HV standards, checked and dated.</div><div><b>Engineer in control</b>Every factor, limit and certificate field is an editable default – you certify the design.</div><div><b>Private and free</b>Your project stays in this browser. Export to PDF, CSV and Excel whenever you need to share.</div></div>'
     + '<p class="note" style="margin-bottom:0">Results are a design pre-check, not certification. Confirm standards and limits with the local authority and network operator.</p></div>'
@@ -3764,7 +3835,7 @@ function render(keepFocus) {
   R = calcAll();
   renderBand(); renderRail(); renderAdvisor();
   const a = document.activeElement, id = a && a.id, pos = a && a.selectionStart, ds = a && a.dataset ? { ...a.dataset } : null;
-  $('#main').innerHTML = V[view]();
+  $('#main').innerHTML = roleBanner() + V[view]();
   // accessibility: inputs inside tables are named after their column heading (and the row's first cell)
   const main = $('#main');
   if (main.querySelectorAll) main.querySelectorAll('table').forEach(t => {
@@ -3775,6 +3846,7 @@ function render(keepFocus) {
       el.setAttribute('aria-label', rowName ? `${hs[i]} – ${rowName}` : hs[i]);
     })));
   });
+  roleLock();
   if (keepFocus && ds) {
     let el = id ? document.getElementById(id) : null;
     if (!el && ds.arr) el = document.querySelector(`[data-arr="${ds.arr}"][data-i="${ds.i}"][data-k="${ds.k}"]`);
@@ -3791,6 +3863,7 @@ const NUM_PATHS = /^(project\.(pf|spare)|mainSF|sizing\.|dc\.(area|m2rack|racks|
 let rT;
 function onEdit(e, immediate) {
   const el = e.target;
+  if (!canEdit() && el.closest && el.closest('#main')) return;
   if (el.dataset.p) { let v = castVal(el); if (NUM_PATHS.test(el.dataset.p) && v === '') return; setPath(el.dataset.p, v); if (el.dataset.p === 'project.country') { S.project.vllOverride = ''; S.project.vlnOverride = ''; S.project.dregOverride = ''; } if (el.dataset.p === 'dc.platform') applyPlatform(v); }
   else if (el.dataset.arr) { const v = castVal(el); S[el.dataset.arr][+el.dataset.i][el.dataset.k] = el.dataset.k === 'cable' || el.dataset.k === 'ph' ? +v : v; if (el.dataset.arr === 'tickets' && el.dataset.k === 'trade') S.tickets[+el.dataset.i].issue = '';
     if (el.dataset.arr === 'tickets' && el.dataset.k === 'issue') { const t = S.tickets[+el.dataset.i], j = jobOf(t.trade, v); if (j) { t.pri = j.p; if (!t.desc || JOB_LIB.some(c => c.issues.some(x => x[1] === t.desc))) t.desc = j.n; t.kind = 'Reactive breakdown'; } }
@@ -3820,6 +3893,8 @@ document.addEventListener('click', async e => {
   const act = b.dataset.act;
   if (act && act.startsWith('intro-')) { introAct(act); return; }
   if (act && act.startsWith('adv-')) { advAct(act, b); return; }
+  if (act && act.startsWith('role-')) { roleAct(act, b); return; }
+  if (!canEdit() && !roleSafe(b) && b.closest('#main')) { toast('View only for your role – change role on the Welcome page'); return; }
   if (proBlocked(act)) { toast(projectNotOffered() ? 'Pro is not offered in this region' : 'This is a Pro feature – see Plan & licence'); location.hash = '#account'; return; }
   if (act === 'lic-activate') { const i = document.getElementById('licKey'); activateLicence(i ? i.value : ''); return; }
   if (act === 'lic-remove') { removeLicence(); return; }

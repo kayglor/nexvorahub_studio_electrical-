@@ -1024,6 +1024,27 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   ADV.open = false; ADV.tab = 'next'; renderAdvisor();
   view = V0; render();
   out.advisorChecks = aF.length ? aF : 'all passed'; }
+// ---------- role workspaces ----------
+{ const rF = [], rchk = (n, ok, got) => { if (!ok) rF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const R0 = { ...ROLE }, V0 = view;
+  rchk('seven roles, lead edits everything', ROLES.length === 7 && ROLE.id === 'lead' && VIEWS.every(v => canEdit(v[0], 'lead') && roleShows(v[0], 'lead')));
+  rchk('every role stage is a real page and edit ⊂ view', ROLES.filter(r => r[3]).every(r => r[3].concat(r[4]).every(v => VIEWS.some(x => x[0] === v)) && r[4].every(v => r[3].includes(v))));
+  rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
+  rchk('design engineer edits circuits, not FM', canEdit('circuits', 'design') && !canEdit('fm', 'design') && !roleShows('fm', 'design'));
+  rchk('energy manager edits energy, views sizing', canEdit('energy', 'energy') && roleShows('sizing', 'energy') && !canEdit('sizing', 'energy'));
+  rchk('home and dashboard open to all', ROLES.every(r => canEdit('home', r[0]) && canEdit('dashboard', r[0])));
+  ROLE.id = 'energy'; ROLE.all = false; view = 'home'; render(); let h = document.querySelector('#main').innerHTML;
+  rchk('role picker on the welcome page', /role="radiogroup"/.test(h) && /data-role="energy"/.test(h) && /aria-checked="true" data-act="role-set" data-role="energy"/.test(h) && /Your workspace/.test(h));
+  const rail = document.querySelector('#rail').innerHTML;
+  rchk('menu shows only the role stages', rail.includes('#energy') && !rail.includes('href="#circuits"') && /Show all stages/.test(rail));
+  view = 'sizing'; render(); h = document.querySelector('#main').innerHTML;
+  rchk('other stages open view only', /View only for your role \(Energy manager\)/.test(h) && /Design engineer/.test(h));
+  rchk('advisor steps stay in the role', advNext().steps.every(x => roleShows(x.v)), advNext().steps.map(x => x.v));
+  const keep = S.project.name; onEdit({ target: { dataset: { p: 'project.name' }, value: 'X', type: 'text', closest: () => true } }, true); rchk('edits blocked on a view-only page', S.project.name === keep);
+  ROLE.id = 'design'; view = 'circuits'; render(); h = document.querySelector('#main').innerHTML; rchk('owner edits normally', !/View only/.test(h));
+  rchk('safe buttons stay live', roleSafe({ dataset: { act: 'dl-xlsx' } }) && !roleSafe({ dataset: { act: 'docs-import' } }) && !roleSafe({ dataset: { add: 'tickets' } }));
+  Object.assign(ROLE, R0); view = V0; render();
+  out.roleChecks = rF.length ? rF : 'all passed'; }
 
 
 
