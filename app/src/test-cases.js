@@ -867,6 +867,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.tickets = [{ ...BLANK.tickets(), pri: 'P1', raised: '2026-11-10T08:00' }]; D = calcDash(); dchk('overdue ticket makes the SLA red', g('sla').rag === 'Red');
   view = 'dashboard'; render(); h = document.querySelector('#main').innerHTML;
   dchk('dashboard view: headline, groups, RAG, standards', /Project dashboard/.test(h) && /Overall: Red/.test(h) && /Testing &amp; commissioning|Testing & commissioning/.test(h) && /Maintenance &amp; operations|Maintenance & operations/.test(h) && /href="#tc"/.test(h) && /Standards for this region/.test(h) && /ENA TS 41-24/.test(h));
+  dchk('test category names shortened correctly', calcDash().k.some(x => x.name === 'Factory acceptance tests') && calcDash().k.some(x => x.name === 'Site acceptance and installation tests'), calcDash().k.map(x => x.name));
   dchk('dashboard first in the rail', VIEWS[0][0] === 'dashboard');
   const o = JSON.parse(SV); Object.assign(S, o); S.project.country = C0; S.dc.include = DC0; view = V0; R = calcAll();
   out.dashChecks = dF.length ? dF : 'all passed'; }
