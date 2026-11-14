@@ -849,11 +849,11 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
 { const dF = [], dchk = (n, ok, got) => { if (!ok) dF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const SV = JSON.stringify({ tc: S.tc, assets: S.assets, tickets: S.tickets, capProj: S.capProj, fmCfg: S.fmCfg }), C0 = S.project.country, V0 = view, DC0 = S.dc.include;
   const hv = n => hvStd(COUNTRIES.find(x => x.name === n))[0][1];
-  dchk('HV standards by region', /BS EN 61936-1/.test(hv('United Kingdom')) && /ESQCR/.test(hv('United Kingdom')) && /Article 49[05]/.test(hv('United States')) && /NESC/.test(hv('United States')) && /AS 2067/.test(hv('Australia')) && /C22\.1 Section 36/.test(hv('Canada')) && /VDE 0101/.test(hv('Germany')) && /NEMSA|NESIS/.test(hv('Nigeria')) && /IEC 61936-1/.test(hv('Kenya') || hv('France')), [hv('United Kingdom'), hv('United States')]);
+  dchk('HV standards by region', /BS EN IEC 61936-1:2021/.test(hv('United Kingdom')) && /Quality and Continuity Regulations 2002/.test(hv('United Kingdom')) && /Article 49[05]/.test(hv('United States')) && /NESC/.test(hv('United States')) && /AS 2067/.test(hv('Australia')) && /C22\.1:24 \(26th edition\) Section 36/.test(hv('Canada')) && /NEC\) 2026 Article 495/.test(hv('United States')) && /AS 2067:2016/.test(hv('Australia')) && /SANS 10142-2:2018/.test(hv('South Africa')) && /VDE 0101/.test(hv('Germany')) && /NEMSA|NESIS/.test(hv('Nigeria')) && /IEC 61936-1/.test(hv('Kenya') || hv('France')), [hv('United Kingdom'), hv('United States')]);
   dchk('every country has six HV topics', COUNTRIES.every(c => hvStd(c).length === 6 && hvStd(c).every(([a, b]) => a && b)));
   S.project.country = 'United Kingdom'; S.dc.include = false; R = calcAll();
   view = 'project'; render(); let h = document.querySelector('#main').innerHTML;
-  dchk('project stage shows the HV standard', /HV installations \(above 1 kV\)/.test(h) && /BS EN 61936-1/.test(h));
+  dchk('project stage shows the HV standard', /HV installations \(above 1 kV\)/.test(h) && /BS EN IEC 61936-1/.test(h));
   dchk('design report lists HV standards', /BS EN 50522/.test(reportDoc()) && /HV switchgear/.test(reportDoc()));
   // dashboard
   S.tc = {}; S.assets = []; S.tickets = []; S.capProj = []; S.fmCfg = { sla: {}, now: '2026-11-13T12:00' };
@@ -871,6 +871,40 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   dchk('dashboard first in the rail', VIEWS[0][0] === 'dashboard');
   const o = JSON.parse(SV); Object.assign(S, o); S.project.country = C0; S.dc.include = DC0; view = V0; R = calcAll();
   out.dashChecks = dF.length ? dF : 'all passed'; }
+// ---------- document control and risk registers ----------
+{ const gF = [], gchk = (n, ok, got) => { if (!ok) gF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SV = JSON.stringify({ docs: S.docs, risks: S.risks, fmCfg: S.fmCfg }), V0 = view, DC0 = S.dc.include;
+  S.dc.include = false; R = calcAll(); S.docs = []; S.risks = []; S.fmCfg = { sla: {}, now: '2026-11-13T12:00' };
+  const dp = docsFromDesign();
+  gchk('standard deliverables from the design', ['d:report', 'd:sld', 'd:earth', 'd:cab', 'd:calc', 'd:spec', 'd:boq', 'd:tc', 'd:om'].every(k => dp.some(d => d.src === k)) && R.DBR.rows.every(b => dp.some(d => d.src === 'd:db:' + b.name)), dp.map(d => d.src));
+  gchk('numbers unique and use the project reference', new Set(dp.map(d => d.no)).size === dp.length && dp.every(d => d.no.startsWith(docPre() + '-')));
+  S.docs = dp; gchk('import not repeated', docsFromDesign().length === 0);
+  const d0 = S.docs[0], d1 = S.docs[1], d2 = S.docs[2];
+  Object.assign(d0, { st: 'For approval', due: '2026-11-01' }); Object.assign(d1, { st: 'For comment', due: '2026-11-20' }); Object.assign(d2, { st: 'Approved', code: 'A' }); S.docs[3].st = 'Superseded'; S.docs[4].code = 'C'; S.docs[4].st = 'For approval';
+  let G = calcRegs();
+  gchk('overdue, awaiting, approved, code C, superseded', G.overdue === 1 && G.waiting === 2 && G.approved === 1 && G.rejected === 1 && G.live.length === S.docs.length - 1 && G.docs[0].st === 'bad' && G.docs[1].st === 'warn' && G.docs[2].st === 'ok', [G.overdue, G.waiting, G.approved, G.rejected]);
+  // risks
+  const rp = risksFromDesign();
+  gchk('typical electrical risks', ['r:hvwork', 'r:live', 'r:lead', 'r:utility', 'r:fault', 'r:harm', 'r:flood', 'r:comm', 'r:docs'].every(k => rp.some(r => r.src === k)) && rp.every(r => r.title && r.mit && r.owner && r.l && r.i));
+  gchk('utility risk quotes the maximum demand', /\d kVA/.test(rp.find(r => r.src === 'r:utility').mit));
+  S.risks = rp.map((r, k) => ({ ...r, no: 'R-' + String(k + 1).padStart(3, '0') }));
+  const hv = S.risks.find(r => r.src === 'r:hvwork'), lead = S.risks.find(r => r.src === 'r:lead');
+  G = calcRegs(); const ghv = G.risks.find(x => x.r === hv), gl = G.risks.find(x => x.r === lead);
+  gchk('score and band', ghv.sc === 10 && ghv.band === 'High' && gl.sc === 16 && gl.band === 'Very high' && G.vhigh >= 1, [ghv.sc, gl.sc]);
+  lead.rl = '2'; lead.ri = '4'; lead.due = '2026-11-01'; G = calcRegs(); const gl2 = G.risks.find(x => x.r === lead);
+  gchk('residual score replaces the current score; late action flagged', gl2.rs === 8 && gl2.cur === 8 && gl2.band === 'Medium' && gl2.late && G.lateR === 1);
+  const hvRes = (hv.st = 'Closed', calcRegs()); gchk('closed risks leave the open count', hvRes.open === S.risks.length - 1);
+  gchk('rail status', railStatus('registers') === 'bad');
+  const D = calcDash(); gchk('dashboard project-control indicators', D.k.some(x => x.id === 'docs' && x.rag === 'Red') && D.k.some(x => x.id === 'risks'));
+  view = 'registers'; render(); let h = document.querySelector('#main').innerHTML;
+  gchk('view: both registers, dropdowns, heat map', /Document control register/.test(h) && /Risk register/.test(h) && /data-arr="docs"[^>]*data-k="code"/.test(h) && /data-arr="risks"[^>]*data-k="l"/.test(h) && /Response overdue/.test(h) && /L5/.test(h) && /I5/.test(h) && /Action overdue/.test(h));
+  view = 'regreport'; render(); h = document.querySelector('#main').innerHTML;
+  gchk('registers report', ['Document and risk registers', 'Document control register', 'Risk register', 'OVERDUE', 'Save report as PDF'].every(w => h.includes(w)));
+  const csv = csvRegs(); gchk('CSV', /DOCUMENT CONTROL REGISTER/.test(csv) && /RISK REGISTER/.test(csv) && /"Very high"|"High"/.test(csv));
+  gchk('stage and report reachable', VIEWS.some(v => v[0] === 'registers') && EXTRA_VIEWS.includes('regreport'));
+  gchk('old projects get registers', (() => { const o = upgrade({ v: 1 }); return Array.isArray(o.docs) && Array.isArray(o.risks); })());
+  const o = JSON.parse(SV); S.docs = o.docs; S.risks = o.risks; S.fmCfg = o.fmCfg; S.dc.include = DC0; view = V0; R = calcAll();
+  out.regChecks = gF.length ? gF : 'all passed'; }
 
 
 
