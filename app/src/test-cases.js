@@ -845,6 +845,31 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   tchk('results kept after importing design assets', calcTC().items.find(x => x.id === txIR.id).st === 'Fail' && before.st === 'Fail');
   const o = JSON.parse(SV); S.tc = o.tc; S.tcCfg = o.tcCfg; S.assets = o.assets; S.dc.include = DC0; view = V0; R = calcAll();
   out.tcChecks = tF.length ? tF : 'all passed'; }
+// ---------- HV standards by region and the project dashboard ----------
+{ const dF = [], dchk = (n, ok, got) => { if (!ok) dF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SV = JSON.stringify({ tc: S.tc, assets: S.assets, tickets: S.tickets, capProj: S.capProj, fmCfg: S.fmCfg }), C0 = S.project.country, V0 = view, DC0 = S.dc.include;
+  const hv = n => hvStd(COUNTRIES.find(x => x.name === n))[0][1];
+  dchk('HV standards by region', /BS EN 61936-1/.test(hv('United Kingdom')) && /ESQCR/.test(hv('United Kingdom')) && /Article 49[05]/.test(hv('United States')) && /NESC/.test(hv('United States')) && /AS 2067/.test(hv('Australia')) && /C22\.1 Section 36/.test(hv('Canada')) && /VDE 0101/.test(hv('Germany')) && /NEMSA|NESIS/.test(hv('Nigeria')) && /IEC 61936-1/.test(hv('Kenya') || hv('France')), [hv('United Kingdom'), hv('United States')]);
+  dchk('every country has six HV topics', COUNTRIES.every(c => hvStd(c).length === 6 && hvStd(c).every(([a, b]) => a && b)));
+  S.project.country = 'United Kingdom'; S.dc.include = false; R = calcAll();
+  view = 'project'; render(); let h = document.querySelector('#main').innerHTML;
+  dchk('project stage shows the HV standard', /HV installations \(above 1 kV\)/.test(h) && /BS EN 61936-1/.test(h));
+  dchk('design report lists HV standards', /BS EN 50522/.test(reportDoc()) && /HV switchgear/.test(reportDoc()));
+  // dashboard
+  S.tc = {}; S.assets = []; S.tickets = []; S.capProj = []; S.fmCfg = { sla: {}, now: '2026-11-13T12:00' };
+  let D = calcDash(); const g = id => D.k.find(x => x.id === id);
+  dchk('design indicators calculated; empty stages N/A', g('compliance').v > 0 && g('circuits').v === 1 && g('tc-TX').rag === 'N/A' && g('ppm').rag === 'N/A' && g('sla').rag === 'N/A', D.k.map(x => [x.id, x.rag]));
+  const tx = calcTC().items.filter(x => x.cat === 'TX'); tx.forEach(x => { S.tc[x.id] = { st: 'Pass' }; });
+  D = calcDash(); dchk('transformer tests green when all pass', g('tc-TX').v === 1 && g('tc-TX').rag === 'Green' && g('tc-COM').rag === 'N/A' && /Not started/.test(g('tc-COM').note));
+  S.tc[tx[0].id] = { st: 'Fail' }; D = calcDash(); dchk('a failure turns the indicator and overall red', g('tc-TX').rag === 'Red' && D.overall === 'Red' && railStatus('dashboard') === 'bad');
+  S.assets = [{ ...BLANK.assets(), cls: 'gen', qty: 1, year: 2024, ppm: '75–89%' }, { ...BLANK.assets(), cls: 'ups', qty: 3, year: 2024, ppm: '100%' }];
+  D = calcDash(); dchk('PPM completion weighted by quantity', near(g('ppm').v, (0.82 + 3) / 4) && g('ppm').rag === 'Green' && g('health').v === 1);
+  S.tickets = [{ ...BLANK.tickets(), pri: 'P1', raised: '2026-11-10T08:00' }]; D = calcDash(); dchk('overdue ticket makes the SLA red', g('sla').rag === 'Red');
+  view = 'dashboard'; render(); h = document.querySelector('#main').innerHTML;
+  dchk('dashboard view: headline, groups, RAG, standards', /Project dashboard/.test(h) && /Overall: Red/.test(h) && /Testing &amp; commissioning|Testing & commissioning/.test(h) && /Maintenance &amp; operations|Maintenance & operations/.test(h) && /href="#tc"/.test(h) && /Standards for this region/.test(h) && /ENA TS 41-24/.test(h));
+  dchk('dashboard first in the rail', VIEWS[0][0] === 'dashboard');
+  const o = JSON.parse(SV); Object.assign(S, o); S.project.country = C0; S.dc.include = DC0; view = V0; R = calcAll();
+  out.dashChecks = dF.length ? dF : 'all passed'; }
 
 
 

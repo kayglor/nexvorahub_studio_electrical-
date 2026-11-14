@@ -1488,7 +1488,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 
 /* ---------- views ---------- */
 const VIEWS = [
-  ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
+  ['dashboard', 'Project dashboard'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
   ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['tc', 'Testing & commissioning'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport'];
@@ -1511,6 +1511,7 @@ function railStatus(id) {
   if (id === 'sizing') return R.txKva ? 'ok' : 'bad';
   if (id === 'review') return !R.RV.sheets.length ? '' : R.RV.nBad ? 'bad' : R.RV.nWarn ? 'warn' : 'ok';
   if (id === 'checklist' || id === 'facilities') { const st = clStat(id === 'facilities' ? facIds() : CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items))); return st.complete ? 'ok' : st.started ? 'warn' : ''; }
+  if (id === 'dashboard') { const o = calcDash().overall; return o === 'Red' ? 'bad' : o === 'Amber' ? 'warn' : o === 'Green' ? 'ok' : ''; }
   if (id === 'tc') { const T = calcTC(); return T.fail ? 'bad' : !T.started ? '' : T.done < T.total ? 'warn' : 'ok'; }
   if (id === 'fm') { if (!(S.tickets || []).length && !(S.soft || []).length && !(S.capProj || []).length) return ''; const F = calcFM(); return F.overdue || F.soft.some(r => r.st === 'bad') || F.pr.some(r => r.rag === 'Red') ? 'bad' : F.open || F.soft.some(r => r.st === 'warn') || F.pr.some(r => r.rag === 'Amber') ? 'warn' : 'ok'; }
   if (id === 'assets') { if (!(S.assets || []).length) return ''; const A = calcAssets(); return A.nBad ? 'bad' : A.nWarn ? 'warn' : 'ok'; }
@@ -1535,7 +1536,7 @@ V.project = () => {
   </div>
   <h3>Region and code</h3><div class="grid">
    ${fld('Country / region', sel('project.country', COUNTRIES.map(c => c.name), p.country), `${COUNTRIES.length} countries and regions`)}
-   ${fld('Wiring regulations', der(esc(c.regs)))}${fld('Code family', der(FAMILY_NAME[c.fam]))}${fld('Utility / authority', der(esc(c.authority)))}
+   ${fld('Wiring regulations', der(esc(c.regs)))}${fld('HV installations (above 1 kV)', der(esc(hvStd(c)[0][1])), 'Full HV standards list on the Project dashboard')}${fld('Code family', der(FAMILY_NAME[c.fam]))}${fld('Utility / authority', der(esc(c.authority)))}
    ${fld('Line–line voltage (V)', inp('project.vllOverride', p.vllOverride, 'number', `placeholder="${c.vll}"`), `Default ${c.vll} V – type to override`)}
    ${fld('Line–neutral voltage (V)', inp('project.vlnOverride', p.vlnOverride, 'number', `placeholder="${c.vln}"`), `Default ${c.vln} V`)}
    ${fld('Frequency / earthing', der(`${c.hz} Hz · ${esc(c.earthing)}`))}${fld('Voltage-drop limits', der(`${c.vdl}% lighting · ${c.vdo}% other`))}
@@ -2654,6 +2655,52 @@ function csvTc() {
   T.items.forEach(x => L.push([tcCatN(x.cat), x.grp, x.test, x.ref, x.acc, x.v.val, x.unit, x.st, x.fail ? 'FAIL' : x.done ? 'Done' : 'Open', x.v.date, x.v.by, x.v.note].map(q).join(',')));
   return L.join('\r\n');
 }
+/* ---------- HV standards by region (installations above 1 kV AC) ---------- */
+const HV_FAM = {
+  IEC: [['HV installation', 'IEC 61936-1 (power installations exceeding 1 kV AC)'], ['HV earthing', 'IEC / EN 50522 earthing of power installations > 1 kV'], ['HV switchgear', 'IEC 62271-200 (metal-enclosed) / IEC 62271-1'], ['Transformers', 'IEC 60076 series (IEC 60076-11 dry type)'], ['Protection relays', 'IEC 60255 / CTs and VTs to IEC 61869'], ['Operation and safety', 'EN 50110-1 operation of electrical installations; utility grid code']],
+  NEC: [['HV installation', 'NFPA 70 (NEC) Article 495 / 490 for premises over 1000 V; NESC (IEEE C2) on the utility side'], ['HV earthing', 'IEEE 80 substation grounding; IEEE 142'], ['HV switchgear', 'IEEE C37.20 series / UL 347 / ANSI C37'], ['Transformers', 'IEEE C57.12 series'], ['Protection relays', 'IEEE C37.90 / C37.2 device numbers'], ['Operation and safety', 'NFPA 70E / OSHA 1910.269; NFPA 70B maintenance']],
+  CEC: [['HV installation', 'CSA C22.1 Section 36 (high-voltage installations over 750 V)'], ['HV earthing', 'CSA C22.3 No. 7 / IEEE 80'], ['HV switchgear', 'CSA C22.2 No. 31 / IEEE C37'], ['Transformers', 'CSA C88 / IEEE C57.12'], ['Protection relays', 'IEEE C37.90 / IEC 60255'], ['Operation and safety', 'CSA Z462 workplace electrical safety']],
+  ASNZS: [['HV installation', 'AS 2067 (substations and HV installations exceeding 1 kV AC)'], ['HV earthing', 'AS 2067 / ENA EG-0 power system earthing guide'], ['HV switchgear', 'AS 62271.200 / AS 62271.1'], ['Transformers', 'AS 60076 series'], ['Protection relays', 'AS 60255 / IEC 60255'], ['Operation and safety', 'AS/NZS 4836 safe work on LV; network operator HV rules']],
+};
+const HV_LOCAL = {
+  'United Kingdom': [['HV installation', 'BS EN 61936-1; Electricity Safety, Quality and Continuity Regulations 2002 (ESQCR); Electricity at Work Regulations 1989'], ['HV earthing', 'BS EN 50522; ENA TS 41-24'], ['Operation and safety', 'HSG85 / BS 6626 maintenance of switchgear; DNO connection under G99 / ENA EREC G81']],
+  'Ireland': [['HV installation', 'I.S. EN 61936-1; ESB Networks connection conditions']],
+  'Germany': [['HV installation', 'DIN VDE 0101-1 (EN 61936-1)'], ['HV earthing', 'DIN VDE 0101-2 (EN 50522)'], ['Operation and safety', 'DIN VDE 0105-100 (EN 50110-1); network operator TAR Mittelspannung (VDE-AR-N 4110)']],
+  'South Africa': [['HV installation', 'SANS 10142-2 (installations above 1 kV); OHS Act Electrical Machinery Regulations']],
+  'India': [['HV installation', 'CEA (Measures relating to Safety and Electric Supply) Regulations 2023; IS / IEC 61936-1']],
+  'Nigeria': [['HV installation', 'Nigerian Electricity Supply and Installation Standards (NESIS) / NEMSA; IEC 61936-1'], ['Operation and safety', 'NEMSA inspection and certification before energisation; DisCo connection rules']],
+  'United Arab Emirates': [['HV installation', 'IEC 61936-1 with DEWA / ADDC / SEWA / FEWA HV connection regulations']],
+  'Saudi Arabia': [['HV installation', 'Saudi Electricity Code (SBC 401) / SEC distribution and connection standards; IEC 61936-1']],
+};
+function hvStd(c) { const base = HV_FAM[(c && c.fam) || 'IEC'] || HV_FAM.IEC, loc = HV_LOCAL[(c && c.name) || ''] || []; return base.map(([k, v]) => { const o = loc.find(x => x[0] === k); return [k, o ? o[1] : v]; }); }
+/* ---------- Project dashboard: design, testing, maintenance and operations KPIs with RAG ---------- */
+const PPM_FRAC = { '100%': 1, '90–99%': 0.95, '75–89%': 0.82, 'Below 75%': 0.6 };
+const ragOf = (v, bad) => bad ? 'Red' : v == null ? 'N/A' : v >= 0.9 ? 'Green' : v >= 0.6 ? 'Amber' : 'Red';
+function calcDash() {
+  const k = [], add = (grp, id, name, v, note, href, bad) => k.push({ grp, id, name, v, note, href, rag: ragOf(v, bad) });
+  const chk = CHECKS.map(c => c[2](R)[1]), app = chk.filter(s => s !== 'na');
+  add('Design', 'compliance', 'Design compliance', app.length ? app.filter(s => s === 'ok').length / app.length : null, app.filter(s => s === 'ok').length + ' of ' + app.length + ' checks OK', '#compliance', chk.includes('bad'));
+  const cc = R.C.filter(c => c.fail && c.fail !== 'REVIEW').length; add('Design', 'circuits', 'Cables & protection', R.C.length ? (R.C.length - cc) / R.C.length : null, (R.C.length - cc) + ' of ' + R.C.length + ' circuits pass', '#circuits', cc > 0);
+  const cl = clStat(CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items))); add('Design', 'checklist', 'Design checklist', cl.started ? cl.frac : null, cl.done + ' of ' + cl.app + ' items done', '#checklist');
+  const T = calcTC(); T.byC.forEach(b => { const st = T.items.some(x => x.cat === b.k && (x.st !== 'Not started' || (x.v.val ?? '') !== '')); add('Testing & commissioning', 'tc-' + b.k, b.n.replace(/ (.*)$/, ''), st ? b.done / b.total : null, st ? b.done + ' of ' + b.total + ' tests' + (b.fail ? ' · ' + b.fail + ' failed' : '') : 'Not started · ' + b.total + ' tests', '#tc', b.fail > 0); });
+  const A = calcAssets(), q = A.rows.reduce((a, r) => a + r.qty, 0);
+  add('Maintenance & operations', 'ppm', 'Planned maintenance completed', q ? A.rows.reduce((a, r) => a + r.qty * (PPM_FRAC[r.a.ppm || '100%'] ?? 1), 0) / q : null, q ? q + ' assets, from the PPM completion recorded' : 'No assets yet', '#assets');
+  add('Maintenance & operations', 'health', 'Asset condition', q ? A.rows.filter(r => r.st !== 'bad').reduce((a, r) => a + r.qty, 0) / q : null, q ? A.nBad + ' to replace / repair, ' + A.nWarn + ' to plan' : 'No assets yet', '#assets');
+  const F = calcFM(); add('Maintenance & operations', 'sla', 'Helpdesk SLA compliance', F.slaPct, F.open + ' open · ' + F.overdue + ' overdue', '#fm', F.overdue > 0);
+  const red = F.pr.filter(r => r.rag === 'Red').length, amb = F.pr.filter(r => r.rag === 'Amber').length;
+  add('Maintenance & operations', 'capex', 'Capital projects on track', F.pr.length ? F.pr.filter(r => r.rag === 'Green').length / F.pr.length : null, F.pr.length ? F.pr.length + ' projects · ' + amb + ' amber · ' + red + ' red' : 'No projects yet', '#fm', red > 0);
+  const scored = k.filter(x => x.rag !== 'N/A');
+  return { k, overall: scored.some(x => x.rag === 'Red') ? 'Red' : scored.some(x => x.rag === 'Amber') ? 'Amber' : scored.length ? 'Green' : 'N/A', nRed: scored.filter(x => x.rag === 'Red').length, nAmber: scored.filter(x => x.rag === 'Amber').length, T, F, A };
+}
+const ragCls = r => r === 'Red' ? 'bad' : r === 'Amber' ? 'warn' : r === 'Green' ? 'ok' : 'na';
+V.dashboard = () => {
+  const D = calcDash(), p = S.project, c = COUNTRIES.find(x => x.name === p.country) || {}, grps = [...new Set(D.k.map(x => x.grp))];
+  return '<section class="sheet">' + head('Dashboard', 'Project dashboard', 'Where the project stands across design, testing and commissioning, maintenance and operations. Each indicator is calculated live from its stage: green 90 % or better, amber 60–89 %, red below 60 % or any failure. Click an indicator to open its stage.', pill(ragCls(D.overall), 'Overall: ' + D.overall + (D.nRed ? ' · ' + D.nRed + ' red' : '') + (D.nAmber ? ' · ' + D.nAmber + ' amber' : '')))
+    + '<div class="kpis">' + [['Maximum demand', f0(R.md) + ' kVA', esc(p.country || '')], ['Transformer', R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : 'Review', 'incl. expansion allowance'], ['Generator', R.gen ? f0(R.gen) + ' kVA' : '–', 'standby'], ['Circuits', R.C.length, 'designed'], ['Stage', esc(p.stage || '–'), 'Rev ' + esc(p.rev || '–')]].map(([a, b, t]) => '<div class="kpi"><span>' + a + '</span><b>' + b + '</b><small>' + t + '</small></div>').join('') + '</div>'
+    + grps.map(g => '<h3>' + esc(g) + '</h3><div class="kpis">' + D.k.filter(x => x.grp === g).map(x => '<a class="kpi" href="' + x.href + '" style="text-decoration:none;color:inherit;border-left:5px solid var(--' + ({ Red: 'bad', Amber: 'warn', Green: 'ok' }[x.rag] || 'line') + ', #999)"><span>' + esc(x.name) + '</span><b>' + (x.v == null ? '–' : pct(x.v)) + '</b><small>' + pill(ragCls(x.rag), x.rag) + ' ' + esc(x.note) + '</small></a>').join('') + '</div>').join('')
+    + '<h3>Standards for this region</h3><div class="tbl-wrap"><table><tbody><tr><th style="width:220px">LV wiring regulations</th><td>' + esc(c.regs || '–') + '</td></tr>' + hvStd(c).map(([a, b]) => '<tr><th>' + esc(a) + '</th><td>' + esc(b) + '</td></tr>').join('') + '</tbody></table></div>'
+    + '<p class="note">Standards are editable defaults to confirm against the current edition and the local authority or network operator. Indicators show N/A until their stage has data.</p></section>';
+};
 V.assets = () => {
   const A = calcAssets(), cfg = A.cfg, prop = assetsFromDesign();
   const selA = (i, k, list, v) => '<select data-arr="assets" data-i="' + i + '" data-k="' + k + '" aria-label="' + k + '">' + opt(list, v) + '</select>';
@@ -3006,7 +3053,7 @@ function reportBody() {
    <div class="tb-g">${[['Client', p.client], ['Site', p.site], ['Reference', p.ref], ['Revision', p.rev], ['Date', p.date], ['Stage', p.stage], ['Designer', p.designer || '—'], ['Checker', p.checker || '—']].map(([a, b]) => `<div><span>${tr(a)}</span>${esc(b)}</div>`).join('')}</div></div>${rLang() !== 'en' ? `<p class="s"><i>${tr('TRANSLATION_NOTE')}</i></p>` : ''}
   ${sec('Summary')}<table class="r kv"><tbody>${[['Design region', `${esc(p.country)} (${esc(X.dreg)})`], ['Wiring regulations', esc(c.regs)], ['Supply', `${X.vln}/${X.vll} V, ${c.hz} Hz, ${esc(c.earthing)}`], ['Total maximum demand', `<b>${f0(R.md)} kVA</b> (${f0(R.kw)} kW, ${f0(R.amps)} A per phase) including ${pct(+p.spare)} spare`], ['Supply arrangement', esc(R.supply)], ['Transformers', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA ${esc(S.sizing.txType)}, ${S.sizing.resilience}` : 'Exceeds standard sizes – review'], ['Main LV incomer', R.incomer ? `${f0(R.incomer)} A, Icw ${R.icw ?? '> 120'} kA` : '–'], ['Standby generation', esc(genText())], ['Expansion allowance', `${pct(R.XP.e)} on ${[S.sizing.expTx !== false && 'transformers', S.sizing.expGen !== false && 'generators', S.sizing.expCab !== false && 'cables', S.sizing.expDb !== false && 'distribution boards'].filter(Boolean).join(', ') || 'none'}${R.XP.nBad ? ` – ${R.XP.nBad} item(s) below` : ''}`], ['Annual electricity (net)', `${f0(R.E.imp / 1000)} MWh/yr, ${f0(R.E.eui)} kWh/m²/yr, ${f1(R.E.tco2)} tCO₂e/yr`]].map(([a, b]) => `<tr><th>${tr(a)}</th><td>${b}</td></tr>`).join('')}</tbody></table>
   ${sec('Design basis and standards')}<p>${esc(method)}</p>
-  ${tbl(['Item', 'Basis'], [['Wiring regulations', esc(c.regs)], ['Load calculation method', esc(c.method)], ['Demand / diversity factor set', esc(c.set)], ['Lighting design', esc(c.lighting)], ['Emergency lighting', esc(c.emergency)], ['LV assemblies', esc(c.assemblies)], ['Protective devices', esc(c.devices)], ['Voltage-drop limits', `${c.vdl}% lighting, ${c.vdo}% other`], ['Utility / authority', esc(c.authority)], ['Power factor / spare', `${p.pf} / ${pct(+p.spare)}`]])}
+  ${tbl(['Item', 'Basis'], [['Wiring regulations', esc(c.regs)], ...hvStd(c).map(([a, b]) => [esc(a), esc(b)]), ['Load calculation method', esc(c.method)], ['Demand / diversity factor set', esc(c.set)], ['Lighting design', esc(c.lighting)], ['Emergency lighting', esc(c.emergency)], ['LV assemblies', esc(c.assemblies)], ['Protective devices', esc(c.devices)], ['Voltage-drop limits', `${c.vdl}% lighting, ${c.vdo}% other`], ['Utility / authority', esc(c.authority)], ['Power factor / spare', `${p.pf} / ${pct(+p.spare)}`]])}
   ${(() => { const cv = coverageOf(c); return `<p class="s"><b>Regional coverage for ${esc(p.country)}: ${esc(cv.label)}${cv.verified ? ` – verified against ${esc(cv.verified.edition)} (${esc(cv.verified.date)})` : ' – not yet verified against the edition in force'}.</b> ${cv.notes.map(esc).join(' ')} Cable data: ${esc(packOn() ? cableSource() : cv.cable)}.</p>`; })()}
   ${sec('Area load schedule')}${tbl(['Zone', 'Building / space type', 'Area m²', 'Design VA/m²', 'Demand kVA'], R.Z.rows.map(r => [esc(r.z.desc), esc(r.z.type), f0(+r.z.area), f1(r.dens), f1(r.kva)]), ['Total', '', f0(R.Z.area), f1(R.Z.area ? R.Z.kva * 1000 / R.Z.area : 0), f1(R.Z.kva)])}
   <p class="s">Design density = base (${esc(p.basis)}) density × regional factor for ${esc(X.dreg)}, unless overridden.</p>
