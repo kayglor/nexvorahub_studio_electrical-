@@ -868,7 +868,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   view = 'dashboard'; render(); h = document.querySelector('#main').innerHTML;
   dchk('dashboard view: headline, groups, RAG, standards', /Project dashboard/.test(h) && /Overall: Red/.test(h) && /Testing &amp; commissioning|Testing & commissioning/.test(h) && /Maintenance &amp; operations|Maintenance & operations/.test(h) && /href="#tc"/.test(h) && /Standards for this region/.test(h) && /ENA TS 41-24/.test(h));
   dchk('test category names shortened correctly', calcDash().k.some(x => x.name === 'Factory acceptance tests') && calcDash().k.some(x => x.name === 'Site acceptance and installation tests'), calcDash().k.map(x => x.name));
-  dchk('dashboard first in the rail', VIEWS[0][0] === 'dashboard');
+  dchk('dashboard right after the welcome page', VIEWS[0][0] === 'home' && VIEWS[1][0] === 'dashboard');
   const o = JSON.parse(SV); Object.assign(S, o); S.project.country = C0; S.dc.include = DC0; view = V0; R = calcAll();
   out.dashChecks = dF.length ? dF : 'all passed'; }
 // ---------- document control and risk registers ----------
@@ -995,6 +995,16 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   ychk('buttons on FM operations and the facilities report', ok);
   Object.assign(S, JSON.parse(SV));
   out.fmXlsxChecks = yF.length ? yF : 'all passed'; }
+// ---------- welcome page ----------
+{ const hF = [], hchk = (n, ok, got) => { if (!ok) hF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const V0 = view; view = 'home'; render(); const h = document.querySelector('#main').innerHTML;
+  hchk('first stage in the rail', VIEWS[0][0] === 'home' && VIEWS[0][1] === 'Welcome');
+  hchk('hero, life-cycle bus and the five stages', /Design it\. Build it\. Prove it\./.test(h) && /<svg class="bus"/.test(h) && ['Design', 'Implement', 'Commission', 'Maintain', 'Manage assets'].every(w => h.includes('<h3>' + w + '</h3>')));
+  hchk('each stage links into the app', ['#area', '#boq', '#lvcert', '#fm', '#assets', '#dashboard'].every(x => h.includes('href="' + x + '"')) && /data-act="new"/.test(h) && /data-act="load-json"/.test(h));
+  hchk('live project figures on the cards', h.includes(f0(R.md) + ' kVA maximum demand') && h.includes(R.C.length + ' circuits'));
+  hchk('integration chain and disclaimer', /One model, every stage/.test(h) && /design pre-check, not certification/.test(h));
+  view = V0; render();
+  out.homeChecks = hF.length ? hF : 'all passed'; }
 
 
 

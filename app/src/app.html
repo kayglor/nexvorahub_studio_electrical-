@@ -25,6 +25,46 @@
   --ok:#5fc08a; --ok-soft:#183324; --warn:#e0b14e; --warn-soft:#33290f; --bad:#f07d73; --bad-soft:#3b1a17;
   --input:#1f2421; --input-line:#5a5236; color-scheme:dark}
 *{box-sizing:border-box}
+/* Welcome page: dark control-room hero with a live "busbar" of the project life cycle */
+.home{display:grid;gap:18px;min-width:0}
+.hero{position:relative;overflow:hidden;border-radius:10px;padding:34px 30px 26px;color:#e9f1ec;background:radial-gradient(120% 140% at 85% 0%,#1f3a33 0%,#0f1c18 45%,#0a1210 100%);border:1px solid #24322d}
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(140,255,200,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(140,255,200,.05) 1px,transparent 1px);background-size:28px 28px;mask-image:radial-gradient(90% 90% at 70% 20%,#000 30%,transparent 80%);pointer-events:none}
+.hero>*{position:relative}
+.hero .k{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#7fe0b0}
+.hero h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,5vw,52px);line-height:1.02;margin:10px 0 12px;max-width:22ch;letter-spacing:.01em}
+.hero h1 em{font-style:normal;color:#ffb184}
+.hero p.lead{font-size:17px;max-width:62ch;color:#c4d3cb;margin:0 0 18px}
+.hero .acts{display:flex;flex-wrap:wrap;gap:10px}
+.hero .btn{background:transparent;color:#e9f1ec;border-color:#4d6a5f}
+.hero .btn.primary{background:#ef7d43;border-color:#ef7d43;color:#1a0e07}
+.hero .btn:focus-visible{outline:2px solid #7fe0b0;outline-offset:2px}
+.bus{width:100%;height:auto;margin:22px 0 4px;display:block}
+.bus .rail{stroke:#2f4a41;stroke-width:6;stroke-linecap:round}
+.bus .flow{stroke:#7fe0b0;stroke-width:2.5;stroke-dasharray:6 18;fill:none;animation:busflow 2.4s linear infinite}
+.bus .node{fill:#0f1c18;stroke:#7fe0b0;stroke-width:2.5}
+.bus .node.on{fill:#ef7d43;stroke:#ffb184}
+.bus .halo{fill:none;stroke:#7fe0b0;stroke-width:1.5;opacity:.6;transform-box:fill-box;transform-origin:center;animation:halo 3s ease-out infinite}
+.bus text{fill:#c4d3cb;font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;text-anchor:middle}
+@keyframes busflow{to{stroke-dashoffset:-48}}
+@keyframes halo{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(2.4);opacity:0}}
+@media (prefers-reduced-motion:reduce){.bus .flow,.bus .halo{animation:none}.bus .halo{display:none}}
+.hero .snap{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;font-family:var(--f-mono);font-size:13px;color:#9fb6ab}
+.hero .snap b{color:#e9f1ec;font-weight:500}
+.life{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:12px}
+.life a.card{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;border-top:4px solid var(--accent);transition:transform .15s ease,box-shadow .15s ease}
+.life a.card:hover,.life a.card:focus-visible{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12);outline:none}
+.life .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.life h3{font-family:var(--f-display);font-size:24px;margin:0;letter-spacing:.01em}
+.life p{margin:0;color:var(--muted);font-size:14px}
+.life .fig{font-family:var(--f-mono);font-size:13px;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line)}
+.life .go{font-weight:600;color:var(--accent);font-size:14px}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 0}
+.chain span{background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px}
+.chain i{font-style:normal;color:var(--accent);font-weight:700}
+.home .why{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px}
+.home .why div{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:14px}
+.home .why b{display:block;font-family:var(--f-display);font-size:19px;margin-bottom:4px}
+@media (max-width:600px){.hero{padding:24px 16px 18px}.hero p.lead{font-size:15.5px}.bus text{font-size:20px}}
 html,body{background:var(--bg);color:var(--ink)}
 body{font-family:var(--f-body);font-size:15px;line-height:1.45}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
@@ -1403,11 +1443,11 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 
 /* ---------- views ---------- */
 const VIEWS = [
-  ['dashboard', 'Project dashboard'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
+  ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
   ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport', 'regreport'];
-let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'project';
+let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'home';
 let R = calcAll();
 function opt(list, sel, map = x => x) { return list.map(x => { const v = typeof x === 'object' ? x.v : x, t = typeof x === 'object' ? x.t : map(x); return `<option value="${esc(v)}"${String(v) === String(sel) ? ' selected' : ''}>${esc(t)}</option>`; }).join(''); }
 function fld(label, html, hint) { const id = (String(html).match(/\sid="([^"]+)"/) || [])[1]; return `<div class="field"><label${id ? ` for="${id}"` : ''}>${label}</label>${html}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`; }
@@ -2965,6 +3005,34 @@ function fmSheets() {
   return [{ name: 'Summary', rows: sum }, ...xlsxSections(csvFm()).filter(x => !/^FACILITIES MANAGEMENT REPORT/.test(x.key)), ...xlsxSections(csvSchedules(), ['ASSET REGISTER', 'PPM PLAN'])];
 }
 function xlsxFm() { return XLSX.book(fmSheets()).bytes; }
+/* ---------- Welcome page: one connected life cycle – design, implement, commission, maintain, manage assets ---------- */
+V.home = () => {
+  const p = S.project, D = calcDash(), G = calcRegs(), T = D.T, F = D.F, A = D.A, L = calcLV(), cur = esc(S.energy.currency || '');
+  const lvDone = L.rows.filter(o => o.res === 'PASS').length, stages = [
+    ['01', 'Design', 'Loads, diversity and demand, transformer and generator sizing, cables, protection and boards – to the code of ' + COUNTRIES.length + ' countries and regions.', f0(R.md) + ' kVA maximum demand · ' + R.C.length + ' circuits', '#area', 'Start designing'],
+    ['02', 'Implement', 'Bill of quantities with the expansion allowance, electrical drawings, document control and the risk register.', (G.live.length ? G.live.length + ' documents · ' + pct(G.docPct || 0) + ' approved' : 'Deliverables ready to generate') + ' · ' + G.open + ' open risks', '#boq', 'Plan the build'],
+    ['03', 'Commission', 'LV certificate and test results, factory and site acceptance, transformer and relay tests, then the handover pack.', T.done + ' of ' + T.total + ' tests done · ' + lvDone + ' of ' + L.rows.length + ' circuits certified', '#lvcert', 'Test and hand over'],
+    ['04', 'Maintain', 'Planned maintenance, P1–P4 helpdesk with response times, lifts and call-outs, soft services and the facilities report.', F.open + ' open tickets · SLA ' + (F.slaPct == null ? '–' : pct(F.slaPct)), '#fm', 'Run the site'],
+    ['05', 'Manage assets', 'Asset register built from the design, condition and risk, depreciation, life cycle and the capital replacement forecast.', (A.rows.length ? A.rows.reduce((a, r) => a + r.qty, 0) + ' assets · book value ' + f0(A.book) + ' ' + cur : 'Add assets from the design'), '#assets', 'Plan for the long term'],
+  ];
+  const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const xs = [70, 245, 420, 595, 770], on = [true, G.live.length > 0 || (S.risks || []).length > 0, T.started, F.open > 0 || (S.tickets || []).length > 0, A.rows.length > 0];
+  const bus = '<svg class="bus" viewBox="0 0 840 120" aria-hidden="true" focusable="false"><line class="rail" x1="40" y1="46" x2="800" y2="46"/>' + (reduce ? '' : '<line class="flow" x1="40" y1="46" x2="800" y2="46"/>')
+    + xs.map((x, i) => '<g>' + (on[i] && !reduce ? '<circle class="halo" cx="' + x + '" cy="46" r="13" style="animation-delay:' + (i * 0.6) + 's"/>' : '') + '<circle class="node' + (on[i] ? ' on' : '') + '" cx="' + x + '" cy="46" r="13"/><text x="' + x + '" y="98">' + stages[i][1].toUpperCase() + '</text></g>').join('') + '</svg>';
+  const rag = { Red: 'needs attention', Amber: 'in progress', Green: 'on track', 'N/A': 'just started' }[D.overall];
+  return '<section class="home">'
+    + '<div class="hero"><div class="k">NexvoraHub Studio · electrical engineering platform</div>'
+    + '<h1>Design it. Build it. Prove it. <em>Keep it running.</em></h1>'
+    + '<p class="lead">One connected workspace for the whole life of an electrical installation – from the first load schedule through construction, testing and handover to everyday maintenance and long-term asset planning. Every stage shares one model, so a change in the design flows through to the bill of quantities, the test schedule, the asset register and the maintenance plan.</p>'
+    + '<div class="acts"><a class="btn primary" href="#dashboard">Open the project dashboard</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button></div>'
+    + bus
+    + '<div class="snap"><span>Project <b>' + esc(p.name || 'Untitled') + '</b></span><span>Region <b>' + esc(p.country || '') + '</b></span><span>Status <b>' + esc(rag) + '</b></span><span>Transformer <b>' + (R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : '–') + '</b></span></div></div>'
+    + '<div class="life">' + stages.map(s => '<a class="card" href="' + s[4] + '"><span class="n">' + s[0] + ' / 05</span><h3>' + s[1] + '</h3><p>' + esc(s[2]) + '</p><span class="fig">' + esc(s[3]) + '</span><span class="go">' + s[5] + ' →</span></a>').join('') + '</div>'
+    + '<div class="sheet"><h3 style="margin-top:0">One model, every stage</h3><div class="chain"><span>Load schedule</span><i>→</i><span>Transformer, generator and cables</span><i>→</i><span>Bill of quantities</span><i>→</i><span>Test schedule</span><i>→</i><span>Handover pack</span><i>→</i><span>Asset register</span><i>→</i><span>Maintenance plan</span><i>→</i><span>Capital forecast</span></div>'
+    + '<div class="why" style="margin-top:14px"><div><b>Regional by default</b>' + COUNTRIES.length + ' countries and regions: wiring rules, certificates and HV standards, checked and dated.</div><div><b>Engineer in control</b>Every factor, limit and certificate field is an editable default – you certify the design.</div><div><b>Private and free</b>Your project stays in this browser. Export to PDF, CSV and Excel whenever you need to share.</div></div>'
+    + '<p class="note" style="margin-bottom:0">Results are a design pre-check, not certification. Confirm standards and limits with the local authority and network operator.</p></div>'
+    + '</section>';
+};
 V.assets = () => {
   const A = calcAssets(), cfg = A.cfg, prop = assetsFromDesign();
   const selA = (i, k, list, v) => '<select data-arr="assets" data-i="' + i + '" data-k="' + k + '" aria-label="' + k + '">' + opt(list, v) + '</select>';
