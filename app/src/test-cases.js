@@ -935,6 +935,16 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   INSP_ITEMS.forEach(([k]) => { S.lvInsp[k] = 'Pass'; }); S.lvInsp.afdd = 'N/A';
   L = calcLV(); lchk('inspections complete', L.inspDone === INSP_ITEMS.length && L.inspFail === 0);
   S.lvInsp.mpb = 'Fail'; L = calcLV(); lchk('failed inspection makes the certificate unsatisfactory', L.overall === 'Unsatisfactory' && railStatus('lvcert') === 'bad'); S.lvInsp.mpb = 'Pass';
+  // the engineer fills in the certificate; empty fields fall back to the regional default
+  S.lvCert = { cert: 'EIC No. 123 – whole installation', no: 'EIC-0042', next: '2031-11-14', dep: 'None', lim: 'Roof void not accessible' };
+  L = calcLV(); lchk('engineer entries replace the default', L.cert.cert === 'EIC No. 123 – whole installation' && L.cert.no === 'EIC-0042' && L.cert.edited && /Building Regulations/.test(L.cert.connect) && L.cert.checked);
+  view = 'lvcert'; render(); let hc = document.querySelector('#main').innerHTML;
+  lchk('certificate fields editable', /data-p="lvCert\.cert"/.test(hc) && /data-p="lvCert\.no"/.test(hc) && /data-p="lvCert\.next"/.test(hc) && /lvcert-reset/.test(hc) && /checked online on/.test(hc));
+  view = 'handover'; render(); hc = document.querySelector('#main').innerHTML;
+  lchk('handover shows the engineer entries', /EIC-0042/.test(hc) && /Roof void not accessible/.test(hc) && /2031-11-14/.test(hc));
+  S.lvCert.cert = ''; L = calcLV(); lchk('cleared field returns to the default', /Electrical Installation Certificate \(EIC\)/.test(L.cert.cert));
+  lchk('confirmed regional wording', /regulation 7\(5\)/.test(certOf(COUNTRIES.find(x => x.name === 'South Africa')).periodic) && /Safe Electric/.test(certOf(COUNTRIES.find(x => x.name === 'Ireland')).cert) && /regulation 45/.test(certOf(COUNTRIES.find(x => x.name === 'India')).cert) && /Record of Inspection/.test(certOf(COUNTRIES.find(x => x.name === 'New Zealand') || { name: 'New Zealand' }).cert));
+  S.lvCert = {};
   const D = calcDash(); lchk('dashboard LV indicators', D.k.some(x => x.id === 'lv-dom') && D.k.some(x => x.id === 'lv-com' || x.id === 'lv-dom'));
   view = 'lvcert'; render(); let h = document.querySelector('#main').innerHTML;
   lchk('LV view: certificate, inspections, test schedule', /Electrical Installation Certificate/.test(h) && /Schedule of inspections/.test(h) && /Schedule of test results/.test(h) && /data-lvt="/.test(h) && /data-p="lvInsp\.earth"/.test(h) && /PASS/.test(h));
