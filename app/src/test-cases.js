@@ -905,6 +905,50 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   gchk('old projects get registers', (() => { const o = upgrade({ v: 1 }); return Array.isArray(o.docs) && Array.isArray(o.risks); })());
   const o = JSON.parse(SV); S.docs = o.docs; S.risks = o.risks; S.fmCfg = o.fmCfg; S.dc.include = DC0; view = V0; R = calcAll();
   out.regChecks = gF.length ? gF : 'all passed'; }
+// ---------- LV certification, schedule of test results and the handover pack ----------
+{ const lF = [], lchk = (n, ok, got) => { if (!ok) lF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
+  const SV = JSON.stringify({ lvt: S.lvt, lvInsp: S.lvInsp, handover: S.handover, tc: S.tc }), C0 = S.project.country, V0 = view, DC0 = S.dc.include;
+  S.dc.include = false; S.project.country = 'United Kingdom'; R = calcAll(); S.lvt = {}; S.lvInsp = {}; S.handover = { inc: {} }; S.tc = {};
+  const cert = n => certOf(COUNTRIES.find(x => x.name === n)).cert;
+  lchk('certificate by region', /Electrical Installation Certificate \(EIC\)/.test(cert('United Kingdom')) && /Certificate of Compliance \(CoC\)/.test(cert('South Africa')) && /DEWA/.test(cert('United Arab Emirates')) && /Authority Having Jurisdiction/.test(cert('United States')) && /NEMSA/.test(cert('Nigeria')) && /IEC 60364-6/.test(cert('France')), cert('United Kingdom'));
+  let L = calcLV(); lchk('every circuit in the schedule; nothing tested', L.rows.length === R.C.length && L.overall === 'Incomplete' && L.dom.frac == null && L.com.frac == null);
+  const ed = (ref, k, value) => onEdit({ target: { dataset: { lvt: ref, k }, value, type: 'text' } }, true);
+  const c1 = L.rows.find(o => o.r.zsMax && !o.rcd) || L.rows.find(o => o.r.zsMax), ref = c1.ref, lim = c1.lim;
+  ed(ref, 'irLL', '200'); ed(ref, 'irLE', '150'); ed(ref, 'pol', 'Correct'); ed(ref, 'zs', String(+(lim * 0.8).toFixed(3))); ed(ref, 'r12', '0.2');
+  if (c1.rcd) { ed(ref, 'rcd1', '24'); ed(ref, 'rcd5', '12'); }
+  L = calcLV(); let o = L.rows.find(x => x.ref === ref);
+  lchk('complete circuit passes', o.res === 'PASS', o);
+  ed(ref, 'irLE', '0.4'); L = calcLV(); o = L.rows.find(x => x.ref === ref);
+  lchk('low insulation resistance fails', o.res === 'FAIL' && o.fails.includes('IR') && L.fail === 1);
+  ed(ref, 'irLE', '150'); ed(ref, 'zs', String(+(lim * 1.05).toFixed(3))); L = calcLV(); o = L.rows.find(x => x.ref === ref);
+  lchk('Zs above 0.8 x max fails', o.res === 'FAIL' && o.fails.includes('Zs'));
+  ed(ref, 'zs', String(+(lim * 0.8).toFixed(3)));
+  const rc = L.rows.find(x => x.rcd);
+  if (rc) { ed(rc.ref, 'irLL', '300'); ed(rc.ref, 'irLE', '300'); ed(rc.ref, 'pol', 'Correct'); ed(rc.ref, 'zs', '0.1'); ed(rc.ref, 'rcd1', '350'); ed(rc.ref, 'rcd5', '20');
+    L = calcLV(); lchk('slow RCD fails', L.rows.find(x => x.ref === rc.ref).fails.includes('RCD IΔn')); ed(rc.ref, 'rcd1', '25'); }
+  L = calcLV();
+  lchk('domestic / commercial split', L.dom.n + L.com.n === L.rows.length && (L.dom.tested + L.com.tested) >= 1);
+  // T&C circuit tests take the LV results
+  const T = calcTC(), z = T.items.find(x => x.id === 'tc:cir:' + ref + ':zs'), d = T.items.find(x => x.id === 'tc:cir:' + ref + ':dead');
+  lchk('Testing & commissioning reads the LV results', z.lv && z.done && +z.v.val === +(lim * 0.8).toFixed(3) && d.lv && d.st === 'Pass' && +d.v.val === 150, [z.st, z.v, d.st, d.v]);
+  // inspections
+  INSP_ITEMS.forEach(([k]) => { S.lvInsp[k] = 'Pass'; }); S.lvInsp.afdd = 'N/A';
+  L = calcLV(); lchk('inspections complete', L.inspDone === INSP_ITEMS.length && L.inspFail === 0);
+  S.lvInsp.mpb = 'Fail'; L = calcLV(); lchk('failed inspection makes the certificate unsatisfactory', L.overall === 'Unsatisfactory' && railStatus('lvcert') === 'bad'); S.lvInsp.mpb = 'Pass';
+  const D = calcDash(); lchk('dashboard LV indicators', D.k.some(x => x.id === 'lv-dom') && D.k.some(x => x.id === 'lv-com' || x.id === 'lv-dom'));
+  view = 'lvcert'; render(); let h = document.querySelector('#main').innerHTML;
+  lchk('LV view: certificate, inspections, test schedule', /Electrical Installation Certificate/.test(h) && /Schedule of inspections/.test(h) && /Schedule of test results/.test(h) && /data-lvt="/.test(h) && /data-p="lvInsp\.earth"/.test(h) && /PASS/.test(h));
+  // handover pack
+  Object.assign(S.handover, { engName: 'A. Engineer', engCo: 'NexvoraHub', engReg: 'REG-123', engQual: 'CEng MIET', cliName: 'Client Ltd', cliRep: 'B. Rep' });
+  view = 'handover'; render(); h = document.querySelector('#main').innerHTML;
+  lchk('handover pack: all sections and sign-off', ['Cover sheet', 'Compliance summary', 'Standards summary', 'Installation certificate', 'Circuit schedule', 'Test results', 'Commissioning summary', 'Asset register', 'O&amp;M summary', 'Engineer declaration', 'Client acceptance', 'REG-123', 'CEng MIET', 'B. Rep', 'BS 7671:2018+A4:2026'].every(w => h.includes(w)) && /data-p="handover\.inc\.cover"/.test(h), ['Cover sheet', 'Compliance summary', 'O&amp;M summary', 'Engineer declaration', 'BS 7671:2018+A4:2026'].filter(w => !h.includes(w)));
+  S.handover.inc.assets = false; render(); h = document.querySelector('#main').innerHTML;
+  lchk('sections can be left out', !/<h2[^>]*>\d+\. Asset register/.test(h) && /<h2[^>]*>\d+\. Client acceptance/.test(h));
+  const csv = csvLV(); lchk('test results CSV', /SCHEDULE OF TEST RESULTS/.test(csv) && /SCHEDULE OF INSPECTIONS/.test(csv) && csv.includes('"' + ref + '"'));
+  lchk('stages in the rail', VIEWS.some(v => v[0] === 'lvcert') && VIEWS.some(v => v[0] === 'handover'));
+  lchk('old projects get LV and handover fields', (() => { const u = upgrade({ v: 1 }); return u.lvt && u.lvInsp && u.handover && u.handover.inc; })());
+  const sv = JSON.parse(SV); Object.assign(S, sv); S.project.country = C0; S.dc.include = DC0; view = V0; R = calcAll();
+  out.lvChecks = lF.length ? lF : 'all passed'; }
 
 
 
