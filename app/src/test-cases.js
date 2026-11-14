@@ -744,8 +744,9 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
 // ---------- reactive maintenance directory: domestic / commercial issues by trade on helpdesk tickets ----------
 { const jF = [], jchk = (n, ok, got) => { if (!ok) jF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const SV = JSON.stringify({ tickets: S.tickets, fmCfg: S.fmCfg }), V0 = view;
-  { const need = ['elec', 'plumb', 'carp', 'hvac', 'pool', 'gym', 'rec']; jchk('directory has all the requested trades', need.every(k => jobCls(k)) && JOB_LIB.every(c => c.issues.length >= 8 && c.issues.every(j => SLA_DEF[j[2]] && j[3] && j[4] && j[5] > 0 && /^[BRC]$/.test(j[6])))); }
+  { const need = ['elec', 'tvnet', 'plumb', 'carp', 'hvac', 'pool', 'gym', 'rec']; jchk('directory has all the requested trades', need.every(k => jobCls(k)) && JOB_LIB.every(c => c.issues.length >= 8 && c.issues.every(j => SLA_DEF[j[2]] && j[3] && j[4] && j[5] > 0 && /^[BRC]$/.test(j[6])))); }
   jchk('requested issues are listed', ['bulb', 'nolight', 'trip', 'socket'].every(k => jobOf('elec', k)) && ['lock', 'wardrobe', 'door'].every(k => jobOf('carp', k)) && jobOf('pool', 'chem') && jobOf('gym', 'tread') && jobOf('hvac', 'noac') && jobOf('plumb', 'burst') && jobOf('rec', 'play'));
+  jchk('cable TV and internet issues listed', ['nonet', 'slow', 'wifi', 'router', 'data', 'notv', 'pixel', 'ibs', 'dish'].every(k => jobOf('tvnet', k)) && jobOf('tvnet', 'netdown').p === 'P1' && !jobOf('elec', 'tv'));
   jchk('issue ids unique within a trade', JOB_LIB.every(c => new Set(c.issues.map(j => j[0])).size === c.issues.length));
   jchk('residential filter hides commercial-only issues', !jobIssues('plumb', 'Residential').some(j => j[6] === 'C') && jobIssues('plumb', 'Residential').some(j => j[0] === 'burst') && !jobIssues('carp', 'Commercial').some(j => j[0] === 'wardrobe') && jobIssues('carp', '').some(j => j[0] === 'wardrobe'));
   jchk('current issue stays in the list after the filter changes', jobIssues('carp', 'Commercial', 'wardrobe').some(j => j[0] === 'wardrobe'));
