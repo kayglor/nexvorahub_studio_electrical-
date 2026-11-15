@@ -28,7 +28,9 @@
 /* Role workspaces, registration and My tasks */
 .rolegrid label.role{position:relative;display:flex;flex-direction:column;gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer}
 .rolegrid label.role input{position:absolute;opacity:0;pointer-events:none}
-.rolegrid label.role:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.rolegrid label.role:has(input:checked),.rolegrid label.role.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.rolegrid label.role b::after{content:'';float:right;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);box-sizing:border-box;margin-top:4px}.rolegrid label.role.on b::after{content:'✓';border-color:var(--accent);background:var(--accent);color:#fff;font-size:12px;line-height:14px;text-align:center}
+.regacts{position:sticky;bottom:0;z-index:2;background:var(--card,#fff);padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}.regacts .bad-msg{color:var(--bad,#b3261e);font-weight:600}#roles,.rolegrid,#regName{scroll-margin-top:130px}.roles input.miss{outline:2px solid var(--bad,#b3261e)}.rolegrid.miss{outline:2px solid var(--bad,#b3261e);outline-offset:4px;border-radius:8px}
 .rolegrid label.role:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .rolegrid label.role b{font-family:var(--f-display);font-size:20px}.rolegrid label.role span{font-size:13.5px;color:var(--muted)}.rolegrid label.role small{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-top:auto}
 ol.tasks{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -281,7 +283,7 @@ input,select,textarea,.adv .q{font-size:16px}
 
 <div class="band gutter">
   <div class="band-in">
-    <div class="brand"><h1>NexvoraHub Studio</h1><span class="proj" id="bandProj"></span><a class="role-chip" id="roleChip" href="#home" title="Your role – change it on the Welcome page"></a></div>
+    <div class="brand"><h1>NexvoraHub Studio</h1><span class="proj" id="bandProj"></span><a class="role-chip" id="roleChip" href="#register" title="Register, or change your role"></a></div>
     <div class="readouts" id="readouts"></div>
     <button class="btn small adv-btn" id="advBtn" data-act="adv-open" aria-controls="advisor" aria-expanded="false" title="Next steps, a guide to this page and help">Advisor <span class="c" id="advCount"></span></button>
   </div>
@@ -3476,6 +3478,10 @@ let REG = null, REG_EDIT = false, ROLE = { id: 'guest', all: false };
 try { const u = JSON.parse(localStorage.getItem(REG_KEY) || 'null'); if (u && u.name && ROLES.some(x => x[0] === u.role)) REG = u; } catch (e) { }
 try { const r = JSON.parse(localStorage.getItem(ROLE_KEY) || 'null'); if (r) ROLE.all = !!r.all; } catch (e) { }
 if (REG) ROLE.id = REG.role;
+let REG_STORE = true;
+function storeOk() { try { return localStorage.getItem(REG_KEY) === JSON.stringify(REG); } catch (e) { return false; } }
+// Go straight to the registration form from anywhere (header chip, view-only notes, buttons)
+function regGo() { view = 'home'; if (!REG) REG_EDIT = false; render(); try { history.replaceState(null, '', '#home'); } catch (e) { } const p = document.getElementById('roles'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'start' }); const n = document.getElementById('regName'); if (n && n.focus) n.focus({ preventScroll: true }); }
 function roleSave() { try { localStorage.setItem(ROLE_KEY, JSON.stringify({ all: ROLE.all })); if (REG) localStorage.setItem(REG_KEY, JSON.stringify(REG)); else localStorage.removeItem(REG_KEY); } catch (e) { } }
 const full = id => id === 'lead' || id === 'controller';
 function roleOf(id = ROLE.id) { return id === 'guest' ? GUEST : ROLES.find(r => r[0] === id) || GUEST; }
@@ -3487,9 +3493,9 @@ function roleRail() { return VIEWS.map((v, i) => [v, i]).filter(([v]) => ROLE.al
 function roleSafe(b) { const a = b.dataset.act || ''; return !b.dataset.add && !b.dataset.del && (!a || /^(dl-|copy-report|save-json|intro-|adv-|role-)/.test(a)); }
 function roleBanner() {
   if (canEdit()) return '';
-  if (ROLE.id === 'guest') return '<p class="callout ro-note" role="note"><b>You are not registered, so this page is view only.</b> <a href="#home">Register on the Welcome page</a> with your role to start working – it takes a few seconds and stays in this browser.</p>';
+  if (ROLE.id === 'guest') return '<p class="callout ro-note" role="note"><b>You are not registered, so this page is view only.</b> <a href="#register">Register now</a> with your role to start working – it takes a few seconds and stays in this browser.</p>';
   const o = roleOwners(view);
-  return '<p class="callout ro-note" role="note"><b>View only for your role (' + esc(roleOf()[1]) + ').</b> ' + (o.length ? 'Edited by: ' + esc(o.join(', ')) + ' and the project lead. ' : '') + 'Exports and reports still work. <a href="#home">Change your registration on the Welcome page</a>.</p>';
+  return '<p class="callout ro-note" role="note"><b>View only for your role (' + esc(roleOf()[1]) + ').</b> ' + (o.length ? 'Edited by: ' + esc(o.join(', ')) + ' and the project lead. ' : '') + 'Exports and reports still work. <a href="#register">Change your registration</a>.</p>';
 }
 function roleLock() {
   const main = $('#main'); if (!main || !main.querySelectorAll || canEdit()) return;
@@ -3501,19 +3507,19 @@ function regWorkspace() {
   return '<div class="yours"><h3>Your workspace</h3><div class="chain">' + ['tasks', ...r[3]].map(v => '<a href="#' + v + '" class="' + (canEdit(v) ? 'ed' : 'vo') + '">' + esc(vName(v)) + (canEdit(v) ? '' : ' <i>view</i>') + '</a>').join('') + '</div></div>';
 }
 function rolePicker() {
-  if (REG && !REG_EDIT) return '<div class="sheet roles" id="roles"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">Registered as ' + esc(REG.name) + '</h3><p class="note" style="margin:4px 0 0">' + esc(roleOf()[1]) + (REG.org ? ' · ' + esc(REG.org) : '') + (REG.qual ? ' · ' + esc(REG.qual) : '') + '</p></div><div class="row"><a class="btn primary" href="#tasks">My tasks</a><button class="btn" data-act="role-edit">Edit registration</button><button class="btn ghost" data-act="role-signout">Sign out</button></div></div>' + regWorkspace() + '</div>';
+  if (REG && !REG_EDIT) return '<div class="sheet roles" id="roles"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">Registered as ' + esc(REG.name) + '</h3><p class="note" style="margin:4px 0 0">' + esc(roleOf()[1]) + (REG.org ? ' · ' + esc(REG.org) : '') + (REG.qual ? ' · ' + esc(REG.qual) : '') + '</p></div><div class="row"><a class="btn primary" href="#tasks">My tasks</a><button class="btn" data-act="role-edit">Edit registration</button><button class="btn ghost" data-act="role-signout">Sign out</button></div></div>' + (REG_STORE ? '' : '<p class="callout" role="note"><b>This browser is not saving your registration</b> (private browsing or blocked site data), so it lasts only until you close the page. Open the site in a normal browser window to stay registered.</p>') + regWorkspace() + '</div>';
   const pick = (REG && REG.role) || '';
   return '<div class="sheet roles" id="roles"><h3 style="margin-top:0">' + (REG ? 'Edit your registration' : 'Register to start working') + '</h3><p class="note" style="margin-top:0">Your role decides which stages open for you to edit – the rest open view only, and your task dashboard and the Advisor follow it. Registration stays in this browser; nothing is sent anywhere. Each person on the team registers on their own device, and the project file is shared between you.</p>'
-    + '<div class="grid">' + fld('Your name', '<input id="regName" autocomplete="name" value="' + esc((REG && REG.name) || '') + '" required>') + fld('Organisation', '<input id="regOrg" autocomplete="organization" value="' + esc((REG && REG.org) || '') + '">', 'Optional') + fld('Qualification / registration', '<input id="regQual" value="' + esc((REG && REG.qual) || '') + '" placeholder="e.g. IEng MIET">', 'Optional – shown on your task dashboard') + '</div>'
-    + '<fieldset class="rolegrid" style="border:0;padding:0;margin:12px 0 0"><legend class="note" style="margin-bottom:8px">Your role</legend>' + ROLES.map(r => '<label class="role"><input type="radio" name="regRole" value="' + r[0] + '"' + (r[0] === pick ? ' checked' : '') + '><b>' + esc(r[1]) + '</b><span>' + esc(r[2]) + '</span>' + (r[4] ? '<small>Edits ' + r[4].length + ' stage' + (r[4].length > 1 ? 's' : '') + ' · views ' + r[3].length + '</small>' : '<small>Edits every stage</small>') + '</label>').join('') + '</fieldset>'
-    + '<div class="row" style="margin-top:12px"><button class="btn primary" data-act="role-register">' + (REG ? 'Save registration' : 'Register') + '</button>' + (REG ? '<button class="btn ghost" data-act="role-cancel">Cancel</button>' : '') + '<span class="note" id="regMsg" role="status"></span></div></div>';
+    + '<form id="regForm" novalidate><div class="grid">' + fld('Your name', '<input id="regName" autocomplete="name" enterkeyhint="go" value="' + esc((REG && REG.name) || '') + '" required>') + fld('Organisation', '<input id="regOrg" autocomplete="organization" value="' + esc((REG && REG.org) || '') + '">', 'Optional') + fld('Qualification / registration', '<input id="regQual" value="' + esc((REG && REG.qual) || '') + '" placeholder="e.g. IEng MIET">', 'Optional – shown on your task dashboard') + '</div>'
+    + '<fieldset class="rolegrid" style="border:0;padding:0;margin:12px 0 0"><legend class="note" style="margin-bottom:8px">Your role</legend>' + ROLES.map(r => '<label class="role' + (r[0] === pick ? ' on' : '') + '"><input type="radio" name="regRole" value="' + r[0] + '"' + (r[0] === pick ? ' checked' : '') + '><b>' + esc(r[1]) + '</b><span>' + esc(r[2]) + '</span>' + (r[4] ? '<small>Edits ' + r[4].length + ' stage' + (r[4].length > 1 ? 's' : '') + ' · views ' + r[3].length + '</small>' : '<small>Edits every stage</small>') + '</label>').join('') + '</fieldset>'
+    + '<div class="row regacts" style="margin-top:12px"><button type="submit" class="btn primary" data-act="role-register">' + (REG ? 'Save registration' : 'Register') + '</button>' + (REG ? '<button type="button" class="btn ghost" data-act="role-cancel">Cancel</button>' : '') + '<span class="note" id="regMsg" role="status" aria-live="polite">' + (pick ? 'Role: ' + esc(roleOf(pick)[1]) : 'Enter your name and pick your role') + '</span></div></form></div>';
 }
 function roleAct(act, b) {
   if (act === 'role-register') {
     const v = id => { const e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }, ch = document.querySelector('input[name="regRole"]:checked'), role = ch ? ch.value : '', name = v('regName');
     const m = document.getElementById('regMsg');
-    if (!name || !role) { if (m) m.textContent = !name ? 'Enter your name.' : 'Pick your role.'; const f = document.getElementById(!name ? 'regName' : 'roles'); if (f && f.focus) f.focus(); return; }
-    REG = { name, org: v('regOrg'), qual: v('regQual'), role, at: (REG && REG.at) || new Date().toISOString().slice(0, 10) }; ROLE.id = role; REG_EDIT = false; roleSave(); render(); { const p = document.getElementById('roles'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'center' }); } toast('Welcome, ' + name + ' – your workspace is set for ' + roleOf()[1]); return;
+    if (!name || !role) { const t = !name ? 'Enter your name to register.' : 'Pick your role – tap one of the role cards.'; if (m) { m.textContent = t; m.className = 'note bad-msg'; } const nm = document.getElementById('regName'), rg = document.querySelector('.rolegrid'); if (nm && nm.classList) nm.classList[!name ? 'add' : 'remove']('miss'); if (rg && rg.classList) rg.classList[!role ? 'add' : 'remove']('miss'); const f = !name ? nm : rg; if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); if (!name && nm && nm.focus) nm.focus({ preventScroll: true }); toast(t); return; }
+    REG = { name, org: v('regOrg'), qual: v('regQual'), role, at: (REG && REG.at) || new Date().toISOString().slice(0, 10) }; ROLE.id = role; REG_EDIT = false; roleSave(); REG_STORE = storeOk(); render(); { const p = document.getElementById('roles'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'center' }); } toast('Welcome, ' + name + ' – your workspace is set for ' + roleOf()[1]); return;
   }
   if (act === 'role-edit') { REG_EDIT = true; render(); const f = document.getElementById('regName'); if (f && f.focus) f.focus(); }
   if (act === 'role-cancel') { REG_EDIT = false; render(); }
@@ -4439,7 +4445,7 @@ V.home = () => {
     + '<div class="hero"><div class="k">NexvoraHub Studio · MEP engineering platform – electrical, mechanical and plumbing</div>'
     + '<h1>Design it. Build it. Prove it. <em>Keep it running.</em></h1>'
     + '<p class="lead">One connected workspace for the whole life of a building’s MEP services – electrical, mechanical and plumbing infrastructure. Work from the first load schedule, heat-loss and ventilation calculation and water-demand estimate. Carry on through water and sewage treatment, pools, construction, testing and handover, then everyday maintenance and long-term asset planning. Every discipline and every stage shares one model. A change in the design flows through to the electrical supply, the bill of quantities, the test schedule, the asset register and the maintenance plan.</p>'
-    + '<div class="acts"><a class="btn primary" href="#dashboard">Open the project dashboard</a><a class="btn" href="#tasks">My tasks</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button><button class="btn" data-act="adv-open" data-tab="next">Ask the Advisor</button></div>'
+    + '<div class="acts">' + (REG ? '' : '<a class="btn primary" href="#register">Register to start working</a>') + '<a class="btn' + (REG ? ' primary' : '') + '" href="#dashboard">Open the project dashboard</a><a class="btn" href="#tasks">My tasks</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button><button class="btn" data-act="adv-open" data-tab="next">Ask the Advisor</button></div>'
     + bus
     + '<div class="snap"><span>Project <b>' + esc(p.name || 'Untitled') + '</b></span><span>Region <b>' + esc(p.country || '') + '</b></span><span>Status <b>' + esc(rag) + '</b></span><span>Transformer <b>' + (R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : '–') + '</b></span></div></div>'
     + introHtml() + rolePicker() + '<div class="life">' + stages.map(s => '<a class="card" href="' + s[4] + '"><span class="n">' + s[0] + ' / 05</span><h3>' + s[1] + '</h3><p>' + esc(s[2]) + '</p><span class="fig">' + esc(s[3]) + '</span><span class="go">' + s[5] + ' →</span></a>').join('') + '</div>'
@@ -5075,8 +5081,11 @@ document.addEventListener('change', e => {
   });
 });
 let tT; function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => t.hidden = true, 3200); }
-addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ADV.open && typeof innerWidth === 'number' && innerWidth < 760) ADV.open = false; if (VIEWS.some(v => v[0] === h) || EXTRA_VIEWS.includes(h)) { view = h; render(); scrollTo(0, 0); } });
+document.addEventListener('change', e => { const t = e.target; if (t && t.name === 'regRole') { document.querySelectorAll('.rolegrid label.role').forEach(l => { const i = l.querySelector('input'); if (l.classList) l.classList[i && i.checked ? 'add' : 'remove']('on'); }); const g = document.querySelector('.rolegrid'); if (g && g.classList) g.classList.remove('miss'); const m = document.getElementById('regMsg'); if (m) { m.className = 'note'; m.textContent = 'Role: ' + roleOf(t.value)[1] + ' – now press ' + (REG ? 'Save registration' : 'Register'); } } });
+document.addEventListener('submit', e => { if (e.target && e.target.id === 'regForm') e.preventDefault(); });
+addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ADV.open && typeof innerWidth === 'number' && innerWidth < 760) ADV.open = false; if (h === 'register') { regGo(); return; } if (VIEWS.some(v => v[0] === h) || EXTRA_VIEWS.includes(h)) { view = h; render(); scrollTo(0, 0); } });
 render();
+if (location.hash === '#register') regGo();
 </script>
 <style>
 .paper .tb{border:2px solid #1b1f1d;display:grid;grid-template-columns:1.2fr 2fr;margin-bottom:18px}.paper .tb-t{padding:12px;border-right:1px solid #1b1f1d}.paper .tb-k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#b9471a;font-weight:700}.paper .tb-n{font-family:var(--f-display);font-size:24px;font-weight:600;margin-top:4px}
