@@ -444,7 +444,7 @@ function exampleProject() {
       { id: uid(), db: 'DB-GF', desc: 'Café kitchen equipment', cat: 'Commercial kitchen equipment', qty: 1, kw: 40, pf: 0.98, ku: '', df: '' },
     ],
     mainSF: 0.9,
-    fixtures: mepExampleFixtures(), plumb: Object.assign(mepDefaults().plumb, { roofArea: 1100 }),
+    fixtures: mepExampleFixtures(), pools: [mepExamplePool()], plumb: Object.assign(mepDefaults().plumb, { roofArea: 1100 }),
     lifts: [{ id: uid(), desc: 'Main passenger group', type: 'Passenger – traction MRL (VVVF)', n: 3, persons: 13, floors: 7, fh: 3.6, pop: 450 }],
     pumps: [
       { id: uid(), desc: 'Domestic water booster set', svc: 'Domestic water booster', q: 3, h: 45, eff: 0.65, duty: 1, stby: 1 },
@@ -1574,7 +1574,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 /* ---------- views ---------- */
 const VIEWS = [
   ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['tasks', 'My tasks'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
-  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
+  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['treat', 'Water & sewage treatment'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport', 'regreport'];
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'home';
@@ -1591,7 +1591,7 @@ function renderBand() {
   $('#readouts').innerHTML = [['Region', `${esc(S.project.country)}`], ['Supply', `${R.X.vln}/${R.X.vll} V ${R.X.c.hz} Hz`], ['Max demand', `${f0(R.md)} kVA`, 'main'], ['Current', `${f0(R.amps)} A`], ['Transformer', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA` : 'Review']].map(([l, v, c]) => `<div class="ro ${c || ''}"><span>${l}</span><b>${v}</b></div>`).join('');
 }
 function railStatus(id) {
-  if (id === 'mech' || id === 'plumb' || id === 'mepcomp') return mepRail(id);
+  if (id === 'mech' || id === 'plumb' || id === 'treat' || id === 'mepcomp') return mepRail(id);
   if (id === 'circuits') return R.C.some(c => c.fail && c.fail !== 'REVIEW') ? 'bad' : R.C.some(c => c.fail === 'REVIEW') ? 'warn' : 'ok';
   if (id === 'compliance') { const st = CHECKS.map(c => c[2](R)[1]); return st.includes('bad') ? 'bad' : st.includes('warn') ? 'warn' : 'ok'; }
   if (id === 'sizing') return R.txKva ? 'ok' : 'bad';
@@ -2293,6 +2293,7 @@ function assetsFromDesign() {
   if (+S.energy.pv > 0) add('pv', 'pv', 'Solar PV system', 1, near('pv', +S.energy.pv));
   if (+S.energy.batt > 0) add('bess', 'bess', 'Battery energy storage', 1, near('bess', +S.energy.batt));
   if (R.E && R.E.bank > 0) add('pfc', 'pfc', 'Power factor correction bank', 1, near('pfc', R.E.bank), 'Automatic, detuned (harmonic filter)');
+  mepAssets(add, near);
   add('earth', 'earth', 'Earthing and lightning protection', 1, 4, R.pme ? 'TN-C-S (PME)' : 'TN-S');
   const have = new Set((S.assets || []).map(a => a.src).filter(Boolean));
   return out.filter(a => !have.has(a.src));
@@ -3244,6 +3245,7 @@ function advNext() {
 }
 // A short guide to each page: what it is for, how to use it, and how to get the best result from it.
 const ADV_PAGE = {
+  treat: ['Water treatment, sewage treatment and swimming pools – options open to the client and consultant, sized by production capacity, with the equipment, power and control panel.', ['Enter the raw water source and quality; the suggested treatment follows.', 'Pick the option and the production capacity – every pump, vessel and panel resizes.', 'Compare the options and capacities in the tables before deciding.', 'Add pools by use, location and size; the recommended treatment follows PWTAG.', 'Send the plant loads to the electrical design and check the bill of quantities.'], ['Treatment sizes and energy are design estimates – confirm with the plant supplier and the regulator.', 'A private water supply or on-site sewage discharge needs the regulator’s approval or a permit.']],
   mech: ['Heating, cooling and ventilation for every zone of the area schedule, with ducts, pipes, pumps and fans – and the electrical load of the plant.', ['Pick the system and heat source, and check the design temperatures for the site.', 'Enter wall, glazing and roof areas for each zone from the drawings – grey values are assumptions.', 'Check the duct and pipe sizes and the fan power against the limits.', 'Press "Send MEP loads to the electrical design" so the plant counts in the maximum demand.'], ['Cooling is a peak estimate – confirm overheating with a dynamic model (TM52 / TM59).', 'Reversible heat pumps count once, at the larger of heating or cooling input.']],
   plumb: ['Sanitary provision, cold and hot water, storage, booster pumps, foul and rainwater drainage from the fixture schedule.', ['List the fixtures by location.', 'Check WCs and basins against the required provision, with at least one accessible WC.', 'Review the main, storage, hot water and drainage sizes.', 'Enter the roof area for rainwater.'], ['Hot water stored at 60 °C or more for Legionella control.', 'Send the booster and water heating to the electrical design from the panel at the foot of the page.']],
   mepcomp: ['The mechanical, plumbing and drainage regulations for the chosen method set, checked against the design, with your status and evidence.', ['Clear every Action item first, then the Check items.', 'Record evidence for the manual items.', 'Save the MEP schedules as CSV for the design file.'], ['References follow the method set on Mechanical services – confirm the edition adopted locally.']],
@@ -3276,6 +3278,7 @@ const ADV_PAGE = {
 };
 // Searchable help: [question, answer, page]
 const ADV_HELP = [
+  ['How do I choose a water, sewage or pool treatment system?', 'Open Water & sewage treatment. Each dropdown lists the options open to the client and consultant with what they suit, their pros and cons, and a suggested option from the raw water, flows or pool use. The comparison tables show power and energy for each option and capacity.', 'treat'],
   ['Where are the mechanical and plumbing designs?', 'Mechanical services, Plumbing & drainage and MEP compliance sit after Energy management. They use the same zones as the electrical area schedule.', 'mech'],
   ['How do MEP loads reach the electrical design?', 'On Mechanical services or Plumbing & drainage press "Send MEP loads to the electrical design". Heat pumps, chillers, fans and water heating become equipment loads, and pumps go to Lifts & pumps, so the maximum demand includes them.', 'mech'],
   ['Where do I start a new project?', 'Use "Start a new project" on the Welcome page, or "New blank project" under Project file – at the foot of the stage menu, or at the foot of the page on a phone (press it twice to confirm). Set the country on Project & region first, then add loads.', 'project'],
@@ -3351,16 +3354,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && ADV.open) 
 const ROLES = [
   ['lead', 'Project lead', 'Every stage, from first design to asset planning – full access.', null, null],
   ['design', 'Design engineer', 'Loads, supply, cables and protection, compliance, drawings, BOQ and the design report.',
-    ['dashboard', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'mech', 'plumb', 'mepcomp', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
+    ['dashboard', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'mech', 'plumb', 'treat', 'mepcomp', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
     ['project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'compliance', 'checklist', 'drawings', 'review', 'boq', 'report']],
   ['mep', 'MEP engineer', 'Mechanical and plumbing services – heating, cooling, ventilation, water and drainage, their compliance, and the plant loads sent to the electrical design.',
-    ['dashboard', 'project', 'area', 'mech', 'plumb', 'mepcomp', 'equipment', 'lifts-pumps', 'energy', 'compliance', 'tc', 'report'],
-    ['mech', 'plumb', 'mepcomp', 'lifts-pumps']],
+    ['dashboard', 'project', 'area', 'mech', 'plumb', 'treat', 'mepcomp', 'equipment', 'lifts-pumps', 'energy', 'compliance', 'tc', 'report'],
+    ['mech', 'plumb', 'treat', 'mepcomp', 'lifts-pumps']],
   ['impl', 'Implementation & deployment', 'Construction and commissioning: drawings, BOQ, document and risk registers, LV tests, T&C and handover.',
-    ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'mepcomp', 'report'],
+    ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'treat', 'mepcomp', 'report'],
     ['drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover']],
   ['faceng', 'Facilities engineer', 'Building services planning, planned and reactive maintenance, plant condition and the facilities report.',
-    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'energy', 'mech', 'plumb', 'lvcert', 'tc', 'handover'],
+    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'energy', 'mech', 'plumb', 'treat', 'lvcert', 'tc', 'handover'],
     ['facilities', 'assets', 'fm', 'fmreport']],
   ['fm', 'Facility manager', 'Helpdesk and SLA, soft services, capital projects and the monthly facilities report.',
     ['dashboard', 'fm', 'fmreport', 'facilities', 'assets', 'handover', 'energy'],
@@ -3513,6 +3516,7 @@ V.tasks = () => {
 function mepDefaults() {
   return {
     mech: { code: 'auto', sys: 'fcu', heatSrc: 'ashp', reversible: true, tWo: -3, tWi: 21, tSo: 28, tSi: 24, gSo: 11, gSi: 9.3, uWall: 0.26, uRoof: 0.16, uGlz: 1.6, uGnd: 0.18, tb: 0.05, fWall: 0.4, ach: 0.3, hr: 0.75, heatUp: 0.1, gVal: 0.4, solar: 400, shade: 0.7, sensP: 75, latP: 55, eqDiv: 0.75, supDT: 8, div: 0.85, margin: 0.1, cop: 2.8, eer: 3.0, boilerEff: 0.92, copMin: 2.5, eerMin: 2.5, hrMin: 0.73, sfpAhu: 1.6, sfpFcu: 0.3, sfpExt: 0.5, sfpLim: '', vMain: 6, vBranch: 4, ductMax: 1.5, lthwDT: '', chwDT: 6, paMax: 300, pipeLen: 300, termKpa: 40, pumpEff: 0.6, nPlant: 2, board: 'MCC-ROOF', replaceDup: true },
+    treat: treatDefaults(),
     plumb: { bt: '', K: '', units: '', reqWcPub: '', reqBasinPub: '', tStore: 60, tCold: 10, peakShare: 0.35, recH: 2, storeH: 12, hwSrc: 'electric', hwCop: 2.5, floors: 6, floorH: 3.6, residual: 1.0, idxLen: 80, vMax: 1.5, nStacks: 2, drainGrad: 80, roofArea: '', rain: 0.021, outletCap: 4, fixOvr: {} },
   };
 }
@@ -3523,7 +3527,7 @@ function mepExampleFixtures() {
 }
 function mepUpgrade(o) {
   const d = mepDefaults();
-  o.mech = Object.assign({}, d.mech, o.mech || {}); o.plumb = Object.assign({}, d.plumb, o.plumb || {});
+  o.mech = Object.assign({}, d.mech, o.mech || {}); o.treat = Object.assign({}, d.treat, o.treat || {}); if (!Array.isArray(o.pools)) o.pools = o.project && o.project.example ? [mepExamplePool()] : []; o.plumb = Object.assign({}, d.plumb, o.plumb || {});
   if (!o.plumb.fixOvr || typeof o.plumb.fixOvr !== 'object') o.plumb.fixOvr = {};
   if (!o.mechEnv || typeof o.mechEnv !== 'object') o.mechEnv = {};
   if (!o.mepComp || typeof o.mepComp !== 'object') o.mepComp = {};
@@ -3617,7 +3621,9 @@ function manning(D, slope, n) { const A = Math.PI * D * D / 4, Q = A * Math.pow(
 function sanL24(n) { if (!(n > 0)) return 0; if (n <= 5) return 1; if (n <= 25) return 2; if (n <= 50) return 3; if (n <= 75) return 4; if (n <= 100) return 5; return 5 + Math.ceil((n - 100) / 25); }
 function ipcN(n, r) { if (!(n > 0)) return 0; const [a, lim, b] = r; return b ? (n <= lim ? Math.ceil(n / a) : Math.ceil(lim / a) + Math.ceil((n - lim) / b)) : Math.ceil(n / a); }
 
-function calcMep() {
+const MEPC = {};
+function calcMep() { const k = JSON.stringify([S.mech, S.plumb, S.treat, S.pools, S.fixtures, S.zones, S.mechEnv, S.loads, S.pumps, S.project.country]); if (MEPC.k === k && MEPC.R === R && MEPC.S === S) return MEPC.v; const v = calcMepRaw(); Object.assign(MEPC, { k, R, S, v }); return v; }
+function calcMepRaw() {
   const m = S.mech, pl = S.plumb, code = mepCode(), env = S.mechEnv || {};
   const dTw = nv(m.tWi, 21) - nv(m.tWo, -3), dTs = nv(m.tSo, 28) - nv(m.tSi, 24), dg = Math.max(0, nv(m.gSo, 11) - nv(m.gSi, 9.3));
   const sys = m.sys || 'fcu', mechVent = sys !== 'natural', hr = mechVent ? Math.min(0.95, Math.max(0, nv(m.hr, 0.75))) : 0;
@@ -3707,6 +3713,10 @@ function calcMep() {
   Pp('lthw', 'LTHW heating pumps', 'LTHW heating', lthwQ, pHead(lthwP), f2(lthwQ) + ' l/s at ' + lthwDT + ' K');
   Pp('chw', 'Chilled water pumps', 'Chilled water', chwQ, pHead(chwP), f2(chwQ) + ' l/s at ' + chwDT + ' K');
   if (floors > 2 || code !== 'uk') Pp('boost', 'Domestic water booster set', 'Domestic water booster', peak, boostH, f2(peak) + ' l/s at ' + f1(boostH) + ' m');
+  const TR = calcTreat(cwDay), PL = calcPools(R ? R.X : null);
+  L('wtp', 'Water treatment plant (MCC)', 'Motors – general', TR.W.sum.duty, 1, f1(TR.W.sum.inst) + ' kW installed, ' + TR.wCap + ' m³/day');
+  L('stp', 'Sewage treatment plant (MCC)', 'Motors – general', TR.Sw.sum.duty, 1, f1(TR.Sw.sum.inst) + ' kW installed, ' + TR.sCap + ' m³/day');
+  if (PL.length) L('pool', 'Swimming pool plant (MCC)', 'Motors – general', PL.reduce((a, r) => a + r.sum.duty, 0), PL.length, PL.map(r => (r.p.name || 'Pool') + ' ' + f1(r.sum.duty) + ' kW').join('; '));
   const elecKw = elec.reduce((a, e) => a + e.kw, 0);
   const tagL = (S.loads || []).filter(l => l.mep), tagP = (S.pumps || []).filter(p => p.mep);
   const sig = a => JSON.stringify(a.slice().sort((x, y) => x.key.localeCompare(y.key)).map(e => [e.key, e.kind === 'load' ? e.qty * e.kwEach : e.q, e.kind === 'pump' ? e.h : 0].map(v => typeof v === 'number' ? Math.round(v * 10) / 10 : v)));
@@ -3717,7 +3727,7 @@ function calcMep() {
     lthwDT, chwDT, lthwQ, chwQ, lthwP, chwP, lthwH: pHead(lthwP), chwH: pHead(chwP), paMax,
     fx, sVRc, sVRh, sVR, sDU, sDFU, sWSFU, maxVR, maxDU, bt, peak, peakH, main, hotMain, vMax, floors, boostH, cwDay, hwDay, cwStore, tS, tC, hwStore, hwKw, hwSrc, hwElec,
     reqWc, reqBasin, reqDf, units, pubNote, sanRows, wcProv, basinProv, urinals, acc, sanSt, K, nSt, Qww, Qst, stack, grad, drain, gradOk, usStack, usDrain, slopeQ, roofA, rainQ, outlets, food, hasWc,
-    elec, elecKw, dupL, dupP, sync, assumed: zones.some(r => r.assumed) };
+    elec, elecKw, dupL, dupP, sync, TR, PL, assumed: zones.some(r => r.assumed) };
 }
 
 // MEP compliance register: [id, discipline, requirement, {uk, en, us} references, M => [result, status]]
@@ -3748,13 +3758,28 @@ const MEP_REG = [
   ['p-rain', 'Plumbing & drainage', 'Rainwater drainage', { uk: 'Approved Document H3; BS EN 12056-3', en: 'EN 12056-3', us: 'IPC Chapter 11' }, M => M.roofA ? [f1(M.rainQ) + ' l/s from ' + f0(M.roofA) + ' m² – ' + M.outlets + ' outlets', 'ok'] : ['Enter the roof area on Plumbing & drainage', 'warn']],
   ['p-fog', 'Plumbing & drainage', 'Grease separation for food premises', { uk: 'Approved Document H1 para 2.21; BS EN 1825', en: 'EN 1825', us: 'IPC Section 1003' }, M => M.food ? ['Kitchen drainage – provide a grease separator sized to BS EN 1825', 'warn'] : ['No food premises', 'na']],
   ['p-test', 'Plumbing & drainage', 'Testing and disinfection', { uk: 'BS EN 806-4; BS 8558 (test at 1.5 × working pressure; disinfect); BS EN 1610 drains', en: 'EN 806-4; EN 1610', us: 'IPC Sections 312 and 610' }, () => ['Required before handover – record in Testing & commissioning', 'na']],
+  ['t-sel', 'Water & sewage treatment', 'Water treatment suits the raw water', { uk: 'Private Water Supplies (England) Regulations 2016 (local authority risk assessment); Water Supply (Water Quality) Regulations 2016', en: 'Drinking Water Directive (EU) 2020/2184', us: 'Safe Drinking Water Act; state primacy rules' }, M => { const t = S.treat, T = M.TR; if (t.water === 'none') return t.source === 'mains' ? ['Public mains – no treatment', 'na'] : ['Private source with no treatment selected', 'bad']; return [(WT_OPT.find(o => o[0] === t.water) || [])[1] + (t.water === T.wSug ? ' – matches the raw water' : ' – suggested: ' + (WT_OPT.find(o => o[0] === T.wSug) || [])[1]), t.water === T.wSug ? 'ok' : 'warn']; }],
+  ['t-wq', 'Water & sewage treatment', 'Drinking-water quality, approved products and chemicals', { uk: 'DWI Regulation 31 approved products and chemicals; BS EN 806; WRAS', en: 'Drinking Water Directive (EU) 2020/2184 Art. 10–11 (materials, chemicals)', us: 'NSF/ANSI 61 and 60; NSF/ANSI 58 (RO), 55 (UV)' }, M => [S.treat.water === 'none' ? 'Public mains supply' : 'Specify approved chemicals and components; sample and test before use', 'na']],
+  ['t-dis', 'Water & sewage treatment', 'Disinfection and residual', { uk: 'DWI guidance; BS EN 901 sodium hypochlorite; contact time (Ct)', en: 'Drinking Water Directive (EU) 2020/2184; national disinfection rules', us: 'EPA Surface Water Treatment Rules; Ground Water Rule (4-log virus)' }, M => S.treat.water === 'none' ? ['No on-site treatment', 'na'] : [(WT_DIS.find(d => d[0] === S.treat.disinf) || [])[1] || '', S.treat.disinf === 'none' ? 'bad' : 'ok']],
+  ['t-ro', 'Water & sewage treatment', 'RO concentrate / brine and backwash disposal', { uk: 'Trade effluent consent (Water Industry Act 1991 s.118) or environmental permit (EPR 2016)', en: 'National discharge permit; Water Framework Directive', us: 'NPDES permit or local pretreatment permit' }, M => M.TR.W.ro ? [f1(M.TR.W.ro.Qr * M.TR.W.runH) + ' m³/day of concentrate at ≈ ' + f0(M.TR.W.ro.rejTds) + ' mg/l – agree the discharge route', 'warn'] : M.TR.W.items.some(i => /Backwash/.test(i.name)) ? ['Filter backwash water – discharge to foul sewer with consent', 'na'] : ['No waste stream', 'na']],
+  ['t-chem', 'Water & sewage treatment', 'Chemical storage, dosing and handling', { uk: 'COSHH Regulations 2002; bunded storage (110%); separate acid / hypochlorite areas', en: 'REACH / CLP; national workplace chemical rules', us: 'OSHA 29 CFR 1910.1200; NFPA 400' }, M => [M.TR.W.chem.length || M.PL.length || S.treat.tertiary === 'reuse' ? 'Dosing chemicals on site – bunds, ventilation, eyewash, segregation' : 'No dosing chemicals', 'na']],
+  ['t-sew', 'Water & sewage treatment', 'Sewage discharge consent or permit', { uk: 'Environmental Permitting (England and Wales) Regulations 2016 – small sewage discharge general binding rules (≤ 2 m³/day to ground, ≤ 5 m³/day to surface water), otherwise a permit; Approved Document H2', en: 'Urban Waste Water Treatment Directive (EU) 2024/3019; national permits', us: 'Clean Water Act NPDES permit; state onsite wastewater rules' }, M => { const t = S.treat; if (t.sewage === 'mains') return ['Public sewer – connection consent (Water Industry Act s.106)', 'na']; if (t.sewage === 'septic') return [f1(M.TR.sNeed) + ' m³/day to a drainage field', M.TR.sNeed <= 2 ? 'ok' : 'bad']; return [f1(M.TR.sCap) + ' m³/day treated on site – permit needed unless within the general binding rules', 'warn']; }],
+  ['t-std', 'Water & sewage treatment', 'Sewage treatment plant design standard', { uk: 'BS EN 12566-1 / -3 (up to 50 PE); BS EN 12255 series (over 50 PE); BS 6297; British Water Flows and Loads 4', en: 'EN 12566-1 / -3; EN 12255 series', us: 'NSF/ANSI 40 and 245; Recommended Standards for Wastewater Facilities (Ten States)' }, M => S.treat.sewage === 'mains' ? ['Public sewer', 'na'] : [f0(M.TR.Sw.pe) + ' PE – ' + (S.treat.sewage === 'septic' ? 'BS 6297 / EN 12566-1' : M.TR.Sw.pe <= 50 ? 'packaged plant to EN 12566-3' : 'design to the EN 12255 series'), 'ok']],
+  ['t-eff', 'Water & sewage treatment', 'Effluent quality against the consent', { uk: 'Environmental permit conditions (typically BOD 20 / SS 30 / NH₃ 5 mg/l)', en: 'UWWTD Annex I limits; national permit', us: 'NPDES secondary treatment standard (BOD₅ 30 mg/l)' }, M => S.treat.sewage === 'mains' ? ['Public sewer', 'na'] : S.treat.sewage === 'septic' ? ['Primary treatment only – to ground through the drainage field', 'na'] : ['≈ ' + M.TR.Sw.eff[0] + ' mg/l BOD against a consent of ' + nv(S.treat.effBod, 20), M.TR.Sw.eff[0] <= nv(S.treat.effBod, 20) ? 'ok' : 'bad']],
+  ['t-site', 'Water & sewage treatment', 'Siting, odour, access and separation distances', { uk: 'Approved Document H2 (septic tank ≥ 7 m from habitable buildings; drainage field ≥ 15 m from buildings, ≥ 10 m from watercourses, ≥ 50 m from water abstraction); BS 6297', en: 'National siting rules; EN 12255-9 (odour)', us: 'State onsite setback rules; IPC Appendix' }, M => [S.treat.sewage === 'mains' && S.treat.water === 'none' ? 'No treatment plant on site' : 'Confirm distances, vehicle access for desludging and odour control', 'na']],
+  ['t-ctrl', 'Water & sewage treatment', 'Plant power, motor control and automation', { uk: 'BS EN 61439-2 (MCC); BS 7671; BS EN 60204-1; IEC 61131 (PLC)', en: 'EN 61439-2; EN 60204-1; IEC 61131', us: 'UL 845 MCC; NFPA 70 Article 430; NFPA 79' }, M => { const ps = [M.TR.W.sum, M.TR.Sw.sum, ...M.PL.map(r => r.sum)].filter(s => s.starters); return ps.length ? [ps.map(s => s.mcc + ' A MCC, ' + s.starters + ' starters').join('; '), 'ok'] : ['No treatment or pool plant', 'na']; }],
+  ['s-turn', 'Swimming pools', 'Pool turnover and bather load', { uk: 'PWTAG Code of Practice; PWTAG Swimming Pool Water (turnover by pool type)', en: 'DIN 19643; EN 15288-1 / -2', us: 'CDC Model Aquatic Health Code (MAHC); ISPSC' }, M => !M.PL.length ? ['No pools', 'na'] : [M.PL.map(r => (r.p.name || 'Pool') + ' ' + f2(r.turn) + ' h (guide ' + r.U[2] + ' h), ' + r.bathers + ' bathers').join('; '), M.PL.every(r => r.turn <= r.U[2] + 1e-9) ? 'ok' : 'warn']],
+  ['s-treat', 'Swimming pools', 'Pool treatment suited to use, size and location', { uk: 'PWTAG Code of Practice (UV recommended for indoor public pools); HSG179', en: 'DIN 19643 process combinations', us: 'MAHC Section 4.7 (secondary disinfection for increased-risk venues)' }, M => !M.PL.length ? ['No pools', 'na'] : [M.PL.map(r => (r.p.name || 'Pool') + ': ' + r.T[1].split(' + ')[0] + (r.tk === r.rec ? '' : ' (recommended ' + (POOL_TREAT.find(x => x[0] === r.rec) || [])[1] + ')')).join('; '), M.PL.every(r => r.tk === r.rec || (r.rec === 'sand-cl') || (r.rec === 'sand-cl-uv' && /ozone|regen/.test(r.tk))) ? 'ok' : 'warn']],
+  ['s-air', 'Swimming pools', 'Pool hall air quality and dehumidification', { uk: 'PWTAG; CIBSE Guide A (hall 1 °C above water, 50–60% RH); Sport England swimming pool design guidance', en: 'VDI 2089-1', us: 'ASHRAE Handbook – Applications Ch. 6 (natatoriums)' }, M => { const ins = M.PL.filter(r => r.indoor && r.dehumAir); return ins.length ? [ins.map(r => (r.p.name || 'Pool') + ' ' + f0(r.dehumAir) + ' m³/h').join('; '), 'ok'] : ['No indoor public pool hall', 'na']; }],
+  ['s-safe', 'Swimming pools', 'Pool safety, entrapment and operation', { uk: 'HSE HSG179; BS EN 15288-1 / -2; BS EN 13451 equipment; BS EN 16582 (domestic)', en: 'EN 15288-1 / -2; EN 13451; EN 16582', us: 'Virginia Graeme Baker Pool and Spa Safety Act (anti-entrapment); ISPSC' }, M => [M.PL.length ? 'Confirm outlet anti-entrapment, depth markings, plant-room safety and the pool safety operating procedures' : 'No pools', 'na']],
+  ['s-spa', 'Swimming pools', 'Spa pools – Legionella control', { uk: 'HSE HSG282 (control of Legionella in spa pools)', en: 'National Legionella rules; DIN 19643-1', us: 'MAHC; ASHRAE 188' }, M => M.PL.some(r => r.U[0] === 'spa') ? ['Spa pool – daily checks, weekly / daily water replacement, disinfection records', 'warn'] : ['No spa pools', 'na']],
   ['i-elec', 'Integration', 'MEP plant loads in the electrical maximum demand', { uk: 'BS 7671 Regulation 311.1; Equipment loads and Lifts & pumps stages', en: 'IEC 60364-3 / HD 60364-3; Equipment loads and Lifts & pumps stages', us: 'NEC Article 220 and 440; Equipment loads and Lifts & pumps stages' }, M => [M.sync.txt, M.sync.st]],
   ['i-ess', 'Integration', 'Life-safety mechanical loads on essential supplies', { uk: 'BS 7671 Chapter 56; BS 8519; Approved Document B', en: 'IEC 60364-5-56; EN 12101-10', us: 'NEC Articles 695 and 700; NFPA 92' }, () => ['Confirm smoke extract and sprinkler pumps are on the essential-load schedule (Supply & equipment)', 'na']],
   ['i-coord', 'Integration', 'Plant spaces, access, weights and services coordination', { uk: 'CDM Regulations 2015; BSRIA BG 6 design framework', en: 'National construction rules', us: 'IMC Section 306 access; IBC structural' }, () => ['Coordinate plant rooms, risers and roof plant with the architect and structure', 'na']],
 ];
 const mepRefs = c => c[3][mepCode()] || c[3].uk;
 function mepStat(disc) { const M = calcMep(), st = MEP_REG.filter(c => !disc || c[1] === disc).map(c => c[4](M)[1]); return st.includes('bad') ? 'bad' : st.includes('warn') ? 'warn' : st.includes('ok') ? 'ok' : ''; }
-function mepRail(id) { return id === 'mech' ? mepStat('Mechanical') : id === 'plumb' ? mepStat('Plumbing & drainage') : mepStat(); }
+function mepRail(id) { if (id === 'treat') { const a = [mepStat('Water & sewage treatment'), mepStat('Swimming pools')]; return a.includes('bad') ? 'bad' : a.includes('warn') ? 'warn' : a.includes('ok') ? 'ok' : ''; } return id === 'mech' ? mepStat('Mechanical') : id === 'plumb' ? mepStat('Plumbing & drainage') : mepStat(); }
 function mepDash(add) {
   const M = calcMep(), st = MEP_REG.map(c => c[4](M)[1]), app = st.filter(s => s !== 'na');
   add('MEP services', 'mep', 'MEP compliance', app.length ? app.filter(s => s === 'ok').length / app.length : null, app.filter(s => s === 'ok').length + ' of ' + app.length + ' checks OK', '#mepcomp', st.includes('bad'));
@@ -3768,6 +3793,7 @@ function mepAct(act) {
     M.elec.forEach(e => { if (e.kind === 'load') S.loads.push({ id: uid(), db, desc: e.name + ' (MEP)', cat: e.cat, qty: e.qty, kw: e.kwEach, pf: 0.9, ku: '', df: '', mep: e.key }); else S.pumps.push({ id: uid(), desc: e.name + ' (MEP)', svc: e.svc, q: e.q, h: e.h, eff: e.eff, duty: 1, stby: 1, mep: e.key }); });
     R = calcAll(); persist(); render(); toast('MEP plant sent to the electrical design – maximum demand is now ' + f0(R.md) + ' kVA'); return;
   }
+  if (act === 'mep-suggest-w' || act === 'mep-suggest-s') { const T = calcMep().TR; if (act === 'mep-suggest-w') S.treat.water = T.wSug; else S.treat.sewage = T.sSug; R = calcAll(); persist(); render(); toast('Suggested option selected'); return; }
   if (act === 'mep-remove') { S.loads = S.loads.filter(l => !l.mep); S.pumps = S.pumps.filter(p => !p.mep); R = calcAll(); persist(); render(); toast('MEP plant loads removed from the electrical design'); }
 }
 
@@ -3908,6 +3934,8 @@ function csvMep() {
   M.fx.forEach(r => row([r.f.loc, r.L.name, r.q, r.vc.toFixed(2), r.vh.toFixed(2), r.du.toFixed(1), r.dfu.toFixed(1), r.wsfu.toFixed(1)]));
   L.push(''); row(['MEP RESULTS']); row(['Item', 'Value']);
   [['Heating plant kW', M.heatCap.toFixed(1)], ['Cooling plant kW', M.coolCap.toFixed(1)], ['AHU air l/s', M.ahuQ.toFixed(0)], ['Main duct', M.mainDuct ? 'Ø' + M.mainDuct.d + ' mm' : ''], ['LTHW main', M.lthwP ? M.lthwP.label : ''], ['CHW main', M.chwP ? M.chwP.label : ''], ['Peak cold water l/s', M.peak.toFixed(2)], ['Water main', M.main ? M.main.label : ''], ['Cold storage l', M.cwStore.toFixed(0)], ['Hot water storage l', M.hwStore.toFixed(0)], ['Hot water recovery kW', M.hwKw.toFixed(1)], ['Wastewater flow l/s', M.Qww.toFixed(2)], ['Soil stack', M.stack ? 'DN' + M.stack[0] : ''], ['Building drain', M.drain ? 'DN' + M.drain.dn : ''], ['Rainwater l/s', M.rainQ.toFixed(1)], ['WCs required / provided', M.reqWc + ' / ' + M.wcProv], ['MEP electrical input kW', M.elecKw.toFixed(1)]].forEach(row);
+  L.push(''); row(['TREATMENT AND POOL PLANT']); row(['Plant', 'Tag', 'Equipment', 'Duty', 'Standby', 'Size / duty point', 'Motor kW']);
+  [['Water treatment', M.TR.W.items], ['Sewage treatment', M.TR.Sw.items], ...M.PL.map(r => ['Pool – ' + (r.p.name || ''), r.items])].forEach(([n, it]) => it.forEach(i => row([n, i.tag, i.name, i.d, i.s, i.spec, i.kw])));
   L.push(''); row(['ELECTRICAL LOADS FROM MEP PLANT']); row(['Plant', 'Category / service', 'Units', 'kW', 'Basis']);
   M.elec.forEach(e => row([e.name, e.kind === 'load' ? e.cat : e.svc, e.kind === 'load' ? e.qty + ' x ' + e.kwEach : e.q + ' l/s at ' + e.h + ' m', e.kw, e.basis]));
   L.push(''); row(['MEP COMPLIANCE']); row(['#', 'Discipline', 'Requirement', 'Reference', 'Design result', 'Auto', 'Engineer status', 'Evidence']);
@@ -3917,9 +3945,306 @@ function csvMep() {
 function mepReportSection(sec) {
   const M = calcMep();
   if (!M.zones.length && !M.fx.length) return '';
-  const kv = [['Methods', esc(MEP_CODES[M.code])], ['Heating', `${f1(M.heatKw)} kW design load, ${f1(M.heatCap)} kW plant (${esc({ ashp: 'air-source heat pumps', boiler: 'gas boilers', electric: 'direct electric', district: 'heat network' }[M.src])})`], ['Cooling', M.coolKw ? `${f1(M.coolKw)} kW block load, ${f1(M.coolCap)} kW plant` : 'None'], ['Ventilation', `${f0(M.oaTot)} l/s outdoor air${M.ahuQ ? ', AHU ' + f0(M.ahuQ) + ' l/s, SFP ' + M.sfpA + ' W/(l/s)' : ''}${M.extTot ? ', extract ' + f0(M.extTot) + ' l/s' : ''}`], ['Water supply', M.peak ? `${f2(M.peak)} l/s peak, ${M.main ? M.main.label : ''} main; ${f0(M.cwStore)} l cold storage` : 'No fixtures'], ['Hot water', M.hwStore ? `${f0(M.hwStore)} l at ${M.tS} °C, ${f1(M.hwKw)} kW recovery` : 'None'], ['Drainage', M.sDU ? (M.code === 'us' ? f1(M.sDFU) + ' DFU' : `${f2(M.Qww)} l/s; stacks DN${M.stack ? M.stack[0] : '–'}, drain DN${M.drain ? M.drain.dn : '–'} at 1:${M.grad}`) : 'None'], ['Sanitary provision', `${M.wcProv} WCs / ${M.basinProv} basins provided against ${M.reqWc} / ${M.reqBasin} required; ${M.acc} accessible`], ['Electrical input of MEP plant', `${f1(M.elecKw)} kW – ${esc(M.sync.txt)}`]];
+  const kv = [['Methods', esc(MEP_CODES[M.code])], ['Heating', `${f1(M.heatKw)} kW design load, ${f1(M.heatCap)} kW plant (${esc({ ashp: 'air-source heat pumps', boiler: 'gas boilers', electric: 'direct electric', district: 'heat network' }[M.src])})`], ['Cooling', M.coolKw ? `${f1(M.coolKw)} kW block load, ${f1(M.coolCap)} kW plant` : 'None'], ['Ventilation', `${f0(M.oaTot)} l/s outdoor air${M.ahuQ ? ', AHU ' + f0(M.ahuQ) + ' l/s, SFP ' + M.sfpA + ' W/(l/s)' : ''}${M.extTot ? ', extract ' + f0(M.extTot) + ' l/s' : ''}`], ['Water supply', M.peak ? `${f2(M.peak)} l/s peak, ${M.main ? M.main.label : ''} main; ${f0(M.cwStore)} l cold storage` : 'No fixtures'], ['Hot water', M.hwStore ? `${f0(M.hwStore)} l at ${M.tS} °C, ${f1(M.hwKw)} kW recovery` : 'None'], ['Drainage', M.sDU ? (M.code === 'us' ? f1(M.sDFU) + ' DFU' : `${f2(M.Qww)} l/s; stacks DN${M.stack ? M.stack[0] : '–'}, drain DN${M.drain ? M.drain.dn : '–'} at 1:${M.grad}`) : 'None'], ['Sanitary provision', `${M.wcProv} WCs / ${M.basinProv} basins provided against ${M.reqWc} / ${M.reqBasin} required; ${M.acc} accessible`], ['Water treatment', M.TR.wCap ? esc(M.TR.W.o[1]) + ', ' + M.TR.wCap + ' m³/day, ' + f1(M.TR.W.sum.inst) + ' kW installed, MCC ' + M.TR.W.sum.mcc + ' A' : 'Public mains'], ['Sewage treatment', M.TR.sCap ? esc(M.TR.Sw.o[1]) + ', ' + M.TR.sCap + ' m³/day (' + f0(M.TR.Sw.pe) + ' PE), ' + f1(M.TR.Sw.sum.inst) + ' kW installed' : 'Public sewer'], ['Swimming pools', M.PL.length ? M.PL.map(r => esc(r.p.name || 'Pool') + ': ' + f0(r.V) + ' m³, ' + esc(r.T[1])).join('; ') : 'None'], ['Electrical input of MEP plant', `${f1(M.elecKw)} kW – ${esc(M.sync.txt)}`]];
   const comp = MEP_REG.map((c, i) => { const [res, st] = c[4](M); return [i + 1, esc(c[2]), esc(mepRefs(c)), esc(res), esc((S.mepComp[c[0]] || {}).st || 'Not checked')]; });
   return sec('Mechanical and plumbing services (MEP)') + `<table class="r kv"><tbody>${kv.map(([a, b]) => `<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</tbody></table>` + tbl(['#', 'MEP requirement', 'Reference', 'Design result', 'Engineer status'], comp);
+}
+
+/* ---------- Water and sewage treatment: options open to the client / consultant, sized by production capacity ---------- */
+function treatDefaults() {
+  return { water: 'none', disinf: 'chlorine', source: 'mains', sewer: 'yes', tds: 500, fe: 0.1, mn: 0.02, hard: 250, turb: 1, procM3: 0, growth: 0.2, runH: 20, wCap: 'auto', filtRate: 10, bwRate: 35, ebct: 10, airRatio: 1, clDose: 1.0, recovery: '', flux: '', ndp: '', uvWh: 15, storeH: 12, wCtrl: 'plc',
+    sewage: 'mains', tertiary: 'none', returnF: 0.9, bodConc: 300, sCap: 'auto', fm: 0.08, mlss: '', depth: 4.5, sor: 16, peakF: 3, percVp: 30, effBod: 20, sCtrl: 'plc' };
+}
+const TREAT_CAPS = [2, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000];
+const MOTORS = [0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3, 4, 5.5, 7.5, 11, 15, 18.5, 22, 30, 37, 45, 55, 75, 90, 110, 132, 160, 200, 250, 315, 355, 400, 450, 500];
+const motorKw = kw => kw > 0 ? (MOTORS.find(m => m >= kw * 1.1) || Math.ceil(kw * 1.1)) : 0;
+const MCC_A = [32, 63, 100, 125, 160, 200, 250, 400, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200];
+// Water treatment options: [key, name, typical use, advantages, limitations, processes]
+const WT_OPT = [
+  ['none', 'Mains water – no on-site treatment', 'Public mains supply that already meets drinking-water standards.', 'No plant, no chemicals, no operator.', 'Depends on the water company supply and pressure.', []],
+  ['media', 'Aeration + chemical dosing + multimedia and carbon filtration', 'Borehole or surface water with iron, manganese, turbidity, taste or odour; TDS below about 1,000 mg/l.', 'Low energy, robust, simple to operate; removes Fe/Mn, turbidity and organics.', 'Does not remove dissolved salts or hardness; backwash water to dispose of; chemical handling.', ['feed', 'aer', 'dose', 'media', 'carbon']],
+  ['ro', 'Cartridge pre-filtration + brackish-water reverse osmosis + remineralisation', 'Brackish borehole or high-TDS water (about 1,000–10,000 mg/l), or low-salt process water.', 'Removes salts, hardness, nitrate and most contaminants; compact.', 'Concentrate (reject) to dispose of; higher energy; needs antiscalant, CIP and remineralisation.', ['feed', 'cart', 'ro', 'remin']],
+  ['media-ro', 'Aeration, dosing and media filtration + reverse osmosis', 'Raw water with both suspended / iron fouling and high dissolved salts.', 'Protects the membranes; treats the widest range of raw water.', 'Most equipment, highest capital cost; reject and backwash disposal.', ['feed', 'aer', 'dose', 'media', 'cart', 'ro', 'remin']],
+  ['swro', 'Seawater reverse osmosis with energy recovery', 'Seawater or very saline water (TDS above about 10,000 mg/l).', 'Produces drinking water where there is no fresh source; energy recovery cuts power by about half.', 'Highest energy (about 3–4 kWh/m³ overall), brine outfall consent, corrosion-resistant materials.', ['feed', 'media', 'cart', 'ro', 'remin']],
+];
+const WT_DIS = [['chlorine', 'Sodium hypochlorite dosing (residual chlorine)'], ['uv', 'UV disinfection'], ['uv-cl', 'UV + residual chlorine'], ['none', 'None (mains water, no storage)']];
+const WT_SRC = [['mains', 'Public mains'], ['borehole', 'Borehole / groundwater'], ['surface', 'River / lake / reservoir'], ['sea', 'Seawater']];
+// Sewage options: [key, name, typical use, advantages, limitations, effluent BOD/SS mg/l]
+const ST_OPT = [
+  ['mains', 'Public sewer – no on-site treatment', 'A public foul sewer within reach.', 'No plant; the sewerage undertaker treats the flow.', 'Needs a connection consent; trade effluent consent for non-domestic discharges.', [0, 0]],
+  ['septic', 'Septic tank + drainage field', 'Very small flows (a few dwellings or a welfare block) on permeable ground.', 'No power, very low maintenance.', 'Primary treatment only; needs suitable soil; small-discharge limits apply.', [150, 100]],
+  ['sbr', 'Packaged plant – sequencing batch reactor (SBR)', 'Small to medium sites (about 5–2,000 PE) with variable flows.', 'One tank does aeration and settling; good nitrogen removal; compact.', 'Batch decant needs controls; peak flows need balancing.', [20, 30]],
+  ['mbbr', 'Packaged plant – moving bed biofilm reactor (MBBR)', 'Small to large sites, retrofits, shock loads.', 'Compact, robust to load swings, little sludge recycling.', 'Higher aeration energy (coarse bubble); needs a settler after.', [20, 30]],
+  ['asp', 'Extended aeration activated sludge with clarifier', 'Medium to large flows with steady loads.', 'Proven, stable, low sludge yield, good effluent.', 'Largest tanks and footprint; return sludge pumping.', [20, 30]],
+  ['mbr', 'Membrane bioreactor (MBR) – reuse quality', 'Sites that reuse water (irrigation, WC flushing) or have strict permits.', 'Excellent effluent (BOD ≈ 5, SS ≈ 1), small footprint, disinfection-ready.', 'Highest energy and membrane replacement cost; skilled operation.', [5, 1]],
+];
+const ST_TER = [['none', 'None'], ['filt', 'Tertiary sand filtration'], ['uv', 'UV disinfection of effluent'], ['reuse', 'Reuse: filtration + UV + chlorination']];
+const CTRL_OPT = [['relay', 'Hard-wired relay logic with local controls'], ['plc', 'PLC with HMI touch screen'], ['scada', 'PLC + HMI + SCADA / BMS link and remote alarms']];
+const capPick = (mode, need) => mode && mode !== 'auto' && isFinite(+mode) && +mode > 0 ? +mode : (TREAT_CAPS.find(c => c >= need) || Math.ceil(need));
+function wtSuggest(t) {
+  const tds = +t.tds || 0, fouling = (+t.fe || 0) > 0.2 || (+t.mn || 0) > 0.05 || (+t.turb || 0) > 1 || t.source === 'surface';
+  if (t.source === 'mains') return 'none';
+  if (t.source === 'sea' || tds > 10000) return 'swro';
+  if (tds > 1000) return fouling ? 'media-ro' : 'ro';
+  return 'media';
+}
+function stSuggest(t, q) { if (t.sewer === 'yes') return 'mains'; if (q <= 2) return 'septic'; if (t.tertiary === 'reuse') return 'mbr'; return q <= 300 ? 'sbr' : q <= 1500 ? 'mbbr' : 'asp'; }
+// plant summary: installed and running power, MCC rating, starters, control and instruments
+function plantSum(items, hours, cap, ctrl, X) {
+  const motors = items.filter(i => i.kw > 0), inst = motors.reduce((a, i) => a + (i.d + i.s) * i.kw, 0), run = motors.reduce((a, i) => a + i.d * i.kw * i.run, 0), duty = motors.reduce((a, i) => a + i.d * i.kw, 0);
+  const vll = X ? X.vll : 400, amps = duty * 1000 / (Math.sqrt(3) * vll * 0.85 * 0.9) * 1.25, mcc = MCC_A.find(a => a >= amps) || Math.ceil(amps);
+  const starters = motors.reduce((a, i) => a + i.d + i.s, 0), vsd = motors.filter(i => i.kw >= 5.5 || i.vsd).reduce((a, i) => a + i.d + i.s, 0);
+  const io = items.length * 8 + 16, kwhDay = run * hours;
+  return { inst, run, duty, amps, mcc, starters, vsd, io, ctrl, kwhDay, sec: cap ? kwhDay / cap : 0 };
+}
+function calcWater(t, opt, cap, X) {
+  const o = WT_OPT.find(x => x[0] === opt) || WT_OPT[0], P = o[5], items = [], E = (tag, name, d, s, spec, kw, run = 1, extra = {}) => items.push({ tag, name, d, s, spec, kw: motorKw(kw), kwCalc: kw, run, ...extra });
+  if (!P.length || !(cap > 0)) return { o, items, cap, Qh: 0, sum: plantSum([], 0, 0, t.wCtrl, X), ro: null, chem: [] };
+  const runH = Math.min(24, Math.max(4, +t.runH || 20)), Qh = cap / runH, pw = (q, h, eta = 0.65) => q / 3600 * 1000 * 9.81 * h / eta / 1000;
+  const sw = opt === 'swro', ro = P.includes('ro'), chem = [];
+  let Qf = Qh, R = null;
+  if (ro) {
+    const r = nv(t.recovery, sw ? 0.45 : 0.75), flux = nv(t.flux, sw ? 14 : 20), ndp = nv(t.ndp, sw ? 15 : 8), tds = Math.max(100, +t.tds || (sw ? 35000 : 1500));
+    Qf = Qh / r; const Qr = Qf - Qh, piF = 0.00069 * tds, piAvg = piF * (1 + 1 / (1 - r)) / 2, bar = piAvg + ndp + 2;
+    const area = Qh * 1000 / flux, elements = Math.ceil(area / 37), vessels = Math.ceil(elements / 6), trains = Qh > 40 ? 2 : 1;
+    const hpFlow = sw ? Qh * 1.02 : Qf, hpKw = hpFlow / 3600 * bar * 1e5 / 0.8 / 1000, boostKw = sw ? Qr / 3600 * 3e5 / 0.8 / 1000 : 0;
+    R = { r, flux, ndp, tds, Qf, Qr, piF, piAvg, bar, area, elements, vessels: Math.ceil(vessels / trains) * trains, trains, hpKw, boostKw, permTds: tds * (sw ? 0.003 : 0.01) * (1 + 1 / (1 - r)) / 2, rejTds: tds / (1 - r) };
+  }
+  if (P.includes('feed')) E('P-01', 'Raw water feed pumps', 1, 1, f1(Qf) + ' m³/h at ' + (ro ? 30 : 35) + ' m', pw(Qf, ro ? 30 : 35));
+  if (P.includes('aer')) { const air = Qf * nv(t.airRatio, 1); E('B-01', 'Aeration blowers', 1, 1, f0(air) + ' m³/h air at 40 kPa', air / 3600 * 40000 / 0.6 / 1000); E('T-01', 'Aeration / contact tank', 1, 0, f1(Qf * 20 / 60) + ' m³ (20 min contact)', 0); }
+  if (P.includes('dose') || t.disinf === 'chlorine' || t.disinf === 'uv-cl') { const kg = cap * nv(t.clDose, 1) / 1000; chem.push(['Sodium hypochlorite (12.5% w/v)', f1(kg / 0.125) + ' l/day', f1(kg) + ' kg Cl₂/day at ' + nv(t.clDose, 1) + ' mg/l']); E('D-01', 'Hypochlorite dosing skid (duty/standby pumps, day tank, bund)', 1, 1, f1(kg / 0.125 / runH) + ' l/h', 0.25, 1, { vsd: false }); }
+  if (P.includes('dose')) { chem.push(['Coagulant / pH correction', 'as jar test', 'confirm with raw water analysis']); E('D-02', 'Coagulant / pH correction dosing skid', 1, 1, 'flow-paced', 0.25); }
+  if (P.includes('media')) {
+    const rate = nv(t.filtRate, 10), area = Qf / rate, n = Math.max(2, Math.ceil(area / 7)), D = Math.ceil(Math.sqrt(4 * area / n / Math.PI) * 10) / 10, va = Math.PI * D * D / 4;
+    E('F-01', 'Multimedia pressure filters (anthracite / sand / gravel)', n, 1, 'Ø' + f1(D) + ' m, ' + f1(rate) + ' m/h, ' + f1(area) + ' m² total', 0);
+    E('P-02', 'Backwash pumps', 1, 1, f0(va * nv(t.bwRate, 35)) + ' m³/h at 15 m', pw(va * nv(t.bwRate, 35), 15), 0.1);
+    E('B-02', 'Air-scour blower', 1, 0, f0(va * 55) + ' m³/h at 40 kPa', va * 55 / 3600 * 40000 / 0.6 / 1000, 0.05);
+  }
+  if (P.includes('carbon')) { const vol = Qf * nv(t.ebct, 10) / 60, n = Math.max(2, Math.ceil(vol / 1.5 / 7)), D = Math.ceil(Math.sqrt(4 * vol / 1.5 / n / Math.PI) * 10) / 10; E('F-02', 'Activated carbon filters', n, 0, 'Ø' + f1(D) + ' m, ' + f1(vol) + ' m³ GAC, EBCT ' + nv(t.ebct, 10) + ' min', 0); }
+  if (P.includes('cart')) { const el = Math.max(1, Math.ceil(Qf / 2.5)); E('F-03', 'Cartridge filter housings (5 µm)', Math.max(1, Math.ceil(el / 20)), 1, el + ' × 40" elements', 0); chem.push(['Antiscalant', f1(Qf * runH * 3 / 1000) + ' kg/day', 'at 3 mg/l on the RO feed']); E('D-03', 'Antiscalant dosing skid', 1, 1, 'flow-paced', 0.25); }
+  if (ro) {
+    E('P-03', sw ? 'RO high-pressure pumps (with energy recovery)' : 'RO high-pressure pumps', 1, 1, f1(sw ? Qh * 1.02 : R.Qf) + ' m³/h at ' + f1(R.bar) + ' bar', R.hpKw, 1, { vsd: true });
+    if (sw) { E('ERD-01', 'Pressure exchanger energy recovery device', 1, 0, f1(R.Qr) + ' m³/h brine, ≈ 95% efficient', 0); E('P-04', 'ERD booster pump', 1, 1, f1(R.Qr) + ' m³/h at 3 bar', R.boostKw); }
+    E('RO-01', 'RO membrane rack (8" elements, 6 per pressure vessel)', R.trains, 0, R.elements + ' elements in ' + R.vessels + ' vessels, ' + f0(R.area) + ' m² at ' + R.flux + ' l/m²·h, recovery ' + pct(R.r), 0);
+    E('P-05', 'Clean-in-place (CIP) pump and tank', 1, 0, f0(Math.min(R.vessels, 6) * 9) + ' m³/h at 35 m', pw(Math.min(R.vessels, 6) * 9, 35), 0);
+  }
+  if (P.includes('remin')) E('F-04', 'Remineralisation (calcite contactor or lime / CO₂ dosing)', 1, 0, f1(Qh) + ' m³/h', 0.25);
+  if (t.disinf === 'uv' || t.disinf === 'uv-cl') E('UV-01', 'UV reactors (40 mJ/cm², validated)', 1, 1, f1(Qh) + ' m³/h', Qh * nv(t.uvWh, 15) / 1000);
+  E('T-02', 'Treated water storage tank (twin compartment)', 1, 0, f0(cap * nv(t.storeH, 12) / 24) + ' m³ (' + nv(t.storeH, 12) + ' h)', 0);
+  return { o, items, cap, Qh, Qf, runH, ro: R, chem, sum: plantSum(items, runH, cap, t.wCtrl, X) };
+}
+function calcSewage(t, opt, cap, X) {
+  const o = ST_OPT.find(x => x[0] === opt) || ST_OPT[0], items = [], E = (tag, name, d, s, spec, kw, run = 1, extra = {}) => items.push({ tag, name, d, s, spec, kw: motorKw(kw), kwCalc: kw, run, ...extra });
+  const bod = cap * nv(t.bodConc, 300) / 1000, pe = bod / 0.06, out = { o, items, cap, bod, pe, eff: o[5] };
+  if (opt === 'mains' || !(cap > 0)) return { ...out, sum: plantSum([], 24, 0, t.sCtrl, X) };
+  const pw = (q, h, eta = 0.6) => q / 3600 * 1000 * 9.81 * h / eta / 1000, depth = nv(t.depth, 4.5), dp = 9.81 * depth + 15;
+  const blowKw = (air, d) => air / 3600 * d * 1000 / 0.65 / 1000, peakQh = cap * nv(t.peakF, 3) / 24;
+  if (opt === 'septic') {
+    const P = Math.max(4, Math.ceil(pe)), V = 180 * P + 2000, A = P * nv(t.percVp, 30) * 0.25;
+    E('T-01', 'Septic tank (two chambers, BS EN 12566-1)', 1, 0, f1(V / 1000) + ' m³ (180P + 2000 l, P = ' + P + ')', 0); E('DF-01', 'Drainage field (sub-surface irrigation)', 1, 0, f0(A) + ' m² trench floor (P × Vp × 0.25, Vp ' + nv(t.percVp, 30) + ' s/mm)', 0);
+    return { ...out, V, A, sum: plantSum(items, 24, cap, t.sCtrl, X) };
+  }
+  E('P-01', 'Inlet pumping station pumps', 1, 1, f1(peakQh) + ' m³/h (peak ' + nv(t.peakF, 3) + ' × average) at 10 m', pw(peakQh, 10));
+  E('SC-01', 'Automatic fine screen (6 mm) with screenings compactor', 1, 0, f1(peakQh) + ' m³/h', 0.75);
+  if (cap > 25) E('T-00', 'Flow balancing tank with mixer', 1, 0, f0(cap * 0.25) + ' m³ (6 h of average flow)', cap * 0.25 * 0.005, 1);
+  let V = 0, aor = 1.8 * bod, sote = 0.06 * depth, sludge = 0.7 * bod, react = 1, sAir = 0;
+  if (opt === 'asp' || opt === 'sbr') V = bod / (nv(t.fm, 0.08) * nv(t.mlss, 3500) / 1000);
+  if (opt === 'sbr') { V *= 1.3; react = 0.6; }
+  if (opt === 'mbbr') { const media = bod * 1000 / (5 * 500); V = media / 0.5; sote = 0.025 * depth; sludge = 0.8 * bod; out.media = media; }
+  if (opt === 'mbr') { V = bod / (nv(t.fm, 0.08) * nv(t.mlss, 10000) / 1000); const area = cap * 1000 / 24 / 20; out.memArea = area; sAir = area * 0.25; }
+  const sotr = aor / 0.5, air = Math.max(sotr / 24 / (0.28 * sote) / react, V / depth * 2.2);
+  out.V = V; out.hrt = V / cap * 24; out.aor = aor; out.air = air; out.sludge = sludge;
+  const tanks = opt === 'sbr' ? 2 : 1;
+  E('T-02', opt === 'sbr' ? 'SBR reactors with decanters' : opt === 'mbbr' ? 'MBBR reactor with carrier media' : opt === 'mbr' ? 'MBR bioreactor' : 'Extended aeration tank', tanks, 0, f0(V) + ' m³ total, ' + depth + ' m deep, HRT ' + f1(out.hrt) + ' h' + (opt === 'mbbr' ? ', ' + f1(out.media) + ' m³ media (500 m²/m³)' : ''), 0);
+  E('B-01', 'Process aeration blowers (' + (opt === 'mbbr' ? 'coarse' : 'fine') + ' bubble)', 1, 1, f0(air) + ' m³/h at ' + f0(dp) + ' kPa (AOR ' + f1(aor) + ' kg O₂/day)', blowKw(air, dp), react, { vsd: true });
+  if (opt === 'asp' || opt === 'mbbr') { const sor = opt === 'mbbr' ? 24 : nv(t.sor, 16), A = cap / sor, D = Math.ceil(Math.sqrt(4 * A / Math.PI) * 10) / 10; E('CL-01', opt === 'mbbr' ? 'Lamella settler' : 'Secondary clarifier with scraper', 1, 0, f1(A) + ' m² (Ø' + f1(D) + ' m) at ' + sor + ' m³/m²·day', opt === 'asp' ? 0.37 : 0); }
+  if (opt === 'asp') E('P-02', 'Return activated sludge pumps', 1, 1, f1(cap / 24) + ' m³/h (100% return) at 6 m', pw(cap / 24, 6));
+  if (opt === 'sbr') E('P-02', 'Decant pumps / decanters', 2, 0, f1(cap / 24 * 3) + ' m³/h', pw(cap / 24 * 3, 5), 0.25);
+  if (opt === 'mbr') { E('M-01', 'Submerged membrane modules', 1, 0, f0(out.memArea) + ' m² at 20 l/m²·h net', 0); E('P-02', 'Permeate pumps', 1, 1, f1(cap / 24 * 1.2) + ' m³/h at 10 m', pw(cap / 24 * 1.2, 10)); E('B-02', 'Membrane scour blowers', 1, 1, f0(sAir) + ' m³/h at 30 kPa', blowKw(sAir, 30), 1, { vsd: true }); E('P-03', 'Mixed-liquor recirculation pumps', 1, 1, f1(cap / 24 * 4) + ' m³/h at 3 m', pw(cap / 24 * 4, 3)); }
+  E('P-04', 'Waste sludge pumps', 1, 1, f1(sludge / 10) + ' m³/day at 1% solids', pw(Math.max(1, sludge / 10 / 2), 10), 0.1);
+  E('T-03', 'Sludge holding tank (30 days, thickened to 2%)', 1, 0, f0(sludge / 20 * 30) + ' m³', 0);
+  if (t.tertiary === 'filt' || t.tertiary === 'reuse') { const A = peakQh / 8; E('F-01', 'Tertiary sand filters', Math.max(2, Math.ceil(A / 7)), 0, f1(A) + ' m² at 8 m/h', 0); E('P-05', 'Filter backwash pumps', 1, 1, f0(A / 2 * 35) + ' m³/h at 15 m', pw(A / 2 * 35, 15), 0.1); }
+  if (t.tertiary === 'uv' || t.tertiary === 'reuse') E('UV-01', 'Effluent UV disinfection (30 mJ/cm²)', 1, 1, f1(peakQh) + ' m³/h', cap / 24 * 30 / 1000 * 2);
+  if (t.tertiary === 'reuse') E('D-01', 'Chlorine dosing for reuse water', 1, 1, 'residual 0.5–2 mg/l', 0.25);
+  out.eff = t.tertiary === 'reuse' || opt === 'mbr' ? [5, 1] : t.tertiary === 'filt' ? [10, 10] : o[5];
+  return { ...out, sum: plantSum(items, 24, cap, t.sCtrl, X) };
+}
+function calcTreat(cwDay) {
+  const t = S.treat, X = R ? R.X : null, demand = (cwDay || 0) / 1000 + (+t.procM3 || 0), g = 1 + nv(t.growth, 0.2);
+  const wNeed = demand * g, wCap = t.water === 'none' ? 0 : capPick(t.wCap, wNeed), W = calcWater(t, t.water, wCap, X);
+  const sNeed = demand * nv(t.returnF, 0.9) * g, sCap = t.sewage === 'mains' ? 0 : capPick(t.sCap, sNeed), Sw = calcSewage(t, t.sewage, sCap, X);
+  return { demand, wNeed, wCap, W, sNeed, sCap, Sw, wSug: wtSuggest(t), sSug: stSuggest(t, sNeed) };
+}
+
+// Swimming pools – use / location and size decide the turnover, bather load and the recommended treatment (PWTAG guidance; editable defaults)
+// [key, name, turnover h, water °C, indoor, evaporation kg/h per m² when in use]
+const POOL_USE = [
+  ['comp', 'Public indoor – main / competition pool', 3, 27, true, 0.15], ['leisure', 'Public indoor – leisure pool (features, flumes)', 1.5, 29, true, 0.2], ['learner', 'Public indoor – learner / teaching pool', 1, 30, true, 0.15],
+  ['outdoor', 'Public outdoor pool / lido (heated)', 3, 26, false, 0.2], ['hotel', 'Hotel / club / gym – indoor pool', 2, 29, true, 0.15], ['hotelout', 'Hotel / resort – outdoor pool', 2.5, 28, false, 0.2],
+  ['resi', 'Residential communal pool', 3, 28, true, 0.12], ['domestic', 'Private domestic pool', 4, 28, false, 0.1], ['hydro', 'Hydrotherapy pool', 0.5, 35, true, 0.25], ['spa', 'Spa pool / hot tub (commercial)', 0.25, 38, true, 0.4],
+];
+// [key, name, length m, width m, average depth m]
+const POOL_SIZE = [
+  ['25x4', '25 m × 4 lanes (25 × 8.5 m)', 25, 8.5, 1.5], ['25x6', '25 m × 6 lanes (25 × 12.5 m)', 25, 12.5, 1.5], ['25x8', '25 m × 8 lanes (25 × 17 m)', 25, 17, 1.6],
+  ['50x8', '50 m × 8 lanes (50 × 21 m)', 50, 21, 2.0], ['50x10', '50 m × 10 lanes, Olympic (50 × 25 m)', 50, 25, 2.5], ['learner', 'Learner pool 13 × 7 m', 13, 7, 0.9],
+  ['leisure', 'Leisure pool about 300 m²', 20, 15, 1.0], ['hotel', 'Hotel pool 15 × 7 m', 15, 7, 1.3], ['domestic', 'Domestic pool 10 × 5 m', 10, 5, 1.4],
+  ['hydro', 'Hydrotherapy pool 8 × 5 m', 8, 5, 1.2], ['spa', 'Spa pool 2.4 × 2.4 m', 2.4, 2.4, 0.9], ['custom', 'Custom – enter length, width and depth', 0, 0, 0],
+];
+// [key, name, best for, advantages, limitations]
+const POOL_TREAT = [
+  ['sand-cl', 'Sand pressure filtration + sodium hypochlorite + pH correction', 'Outdoor and small pools with modest bather loads.', 'Simple, low cost, widely understood.', 'Chloramines (pool smell, eye irritation) build up indoors without UV.'],
+  ['sand-cl-uv', 'Sand / multimedia filtration + hypochlorite + medium-pressure UV', 'Indoor public, hotel, residential and hydrotherapy pools.', 'UV destroys combined chlorine – better air quality indoors; Cryptosporidium inactivation.', 'UV power and lamp replacement.'],
+  ['regen', 'Regenerative media (perlite) filtration + hypochlorite + UV', 'Space-limited plant rooms and water-saving projects.', 'Fine filtration (≈ 1–5 µm), up to 90% less backwash water, small footprint.', 'Higher equipment cost; media handling.'],
+  ['ozone', 'Coagulation, filtration, ozone + deozonisation + residual chlorine', 'Large competition and leisure pools with high bather loads.', 'Best water and air quality, low chlorine use.', 'Highest capital cost and complexity; ozone safety (detection, ventilation).'],
+  ['salt', 'Salt electrolysis chlorination + sand filtration', 'Private domestic and small hotel outdoor pools.', 'No chlorine deliveries; soft-feeling water.', 'Not suited to high bather loads; corrosion of fittings; salty backwash water.'],
+  ['spa', 'Fine filtration + chlorine or bromine dosing + UV, high turnover', 'Spa pools and hot tubs.', 'Copes with high temperature and very high bather load per m³.', 'Daily water replacement and Legionella control (HSG282) are essential.'],
+];
+function poolRec(use, V) {
+  if (use === 'spa') return 'spa'; if (use === 'domestic') return 'salt'; if (use === 'outdoor' || use === 'hotelout') return 'sand-cl';
+  if ((use === 'comp' || use === 'leisure') && V >= 900) return 'ozone';
+  return 'sand-cl-uv';
+}
+function calcPool(p, X) {
+  const U = POOL_USE.find(u => u[0] === p.use) || POOL_USE[0], Z = POOL_SIZE.find(z => z[0] === p.size) || POOL_SIZE[0];
+  const L = nv(p.L, Z[2]), W = nv(p.W, Z[3]), dep = nv(p.dep, Z[4]), A = L * W, V = A * dep, turn = nv(p.turn, U[2]), Q = turn > 0 ? V / turn : 0;
+  const aPer = U[0] === 'spa' ? 1 : dep < 1 ? 2.2 : dep <= 1.5 ? 2.7 : 4, bathers = Math.floor(A / aPer), rec = poolRec(U[0], V), tk = p.treat && p.treat !== 'auto' ? p.treat : rec, T = POOL_TREAT.find(x => x[0] === tk) || POOL_TREAT[0];
+  const items = [], E = (tag, name, d, s, spec, kw, run = 1, extra = {}) => items.push({ tag, name, d, s, spec, kw: motorKw(kw), kwCalc: kw, run, ...extra }), pw = (q, h) => q / 3600 * 1000 * 9.81 * h / 0.65 / 1000;
+  const dom = U[0] === 'domestic', temp = nv(p.temp, U[3]), indoor = U[4], bDay = bathers * (dom ? 1 : 4);
+  if (Q > 0) {
+    const rate = tk === 'regen' ? 0 : U[0] === 'spa' ? 25 : 20, area = rate ? Q / rate : 0, n = dom ? 1 : Math.max(2, Math.ceil(area / 5)), D = area ? Math.ceil(Math.sqrt(4 * area / n / Math.PI) * 10) / 10 : 0;
+    E('P-01', 'Circulation pumps' + (dom ? '' : ' (duty / standby, VSD)'), 1, dom ? 0 : 1, f1(Q) + ' m³/h at ' + (dom ? 12 : 15) + ' m', pw(Q, dom ? 12 : 15), 1, { vsd: !dom });
+    if (tk === 'regen') E('F-01', 'Regenerative media (perlite) filter', 1, 0, f1(Q) + ' m³/h', 0.75);
+    else { E('F-01', (tk === 'ozone' ? 'Multimedia' : 'Sand') + ' pressure filters', n, 0, 'Ø' + f1(D) + ' m, ' + rate + ' m/h, ' + f1(area) + ' m² total', 0); if (!dom) E('P-02', 'Backwash (or use the circulation pumps) and air scour', 1, 0, f0(area / n * 30) + ' m³/h at 15 m', pw(area / n * 30, 15), 0.05); }
+    if (!dom) E('T-01', 'Balance tank', 1, 0, f1(Q * 10 / 60 + bathers * 0.075) + ' m³ (10 min flow + bather displacement)', 0);
+    if (/uv|regen|ozone|spa/.test(tk)) E('UV-01', tk === 'spa' ? 'UV unit' : 'Medium-pressure UV reactor (60 mJ/cm²)', 1, 0, f1(Q) + ' m³/h', Q * (tk === 'spa' ? 0.02 : 0.04));
+    if (tk === 'ozone') { E('O3-01', 'Ozone generator with oxygen concentrator and contact tank', 1, 0, f0(Q * 1.0) + ' g/h at 1 g/m³', Q * 1.0 * 15 / 1000); E('F-02', 'Deozonising activated carbon filters', 2, 0, f1(Q / 30) + ' m² at 30 m/h', 0); }
+    if (tk === 'salt') E('EC-01', 'Salt electrolysis chlorinator cell and controller', 1, 0, f0((0.005 * bDay + 0.001 * V) * 1000 / 24) + ' g/h chlorine', (0.005 * bDay + 0.001 * V) * 5 / 24);
+    else E('D-01', 'Chlorine (hypochlorite' + (tk === 'spa' ? ' / bromine' : '') + ') and pH dosing with controller (ORP / free Cl)', 1, dom ? 0 : 1, f1((0.005 * bDay + 0.001 * V) / 0.125) + ' l/day hypochlorite', 0.25);
+  }
+  const heatUp = V * 1.163 * Math.max(0, temp - 10) / 48, surf = A * (indoor ? 150 : p.cover === 'yes' ? 150 : 400) / 1000, heatKw = p.heat === 'none' ? 0 : Math.max(heatUp, surf);
+  const heatElec = p.heat === 'ashp' ? heatKw / 4 : p.heat === 'electric' ? heatKw : 0;
+  if (heatKw > 0) E('H-01', p.heat === 'ashp' ? 'Pool heat pump' : p.heat === 'gas' ? 'Gas boiler with pool plate heat exchanger' : p.heat === 'electric' ? 'Electric pool heater' : 'Heat exchanger from the site heating', 1, 0, f0(heatKw) + ' kW (heat-up 48 h ' + f0(heatUp) + ' kW, surface ' + f0(surf) + ' kW)', p.heat === 'ashp' || p.heat === 'electric' ? heatElec / 1.1 : 0, 0.6);
+  let evap = 0, dehumAir = 0;
+  if (indoor && !dom && A > 0) { evap = A * U[5]; dehumAir = evap * 1000 / (1.2 * 4); E('AHU-01', 'Pool hall dehumidification AHU with heat recovery heat pump', 1, 0, f0(dehumAir) + ' m³/h for ' + f1(evap) + ' kg/h evaporation (hall ' + (temp + 1) + ' °C, 60% RH)', dehumAir / 3.6 * 1.6 / 1000 + evap * 0.75 * 0.68 / 3, 1); }
+  const sum = plantSum(items, dom ? 10 : 24, 0, p.ctrl || 'plc', X);
+  return { p, U, Z, L, W, dep, A, V, turn, Q, bathers, aPer, rec, tk, T, temp, indoor, items, heatKw, heatElec, evap, dehumAir, dilution: bDay * 30 / 1000, sum };
+}
+function calcPools(X) { return (S.pools || []).map(p => calcPool(p, X)); }
+function mepExamplePool() { return { id: uid(), name: 'Level 5 gym pool', use: 'hotel', size: 'hotel', L: '', W: '', dep: '', turn: '', temp: '', treat: 'auto', heat: 'ashp', cover: 'no', ctrl: 'plc' }; }
+
+// ---- Water & sewage treatment and swimming pools stage ----
+const tOpts = list => list.map(x => ({ v: x[0], t: x[1] }));
+function eqTable(items) {
+  if (!items.length) return '<p class="note">No plant for this option.</p>';
+  return `<div class="tbl-wrap"><table><thead><tr><th>Tag</th><th>Equipment</th><th>Duty + standby</th><th>Size / duty point</th><th>Motor kW each</th><th>Installed kW</th></tr></thead><tbody>${items.map(i => `<tr><td>${esc(i.tag)}</td><td>${esc(i.name)}</td><td class="n">${i.d}${i.s ? ' + ' + i.s : ''}</td><td class="note">${esc(i.spec)}</td><td class="n">${i.kw ? f2(i.kw) : '–'}</td><td class="n">${i.kw ? f1((i.d + i.s) * i.kw) : '–'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function panelBlock(s, ctrlPath, ctrlVal, label) {
+  if (!s.starters) return '';
+  return `<div class="row" style="align-items:flex-end;gap:16px;flex-wrap:wrap;margin:8px 0">${fld('Control system – ' + label, `<select data-p="${ctrlPath}" id="${ctrlPath.replace(/\./g, '_')}">${opt(tOpts(CTRL_OPT), ctrlVal || 'plc')}</select>`)}</div>
+  <div class="kpis">${mKpi('Installed power', f1(s.inst) + ' kW', 'duty + standby motors')}${mKpi('Running load', f1(s.run) + ' kW', f0(s.kwhDay) + ' kWh/day' + (s.sec ? ' · ' + f2(s.sec) + ' kWh/m³' : ''))}${mKpi('Motor control centre', s.mcc + ' A', 'Form 2b, ' + s.starters + ' starters, ' + s.vsd + ' VSD')}${mKpi('Control', (CTRL_OPT.find(c => c[0] === s.ctrl) || CTRL_OPT[1])[1].split(' with')[0].split(' +')[0], s.ctrl === 'relay' ? 'local hand / off / auto' : '≈ ' + s.io + ' I/O points')}</div>`;
+}
+function optCard(o, sug) { return `<div class="callout" style="border-left-color:var(--accent);background:var(--sunk)"><b>${esc(o[1])}</b>${sug ? ' ' + pill('ok', 'Suggested') : ''}<br><span class="note">Best for: ${esc(o[2])}</span><br>✓ ${esc(o[3])}<br>✗ ${esc(o[4])}</div>`; }
+function capOptions(fn, cap, unit) {
+  const i = Math.max(0, TREAT_CAPS.indexOf(cap)), caps = TREAT_CAPS.slice(Math.max(0, i - 2), i + 4);
+  return `<div class="tbl-wrap"><table><thead><tr><th>Capacity ${unit}</th><th>Main equipment</th><th>Installed kW</th><th>Running kW</th><th>MCC</th><th>Energy kWh/day</th></tr></thead><tbody>${caps.map(c => { const r = fn(c), main = r.items.filter(x => !/tank|dosing|UV|screen/i.test(x.name)).slice(0, 3).map(x => x.name.split(' (')[0] + ': ' + x.spec).join('; '); return `<tr${c === cap ? ' class="total"' : ''}><td class="n">${c}${c === cap ? ' ◀' : ''}</td><td class="note">${esc(main)}</td><td class="n">${f1(r.sum.inst)}</td><td class="n">${f1(r.sum.run)}</td><td class="n">${r.sum.mcc} A</td><td class="n">${f0(r.sum.kwhDay)}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+V.treat = () => {
+  const M = calcMep(), T = M.TR, t = S.treat, X = R.X, W = T.W, SW = T.Sw;
+  const capSel = (path, val, need, unit) => `<select data-p="${path}" id="${path.replace(/\./g, '_')}">${opt([{ v: 'auto', t: 'Auto – next standard size above ' + f1(need) + ' ' + unit }, ...TREAT_CAPS.map(c => ({ v: String(c), t: c + ' ' + unit }))], String(val || 'auto'))}</select>`;
+  const wCmp = WT_OPT.filter(o => o[0] !== 'none').map(o => { const r = calcWater(t, o[0], T.wCap || capPick('auto', T.wNeed), X); return `<tr${o[0] === t.water ? ' class="total"' : ''}><td>${esc(o[1])}${o[0] === T.wSug ? ' ' + pill('ok', 'Suggested') : ''}</td><td class="note">${esc(o[2])}</td><td class="n">${f1(r.sum.inst)}</td><td class="n">${f2(r.sum.sec)}</td><td class="note">${r.ro ? 'Reject ' + f1(r.ro.Qr * r.runH) + ' m³/day' : r.items.some(i => /Backwash/.test(i.name)) ? 'Backwash water' : '–'}</td></tr>`; }).join('');
+  const sCmp = ST_OPT.filter(o => o[0] !== 'mains').map(o => { const c = T.sCap || capPick('auto', T.sNeed), r = calcSewage(t, o[0], c, X); return `<tr${o[0] === t.sewage ? ' class="total"' : ''}><td>${esc(o[1])}${o[0] === T.sSug ? ' ' + pill('ok', 'Suggested') : ''}</td><td class="note">${esc(o[2])}</td><td class="n">${f1(r.sum.inst)}</td><td class="n">${f2(r.sum.sec)}</td><td class="n">${r.eff[0]} / ${r.eff[1]}</td><td class="n">${r.V ? f0(r.V) + ' m³' : r.A ? f0(r.A) + ' m² field' : '–'}</td></tr>`; }).join('');
+  (S.pools || []).forEach(p => { if (!p.id) p.id = uid(); });
+  const P = M.PL, pr = (i, k, list, val) => `<select data-arr="pools" data-i="${i}" data-k="${k}" aria-label="${k}">${opt(list, val)}</select>`, pn = (i, k, val, ph, w = 64) => `<input type="number" step="any" style="width:${w}px" data-arr="pools" data-i="${i}" data-k="${k}" value="${esc(val ?? '')}" placeholder="${esc(ph)}" aria-label="${k}">`;
+  const poolRows = P.map((r, i) => `<tr><td><input data-arr="pools" data-i="${i}" data-k="name" value="${esc(r.p.name || '')}" aria-label="Pool name" style="min-width:120px"></td>
+    <td class="wide">${pr(i, 'use', tOpts(POOL_USE), r.p.use)}</td><td class="wide">${pr(i, 'size', tOpts(POOL_SIZE), r.p.size)}</td>
+    <td>${pn(i, 'L', r.p.L, f1(r.L), 56)}</td><td>${pn(i, 'W', r.p.W, f1(r.W), 56)}</td><td>${pn(i, 'dep', r.p.dep, f1(r.dep), 56)}</td>
+    <td class="wide">${pr(i, 'treat', [{ v: 'auto', t: 'Recommended – ' + (POOL_TREAT.find(x => x[0] === r.rec) || [])[1] }, ...tOpts(POOL_TREAT)], r.p.treat || 'auto')}</td>
+    <td>${pr(i, 'heat', [{ v: 'ashp', t: 'Heat pump' }, { v: 'gas', t: 'Gas boiler' }, { v: 'electric', t: 'Electric' }, { v: 'site', t: 'Site heating' }, { v: 'none', t: 'Unheated' }], r.p.heat || 'ashp')}</td>
+    <td class="n">${f0(r.A)} m²<br>${f0(r.V)} m³</td><td class="n">${f2(r.turn)} h<br><b>${f1(r.Q)} m³/h</b></td><td class="n">${r.bathers}</td><td class="n">${f1(r.sum.inst)}</td><td><button class="btn small ghost" data-del="pools" data-i="${i}">Remove</button></td></tr>`).join('');
+  const poolDetail = P.map((r, i) => `<details style="margin-top:8px"${i === 0 ? ' open' : ''}><summary><b>${esc(r.p.name || 'Pool ' + (i + 1))}</b> – ${esc(r.U[1])}, ${f0(r.V)} m³, ${esc(r.T[1])}${r.tk === r.rec ? ' ' + pill('ok', 'Recommended') : ' ' + pill(/uv|ozone|regen/.test(r.tk) || r.rec === 'sand-cl' ? 'ok' : 'warn', r.rec === r.tk ? '' : 'Recommended: ' + (POOL_TREAT.find(x => x[0] === r.rec) || [])[1])}</summary>
+    ${optCard(r.T, r.tk === r.rec)}
+    <p class="note">Turnover ${f2(r.turn)} h (PWTAG guide for this use ${r.U[2]} h) → circulation ${f1(r.Q)} m³/h. Bather load ${r.bathers} at ${r.aPer} m² per bather (average depth ${f1(r.dep)} m). Water ${r.temp} °C${r.indoor ? ', hall ' + (r.temp + 1) + ' °C' : ''}. Dilution ${f1(r.dilution)} m³/day fresh water (30 l per bather). Heating ${f0(r.heatKw)} kW${r.heatElec ? ' (' + f1(r.heatElec) + ' kW electrical)' : ''}${r.dehumAir ? '; dehumidification ' + f0(r.dehumAir) + ' m³/h' : ''}.</p>
+    <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-end">${fld('Turnover h', pn(i, 'turn', r.p.turn, r.U[2], 80))}${fld('Water °C', pn(i, 'temp', r.p.temp, r.U[3], 80))}${r.indoor ? '' : fld('Pool cover', pr(i, 'cover', [{ v: 'no', t: 'No cover' }, { v: 'yes', t: 'Thermal cover when closed' }], r.p.cover || 'no'))}</div>
+    ${eqTable(r.items)}${panelBlock(r.sum, 'pools.' + i + '.ctrl', r.p.ctrl, 'pool plant')}</details>`).join('');
+  return `<section class="sheet">${head('MEP · Treatment', 'Water & sewage treatment and pools', `Treatment options open to the client and the consultant, sized by production capacity. Each choice sets the equipment, pumps, power and control panel, feeds the bill of quantities and asset register, and sends its load to the electrical design. Values are editable design defaults – a design pre-check, not certification.`)}
+  <div class="kpis">${mKpi('Water demand', f1(T.demand) + ' m³/day', 'building ' + f1(M.cwDay / 1000) + ' + process ' + f1(+t.procM3 || 0))}${mKpi('Water plant', T.wCap ? T.wCap + ' m³/day' : 'none', W.sum.inst ? f0(W.sum.inst) + ' kW installed' : 'mains supply')}${mKpi('Sewage plant', T.sCap ? T.sCap + ' m³/day' : 'none', T.sCap ? f0(SW.pe) + ' PE · ' + f0(SW.sum.inst) + ' kW' : 'public sewer')}${mKpi('Pools', P.length, P.length ? f0(P.reduce((a, r) => a + r.V, 0)) + ' m³ · ' + f0(P.reduce((a, r) => a + r.sum.inst, 0)) + ' kW' : 'none')}</div>
+  <h2 style="margin-top:18px">Water treatment</h2><div class="grid">
+   ${fld('Raw water source', sel('treat.source', tOpts(WT_SRC), t.source))}${mNum('treat.tds', 'Total dissolved solids mg/l')}${mNum('treat.fe', 'Iron mg/l', 'Drinking water limit 0.2')}${mNum('treat.mn', 'Manganese mg/l', 'Limit 0.05')}${mNum('treat.turb', 'Turbidity NTU', 'Limit 1 at the tap')}${mNum('treat.hard', 'Hardness mg/l CaCO₃')}
+   ${fld('Treatment option', sel('treat.water', tOpts(WT_OPT), t.water), 'Suggested: ' + (WT_OPT.find(o => o[0] === T.wSug) || [])[1])}${fld('Disinfection', sel('treat.disinf', tOpts(WT_DIS), t.disinf))}
+   ${mNum('treat.procM3', 'Process / irrigation water m³/day')}${mNum('treat.growth', 'Growth allowance', '0.20 = 20%')}${mNum('treat.runH', 'Plant operating hours per day')}
+   ${fld('Production capacity', capSel('treat.wCap', t.wCap, T.wNeed, 'm³/day'), 'Sets every equipment size')}
+  </div>
+  ${t.water !== T.wSug ? `<p class="callout">For this raw water the suggested option is <b>${esc((WT_OPT.find(o => o[0] === T.wSug) || [])[1])}</b>. <button class="btn small" data-act="mep-suggest-w">Use the suggestion</button></p>` : ''}
+  ${t.water !== 'none' ? optCard(W.o, t.water === T.wSug) + `<h3>Equipment schedule – ${T.wCap} m³/day (${f1(W.Qh)} m³/h over ${W.runH} h)</h3>${eqTable(W.items)}
+   ${W.ro ? `<p class="note">RO: recovery ${pct(W.ro.r)}, feed ${f1(W.ro.Qf)} m³/h, reject ${f1(W.ro.Qr)} m³/h at ≈ ${f0(W.ro.rejTds)} mg/l. Osmotic pressure ≈ ${f1(W.ro.piF)} bar at the feed (0.69 bar per 1,000 mg/l), ${f1(W.ro.piAvg)} bar average; feed pressure ${f1(W.ro.bar)} bar (+ ${W.ro.ndp} bar net driving pressure + 2 bar losses). Permeate ≈ ${f0(W.ro.permTds)} mg/l before remineralisation.</p>` : ''}
+   ${W.chem.length ? `<div class="tbl-wrap"><table><thead><tr><th>Chemical</th><th>Use</th><th>Basis</th></tr></thead><tbody>${W.chem.map(c => `<tr><td>${esc(c[0])}</td><td class="n">${esc(c[1])}</td><td class="note">${esc(c[2])}</td></tr>`).join('')}</tbody></table></div>` : ''}
+   <h3>Power and control panel</h3>${panelBlock(W.sum, 'treat.wCtrl', t.wCtrl, 'water plant')}
+   <h3>Capacity options</h3>${capOptions(c => calcWater(t, t.water, c, X), T.wCap, 'm³/day')}` : '<p class="note">Mains water selected – no treatment plant. Change the raw water source or treatment option for a private supply.</p>'}
+  <h3>Water treatment options compared at ${T.wCap || capPick('auto', T.wNeed)} m³/day</h3><div class="tbl-wrap"><table><thead><tr><th>Option</th><th>Best for</th><th>Installed kW</th><th>Energy kWh/m³</th><th>Waste stream</th></tr></thead><tbody>${wCmp}</tbody></table></div>
+  <h2 style="margin-top:18px">Sewage treatment</h2><div class="grid">
+   ${fld('Public sewer available', sel('treat.sewer', [{ v: 'yes', t: 'Yes – connect to the public sewer' }, { v: 'no', t: 'No – treat on site' }], t.sewer || 'yes'))}
+   ${fld('Treatment option', sel('treat.sewage', tOpts(ST_OPT), t.sewage), 'Suggested: ' + (ST_OPT.find(o => o[0] === T.sSug) || [])[1])}${fld('Tertiary treatment', sel('treat.tertiary', tOpts(ST_TER), t.tertiary))}
+   ${mNum('treat.returnF', 'Wastewater return factor', 'Share of water use reaching the drain')}${mNum('treat.bodConc', 'Raw BOD mg/l')}${mNum('treat.effBod', 'Consent BOD mg/l')}${mNum('treat.depth', 'Aeration tank depth m')}${mNum('treat.peakF', 'Peak flow factor')}${t.sewage === 'septic' ? mNum('treat.percVp', 'Percolation value Vp s/mm', 'BS 6297 test; 15–100 suitable') : ''}
+   ${fld('Treatment capacity', capSel('treat.sCap', t.sCap, T.sNeed, 'm³/day'), 'Design average daily flow')}
+  </div>
+  ${t.sewage !== T.sSug ? `<p class="callout">For ${f1(T.sNeed)} m³/day the suggested option is <b>${esc((ST_OPT.find(o => o[0] === T.sSug) || [])[1])}</b>. <button class="btn small" data-act="mep-suggest-s">Use the suggestion</button></p>` : ''}
+  ${t.sewage !== 'mains' ? optCard(SW.o, t.sewage === T.sSug) + `<p class="note">Design flow ${T.sCap} m³/day, BOD load ${f1(SW.bod)} kg/day ≈ <b>${f0(SW.pe)} population equivalent</b> (60 g BOD per person per day).${SW.V ? ' Biological volume ' + f0(SW.V) + ' m³ (F/M ' + nv(t.fm, 0.08) + ' kg BOD/kg MLSS·day), HRT ' + f1(SW.hrt) + ' h; oxygen ' + f1(SW.aor) + ' kg/day, air ' + f0(SW.air) + ' m³/h; sludge ' + f1(SW.sludge) + ' kg dry solids/day.' : ''} Effluent ≈ ${SW.eff[0]} mg/l BOD, ${SW.eff[1]} mg/l SS.</p>
+   <h3>Equipment schedule</h3>${eqTable(SW.items)}<h3>Power and control panel</h3>${panelBlock(SW.sum, 'treat.sCtrl', t.sCtrl, 'sewage plant')}
+   ${t.sewage !== 'septic' ? '<h3>Capacity options</h3>' + capOptions(c => calcSewage(t, t.sewage, c, X), T.sCap, 'm³/day') : ''}` : '<p class="note">Connected to the public sewer – no on-site treatment. A connection consent (and trade effluent consent for non-domestic discharges) is still needed.</p>'}
+  <h3>Sewage treatment options compared at ${T.sCap || capPick('auto', T.sNeed)} m³/day</h3><div class="tbl-wrap"><table><thead><tr><th>Option</th><th>Best for</th><th>Installed kW</th><th>Energy kWh/m³</th><th>Effluent BOD / SS</th><th>Tank / field</th></tr></thead><tbody>${sCmp}</tbody></table></div>
+  <h2 style="margin-top:18px">Swimming pools</h2>
+  <div class="row" style="margin-bottom:8px"><button class="btn" data-add="pools">Add pool</button></div>
+  ${P.length ? `<div class="tbl-wrap"><table><thead><tr><th>Pool</th><th>Use and location</th><th>Size</th><th>Length m</th><th>Width m</th><th>Avg depth m</th><th>Treatment</th><th>Heating</th><th>Area / volume</th><th>Turnover / flow</th><th>Bathers</th><th>Installed kW</th><th></th></tr></thead><tbody>${poolRows}</tbody></table></div>${poolDetail}` : '<p class="note">No pools. Press Add pool, then pick the use, location and size – the turnover, bather load, treatment and plant follow.</p>'}
+  <p class="note">Pool guidance follows the PWTAG Code of Practice (turnover by use, bather load by depth, 30 l of dilution per bather, UV for indoor public pools, hall 1 °C above the water). Treatment process sizes, chemical doses and energy are design estimates – confirm with the plant supplier, the water quality analysis and the regulator.</p>
+  ${mepElecPanel(M)}</section>`;
+};
+// Asset register and bill of quantities from the MEP and treatment design
+function mepAssets(add, near) {
+  const M = calcMep(), nP = Math.max(1, Math.round(nv(S.mech.nPlant, 2)));
+  if (M.coolCap || M.heatCap) add('mep:plant', 'chiller', M.rev ? 'Air-source heat pumps (reversible)' : M.src === 'ashp' ? 'Air-source heat pumps' : 'Chillers', nP, near('chiller', Math.max(M.coolCap, M.heatCap) / nP), M.src === 'ashp' ? 'Air-source heat pump' : 'Air-cooled');
+  if (M.ahuQ) add('mep:ahu', 'ahu', 'Air handling unit', 1, near('ahu', M.ahuQ / 1000), M.hr ? 'Supply / extract with heat recovery' : 'Supply only');
+  if (M.fcuQ) add('mep:fcu', 'ahu', 'Fan coil units', 1, near('ahu', M.fcuQ / 1000), 'Fan coil units (group)');
+  const T = M.TR, wt = { media: 'Conventional (coagulation, filtration, chlorination)', ro: 'Reverse osmosis (RO)', 'media-ro': 'Reverse osmosis (RO)', swro: 'Reverse osmosis (RO)' }, st = { septic: 'Septic tank + soakaway', sbr: 'Packaged SBR', mbbr: 'MBBR', asp: 'Extended aeration / activated sludge', mbr: 'MBR (membrane)' };
+  if (T.wCap) add('mep:wtp', 'wtp', 'Water treatment plant – ' + T.W.o[1], 1, near('wtp', T.wCap), wt[S.treat.water]);
+  if (T.sCap) add('mep:stp', 'stp', 'Sewage treatment plant – ' + T.Sw.o[1], 1, near('stp', T.sCap), st[S.treat.sewage]);
+  M.PL.forEach((r, i) => add('mep:pool:' + (r.p.id || i), 'wtp', 'Swimming pool water treatment – ' + (r.p.name || 'pool ' + (i + 1)), 1, near('wtp', r.Q * 24), 'UV + filtration package'));
+}
+function mepBoq(add) {
+  const M = calcMep(), nP = Math.max(1, Math.round(nv(S.mech.nPlant, 2))), m = S.mech;
+  // K mechanical plant
+  if (M.rev && (M.coolCap || M.heatCap)) add('K', `Reversible air-source heat pump, ${f0(M.coolCap / nP)} kW cooling / ${f0(M.heatCap / nP)} kW heating each, EER ≥ ${M.eer}, COP ≥ ${M.cop}`, 'no', nP, 'Low-GWP refrigerant; acoustic enclosure');
+  else { if (M.src === 'ashp' && M.heatCap) add('K', `Air-source heat pump, ${f0(M.heatCap / nP)} kW heating each, COP ≥ ${M.cop}`, 'no', nP); if (M.coolCap) add('K', `Air-cooled chiller, ${f0(M.coolCap / nP)} kW cooling each, EER ≥ ${M.eer}`, 'no', nP); }
+  if (M.src === 'boiler') add('K', `Condensing gas boiler, ${f0(M.heatCap / nP)} kW each, ≥ ${pct(nv(m.boilerEff, 0.92))} efficiency, with flue`, 'no', nP);
+  if (M.ahuQ) add('K', `Air handling unit ${f0(M.ahuQ)} l/s, heat recovery ≥ ${pct(M.hr)}, SFP ≤ ${M.sfpA} W/(l/s), filters ePM1 / ePM10`, 'no', 1);
+  if (M.fcuQ) add('K', 'Fan coil units, about 150 l/s each, EC motors', 'no', Math.ceil(M.fcuQ / 150), f0(M.fcuQ) + ' l/s total');
+  if (M.extTot) add('K', `Extract fans (car park / WC / plant), ${f0(M.extTot)} l/s total`, 'lot', 1);
+  if (M.lthwP) add('K', `LTHW heating pumps, duty / standby, ${f2(M.lthwQ)} l/s at ${f1(M.lthwH)} m, VSD`, 'no', 2);
+  if (M.chwP) add('K', `Chilled water pumps, duty / standby, ${f2(M.chwQ)} l/s at ${f1(M.chwH)} m, VSD`, 'no', 2);
+  if (M.mainDuct) add('K', `Galvanised ductwork to DW/144, main Ø${M.mainDuct.d} mm (${M.mainDuct.rect} mm), insulated, with fire / smoke dampers`, 'lot', 1);
+  if (M.lthwP || M.chwP) add('K', `Steel pipework, insulated (LTHW ${M.lthwP ? M.lthwP.label : '–'} / CHW ${M.chwP ? M.chwP.label : '–'} mains), valves and pressurisation unit`, 'lot', 1);
+  if (M.heatKw || M.coolKw) add('K', 'BMS controls, sensors, mechanical services control panel and sub-metering', 'lot', 1);
+  // L plumbing and drainage
+  const fx = {}; M.fx.forEach(r => { fx[r.L.name] = (fx[r.L.name] || 0) + r.q; }); Object.entries(fx).forEach(([k, n]) => add('L', 'Sanitaryware: ' + k + ', with fittings and WRAS-approved taps / valves', 'no', n));
+  if (M.cwStore) add('L', `Cold water storage tank, sectional, twin compartment, ${f1(M.cwStore / 1000)} m³, insulated with screened vents`, 'no', 1);
+  if (M.peak && (M.floors > 2 || M.code !== 'uk')) add('L', `Cold water booster set, duty / standby VSD, ${f2(M.peak)} l/s at ${f1(M.boostH)} m`, 'no', 1);
+  if (M.hwStore) add('L', `Hot water storage at ${M.tS} °C, ${f0(M.hwStore)} l, ${f1(M.hwKw)} kW recovery (${esc(M.hwSrc)}), with secondary circulation and TMVs`, 'lot', 1);
+  if (M.main) add('L', `Copper water distribution, ${M.main.label} incoming main, insulated, with isolation and backflow devices`, 'lot', 1);
+  if (M.stack) add('L', `Soil and vent stacks DN${M.stack[0]}`, 'no', M.nSt);
+  if (M.drain) add('L', `Below-ground foul drainage DN${M.drain.dn} at 1:${M.grad}, with access chambers`, 'lot', 1);
+  if (M.outlets) add('L', `Roof rainwater outlets and downpipes (${f1(M.rainQ)} l/s)`, 'no', M.outlets);
+  if (M.food) add('L', 'Grease separator to BS EN 1825', 'no', 1);
+  if (M.fx.length) add('L', 'Pressure testing, flushing and disinfection of water services; drain testing', 'lot', 1);
+  // M / N / P treatment and pools
+  const plant = (sec, label, items, s, ctrl) => {
+    if (!items.length) return;
+    items.forEach(i => add(sec, `${i.name} – ${i.spec}${i.kw ? `, ${f2(i.kw)} kW motor` : ''}`, 'no', i.d + i.s, i.s ? i.d + ' duty + ' + i.s + ' standby' : ''));
+    if (s.starters) { add(sec, `${label} motor control centre, Form 2b, ${s.mcc} A incomer, ${s.starters} starters (${s.vsd} VSD), surge protection, IP54`, 'no', 1, f1(s.run) + ' kW running'); add(sec, (CTRL_OPT.find(c => c[0] === ctrl) || CTRL_OPT[1])[1] + (ctrl === 'relay' ? '' : `, about ${s.io} I/O`), 'no', 1); }
+    add(sec, `${label} instrumentation (flow, pressure, level${/water/i.test(label) ? ', turbidity, chlorine, pH, conductivity' : /pool/i.test(label) ? ', free / combined chlorine, pH, ORP, temperature' : ', DO, pH, MLSS'}), pipework, valves and supports`, 'lot', 1);
+    add(sec, `${label} installation, testing, commissioning, operator training and O&M manuals`, 'lot', 1);
+  };
+  plant('M', 'Water treatment plant', M.TR.W.items, M.TR.W.sum, S.treat.wCtrl);
+  plant('N', 'Sewage treatment plant', M.TR.Sw.items, M.TR.Sw.sum, S.treat.sCtrl);
+  M.PL.forEach((r, i) => plant('P', 'Swimming pool plant – ' + (r.p.name || 'pool ' + (i + 1)), r.items, r.sum, r.p.ctrl || 'plc'));
 }
 
 /* ---------- Welcome page: one connected life cycle – design, implement, commission, maintain, manage assets ---------- */
@@ -4224,9 +4549,10 @@ function boqItems() {
   // J earthing, testing
   add('J', `Main earthing terminal, main earthing conductor ${R.met} mm² Cu, main protective bonding ${R.bond} mm² Cu`, 'lot', 1, esc(X.c.earthing));
   add('J', `Inspection, testing, commissioning and certification to ${esc(X.c.regs)}`, 'lot', 1);
+  mepBoq(add);
   return items;
 }
-const BOQ_SECTIONS = { A: 'Supply and main LV switchboard', B: 'Standby generation', C: 'Distribution boards', D: 'Protective devices', E: 'Cables', F: 'Luminaires and wiring accessories', G: 'Equipment, mechanical and special services connections', H: 'Energy systems', J: 'Earthing, testing and commissioning' };
+const BOQ_SECTIONS = { A: 'Supply and main LV switchboard', B: 'Standby generation', C: 'Distribution boards', D: 'Protective devices', E: 'Cables', F: 'Luminaires and wiring accessories', G: 'Equipment, mechanical and special services connections', H: 'Energy systems', J: 'Earthing, testing and commissioning' , K: 'Mechanical services plant', L: 'Plumbing, sanitaryware and drainage', M: 'Water treatment plant', N: 'Sewage treatment plant', P: 'Swimming pool plant' };
 function boqBody() {
   const p = S.project, items = boqItems(), secs = Object.keys(BOQ_SECTIONS).filter(k => items.some(i => i.sec === k)), so = S.signoff || {};
   let n = 0; const sec = t => `<h2>${++n}. ${t}</h2>`;
@@ -4463,6 +4789,7 @@ document.addEventListener('input', e => { if (e.target.matches('input:not([type=
 document.addEventListener('change', e => { if (e.target.matches('select,input[type=checkbox],input[type=date]')) onEdit(e, true); });
 const BLANK = { docs: () => ({ id: uid(), src: '', no: docPre() + '-' + String((S.docs || []).length + 1).padStart(3, '0'), title: '', type: 'Drawing', disc: 'Electrical – general', rev: 'P01', st: 'Work in progress', date: '', to: '', due: '', code: '', by: '', note: '' }), risks: () => ({ id: uid(), src: '', no: 'R-' + String((S.risks || []).length + 1).padStart(3, '0'), cat: 'Design', title: '', cause: '', l: 3, i: 3, mit: '', owner: '', rl: '', ri: '', st: 'Open', due: '' }), tickets: () => ({ id: uid(), no: 'T-' + String((S.tickets || []).length + 1).padStart(4, '0'), pri: 'P3', prop: '', trade: '', issue: '', loc: '', target: '', desc: '', kind: 'Reactive breakdown', who: '', raised: new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), attended: '', done: '', st: 'Open' }), soft: () => ({ id: uid(), svc: 'clean', scope: '', prov: 'Contractor', who: '', freq: '', std: '', perf: 'Good', func: 'Fully operational', last: '', kpi: '', cost: '' }), capProj: () => ({ id: uid(), src: '', name: 'New capital project', cat: CAP_CAT[0], asset: '', stage: 'Concept', pct: 0, rag: '', budget: '', spent: '', start: '', end: '', summary: '', update: '' }), milestones: () => ({ id: uid(), pid: '', name: 'Milestone', due: '', st: 'Not started' }), assets: () => ({ id: uid(), src: '', cls: 'wtp', tag: '', desc: '', loc: '', qty: 1, cap: '', type: '', year: new Date().getFullYear(), cost: '', life: '', cond: 1, crit: '', fails: '', maint: '' }), essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: (R && R.DBR && R.DBR.rows[0] && R.DBR.rows[0].name) || 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', uf: '', ku: '', df: '', lf: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
 let armedNew = false;
+BLANK.pools = () => ({ id: uid(), name: 'Pool ' + ((S.pools || []).length + 1), use: 'hotel', size: 'hotel', L: '', W: '', dep: '', turn: '', temp: '', treat: 'auto', heat: 'ashp', cover: 'no', ctrl: 'plc' });
 BLANK.fixtures = () => ({ id: uid(), loc: '', type: 'wc', qty: 1 });
 BLANK.tasks = () => ({ id: uid(), title: '', role: ROLE.id === 'lead' || ROLE.id === 'guest' ? 'design' : ROLE.id, due: '', st: 'To do', by: REG ? REG.name : '', note: '' });
 document.addEventListener('click', async e => {
@@ -4497,7 +4824,7 @@ document.addEventListener('click', async e => {
   if (act === 'lift-import') { const add = assetsFromDesign().filter(a => a.cls === 'lift' || a.cls === 'esc'); S.assets = [...(S.assets || []), ...add]; persist(); render(); toast('Added ' + add.length + ' lifts / escalators from the design'); return; }
   if (act === 'asset-import') { const add = assetsFromDesign(); S.assets = [...(S.assets || []), ...add]; persist(); render(); toast('Added ' + add.length + ' assets from the design'); return; }
   if (act === 'add-db') { const el = document.getElementById('newDb'), n = String(el && el.value || '').trim().slice(0, 40); if (!n) { toast('Type a board name first'); return; } S.boards = S.boards || {}; S.boards[n] = Object.assign(S.boards[n] || {}, { reg: true }); persist(); render(); toast('Added board ' + n); return; }
-  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {}, cl: {}, fixtures: [], mechEnv: {}, mepComp: {}, plumb: mepDefaults().plumb }; persist(); render(); toast('Started a blank project'); }
+  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {}, cl: {}, fixtures: [], mechEnv: {}, mepComp: {}, plumb: mepDefaults().plumb, pools: [], treat: treatDefaults() }; persist(); render(); toast('Started a blank project'); }
   if (act === 'save-json') await saveProjectFiles();
   if (act === 'save-json-only') save(projectFileName('json'), JSON.stringify(S, null, 1), 'Project file');
   if (act === 'load-json') $('#fileIn').click();

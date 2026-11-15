@@ -1205,10 +1205,51 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   mchk('MEP engineer has KPIs and tasks with real links', roleKpis('mep').length >= 3 && roleTasks('mep').every(o => VIEWS.some(v => v[0] === o.v)));
   mchk('Advisor has a guide for each MEP stage', ['mech', 'plumb', 'mepcomp'].every(v => ADV_PAGE[v]));
   // blank project
-  S = exampleProject(); upgrade(S); S.zones = []; S.fixtures = []; S.loads = []; S.pumps = []; R = calcAll(); M = calcMep();
+  S = exampleProject(); upgrade(S); S.zones = []; S.fixtures = []; S.loads = []; S.pumps = []; S.pools = []; R = calcAll(); M = calcMep();
   mchk('blank project: no MEP loads, pages render', !M.elec.length && M.sync.st === 'na' && ['mech', 'plumb', 'mepcomp'].every(v => { view = v; render(); return !/NaN/.test(document.querySelector('#main').innerHTML); }));
   S = S0; R = calcAll(); view = R0v; ROLE.id = ROLE0; render();
   out.mepChecks = mF.length ? mF : 'all passed'; }
+// Water & sewage treatment and swimming pools – hand-checked sizing, options, BOQ, assets and the electrical link
+{ const tF = [], tchk = (n, ok, v) => { if (!ok) tF.push(n + (v !== undefined ? ' ' + JSON.stringify(v) : '')); }, near = (a, b, e = 1e-3) => Math.abs(a - b) <= e * Math.max(1, Math.abs(b));
+  const S0 = S, V0 = view; S = exampleProject(); upgrade(S); R = calcAll();
+  const t = Object.assign(treatDefaults(), { tds: 35000 }), X = R.X;
+  const sw = calcWater(t, 'swro', 100, X);
+  tchk('SWRO: feed pressure = π_avg + NDP + 2 bar (π 0.69 bar per 1,000 mg/l)', near(sw.ro.bar, 0.00069 * 35000 * (1 + 1 / 0.55) / 2 + 17, 1e-9) && sw.ro.elements === 10 && sw.ro.vessels === 2, [sw.ro.bar, sw.ro.elements]);
+  tchk('SWRO energy 2–5 kWh/m³', sw.sum.sec > 2 && sw.sum.sec < 5, sw.sum.sec);
+  const bw = calcWater(Object.assign(treatDefaults(), { tds: 1500 }), 'ro', 100, X);
+  tchk('brackish RO: 75% recovery, 0.3–1.6 kWh/m³', near(bw.ro.Qf, 5 / 0.75, 1e-9) && bw.sum.sec > 0.3 && bw.sum.sec < 1.6, bw.sum.sec);
+  const md = calcWater(treatDefaults(), 'media', 200, X);
+  tchk('media filters at 10 m/h with duty + standby feed pumps and an MCC', md.items.some(i => /Multimedia/.test(i.name)) && md.items.find(i => i.tag === 'P-01').s === 1 && md.sum.mcc > 0 && md.sum.starters >= 6);
+  tchk('suggestions follow the raw water', wtSuggest({ source: 'sea' }) === 'swro' && wtSuggest({ source: 'borehole', tds: 500, fe: 1 }) === 'media' && wtSuggest({ source: 'borehole', tds: 3000, fe: 0 }) === 'ro' && wtSuggest({ source: 'borehole', tds: 3000, fe: 1 }) === 'media-ro' && wtSuggest({ source: 'mains' }) === 'none');
+  tchk('sewage suggestions by flow', stSuggest({ sewer: 'yes' }, 50) === 'mains' && stSuggest({ sewer: 'no' }, 1.5) === 'septic' && stSuggest({ sewer: 'no' }, 100) === 'sbr' && stSuggest({ sewer: 'no', tertiary: 'reuse' }, 100) === 'mbr');
+  const as = calcSewage(treatDefaults(), 'asp', 50, X);
+  tchk('extended aeration: V = BOD ÷ (F/M × MLSS) = 15 ÷ (0.08 × 3.5)', near(as.V, 15 / (0.08 * 3.5), 1e-9) && near(as.pe, 250, 1e-9) && as.items.some(i => /clarifier/i.test(i.name)), [as.V, as.pe]);
+  const sp = calcSewage(treatDefaults(), 'septic', 1.5, X);
+  tchk('septic tank BS 6297: 180P + 2000 l', sp.V === 180 * 8 + 2000 && sp.sum.inst === 0, sp.V);
+  const mb = calcSewage(treatDefaults(), 'mbr', 50, X);
+  tchk('MBR uses more energy than SBR and gives reuse-quality effluent', mb.sum.sec > calcSewage(treatDefaults(), 'sbr', 50, X).sum.sec && mb.eff[0] === 5);
+  tchk('capacity sets the equipment: 500 m³/day needs more power than 50', calcWater(treatDefaults(), 'media', 500, X).sum.inst > calcWater(treatDefaults(), 'media', 50, X).sum.inst && capPick('auto', 26) === 30 && capPick('100', 5) === 100);
+  // pools
+  const pc = calcPool({ use: 'comp', size: '25x6', treat: 'auto', heat: 'ashp' }, X);
+  tchk('25 m × 6 lane pool: 468.75 m³, 3 h turnover, 115 bathers, sand + UV recommended', near(pc.V, 468.75, 1e-9) && near(pc.Q, 156.25, 1e-9) && pc.bathers === 115 && pc.tk === 'sand-cl-uv' && pc.dehumAir > 0, [pc.V, pc.Q, pc.bathers, pc.tk]);
+  tchk('pool recommendations by use and size', calcPool({ use: 'comp', size: '50x10' }, X).rec === 'ozone' && calcPool({ use: 'domestic', size: 'domestic' }, X).rec === 'salt' && calcPool({ use: 'spa', size: 'spa' }, X).rec === 'spa' && calcPool({ use: 'hotelout', size: 'hotel' }, X).rec === 'sand-cl');
+  tchk('custom pool size and turnover override', near(calcPool({ use: 'hotel', size: 'custom', L: 20, W: 10, dep: 1.2, turn: 1 }, X).Q, 240, 1e-9));
+  // integration: example pool, chosen treatment, electrical, BOQ, assets, compliance, page
+  S.treat.source = 'borehole'; S.treat.tds = 3000; S.treat.fe = 1; S.treat.water = 'media-ro'; S.treat.sewer = 'no'; S.treat.sewage = 'sbr'; R = calcAll();
+  let M = calcMep();
+  tchk('plant loads reach the electrical list', ['wtp', 'stp', 'pool'].every(k => M.elec.some(e => e.key === k && e.kw > 0)), M.elec.map(e => e.key));
+  const B = boqItems();
+  tchk('BOQ has mechanical, plumbing, water, sewage and pool sections with MCC and control panels', ['K', 'L', 'M', 'N', 'P'].every(k => B.some(i => i.sec === k)) && B.filter(i => /motor control centre/.test(i.desc)).length >= 3 && B.some(i => i.sec === 'L' && /Sanitaryware: WC/.test(i.desc)), [...new Set(B.map(i => i.sec))]);
+  const As = assetsFromDesign();
+  tchk('asset register gets the MEP, treatment and pool plant', ['mep:plant', 'mep:ahu', 'mep:wtp', 'mep:stp'].every(k => As.some(a => a.src === k)) && As.some(a => /^mep:pool:/.test(a.src)));
+  tchk('treatment and pool regulations have UK, EN and US references', MEP_REG.filter(c => /treatment|pools/i.test(c[1])).length === 15 && MEP_REG.every(c => c[3].uk && c[3].en && c[3].us));
+  tchk('suggested option matches → treatment check OK; permit flagged', MEP_REG.find(c => c[0] === 't-sel')[4](M)[1] === 'ok' && MEP_REG.find(c => c[0] === 't-sew')[4](M)[1] === 'warn');
+  view = 'treat'; render(); const h = document.querySelector('#main').innerHTML;
+  tchk('treatment page renders the dropdowns, comparisons and pool table', /id="treat_water"/.test(h) && /id="treat_sewage"/.test(h) && /Capacity options/.test(h) && /options compared/.test(h) && /data-add="pools"/.test(h) && !/NaN|undefined/.test(h.replace(/data-[a-z]+="[^"]*"/g, '')), (h.match(/.{40}(NaN|undefined).{40}/) || [])[0]);
+  tchk('BOQ page and CSV render', /Swimming pool plant/.test(V.boq()) && /TREATMENT AND POOL PLANT/.test(csvMep()));
+  S.treat.water = 'ro'; mepAct('mep-suggest-w'); tchk('Use the suggestion selects it', S.treat.water === 'media-ro');
+  S = S0; R = calcAll(); view = V0; render();
+  out.treatChecks = tF.length ? tF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
