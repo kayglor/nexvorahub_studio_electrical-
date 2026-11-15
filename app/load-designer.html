@@ -211,7 +211,7 @@ main{min-width:0;display:flex;flex-direction:column;gap:18px}
 .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
 h3{font-size:18px;margin:18px 0 8px}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:12px 16px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font-size:12px;color:var(--muted);font-weight:500}
 .field .hint{font-size:11.5px;color:var(--muted)}
@@ -520,6 +520,7 @@ function exampleProject() {
       { id: uid(), db: 'DB-GF', desc: 'Café kitchen equipment', cat: 'Commercial kitchen equipment', qty: 1, kw: 40, pf: 0.98, ku: '', df: '' },
     ],
     mainSF: 0.9,
+    fixtures: mepExampleFixtures(), plumb: Object.assign(mepDefaults().plumb, { roofArea: 1100 }),
     lifts: [{ id: uid(), desc: 'Main passenger group', type: 'Passenger – traction MRL (VVVF)', n: 3, persons: 13, floors: 7, fh: 3.6, pop: 450 }],
     pumps: [
       { id: uid(), desc: 'Domestic water booster set', svc: 'Domestic water booster', q: 3, h: 45, eff: 0.65, duty: 1, stby: 1 },
@@ -557,7 +558,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { S = null; }
 if (!S || S.v !== 1) S = exampleProject();
 // Projects saved before the AI data centre fields existed: fill in the new defaults.
-function upgrade(o) { if (!Array.isArray(o.tasks)) o.tasks = []; if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); if (!o.tc || typeof o.tc !== 'object' || Array.isArray(o.tc)) o.tc = {}; ['docs', 'risks'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); ['lvt', 'lvInsp', 'lvCert'].forEach(k => { if (!o[k] || typeof o[k] !== 'object' || Array.isArray(o[k])) o[k] = {}; }); o.handover = Object.assign({}, o.handover || {}); o.handover.inc = Object.assign({}, o.handover.inc || {}); o.tcCfg = Object.assign({ cat: '', open: '' }, o.tcCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
+function upgrade(o) { mepUpgrade(o); if (!Array.isArray(o.tasks)) o.tasks = []; if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); if (!o.tc || typeof o.tc !== 'object' || Array.isArray(o.tc)) o.tc = {}; ['docs', 'risks'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); ['lvt', 'lvInsp', 'lvCert'].forEach(k => { if (!o[k] || typeof o[k] !== 'object' || Array.isArray(o[k])) o[k] = {}; }); o.handover = Object.assign({}, o.handover || {}); o.handover.inc = Object.assign({}, o.handover.inc || {}); o.tcCfg = Object.assign({ cat: '', open: '' }, o.tcCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
 upgrade(S);
 let saveT;
 let saveWarned = false;
@@ -1649,7 +1650,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 /* ---------- views ---------- */
 const VIEWS = [
   ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['tasks', 'My tasks'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
-  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
+  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport', 'regreport'];
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'home';
@@ -1666,6 +1667,7 @@ function renderBand() {
   $('#readouts').innerHTML = [['Region', `${esc(S.project.country)}`], ['Supply', `${R.X.vln}/${R.X.vll} V ${R.X.c.hz} Hz`], ['Max demand', `${f0(R.md)} kVA`, 'main'], ['Current', `${f0(R.amps)} A`], ['Transformer', R.txKva ? `${R.nTx} × ${f0(R.txKva)} kVA` : 'Review']].map(([l, v, c]) => `<div class="ro ${c || ''}"><span>${l}</span><b>${v}</b></div>`).join('');
 }
 function railStatus(id) {
+  if (id === 'mech' || id === 'plumb' || id === 'mepcomp') return mepRail(id);
   if (id === 'circuits') return R.C.some(c => c.fail && c.fail !== 'REVIEW') ? 'bad' : R.C.some(c => c.fail === 'REVIEW') ? 'warn' : 'ok';
   if (id === 'compliance') { const st = CHECKS.map(c => c[2](R)[1]); return st.includes('bad') ? 'bad' : st.includes('warn') ? 'warn' : 'ok'; }
   if (id === 'sizing') return R.txKva ? 'ok' : 'bad';
@@ -2857,6 +2859,7 @@ function calcDash() {
   add('Design', 'compliance', 'Design compliance', app.length ? app.filter(s => s === 'ok').length / app.length : null, app.filter(s => s === 'ok').length + ' of ' + app.length + ' checks OK', '#compliance', chk.includes('bad'));
   const cc = R.C.filter(c => c.fail && c.fail !== 'REVIEW').length; add('Design', 'circuits', 'Cables & protection', R.C.length ? (R.C.length - cc) / R.C.length : null, (R.C.length - cc) + ' of ' + R.C.length + ' circuits pass', '#circuits', cc > 0);
   const cl = clStat(CL_CHECKLIST.flatMap(([set, , items]) => clIds(set, items))); add('Design', 'checklist', 'Design checklist', cl.started ? cl.frac : null, cl.done + ' of ' + cl.app + ' items done', '#checklist');
+  mepDash(add);
   const T = calcTC(); T.byC.forEach(b => { const st = T.items.some(x => x.cat === b.k && (x.st !== 'Not started' || (x.v.val ?? '') !== '')); add('Testing & commissioning', 'tc-' + b.k, b.n.replace(/ \(.*\)$/, ''), st ? b.done / b.total : null, st ? b.done + ' of ' + b.total + ' tests' + (b.fail ? ' · ' + b.fail + ' failed' : '') : 'Not started · ' + b.total + ' tests', '#tc', b.fail > 0); });
   const LV = calcLV();
   add('Testing & commissioning', 'lv-dom', 'Domestic LV compliance', LV.dom.frac, LV.dom.tested ? LV.dom.pass + ' of ' + LV.dom.tested + ' circuits pass' : LV.dom.n ? LV.dom.n + ' circuits, none tested' : 'No domestic circuits', '#lvcert', LV.dom.tested > LV.dom.pass);
@@ -3198,7 +3201,7 @@ function xlsxSheets() {
     [B(1, 'Group'), B(1, 'Indicator'), B(1, 'Value'), B(1, 'RAG'), B(1, 'Detail')], ...D.k.map(k => [k.grp, k.name, k.v == null ? '' : { v: Math.round(k.v * 1000) / 1000, s: 3 }, k.rag, k.note])];
   const proj = [[B(2, 'Project setup and standards')], [], [B(1, 'Parameter'), B(1, 'Value')], ...[['Project', p.name], ['Reference', p.ref], ['Client', p.client], ['Site', p.site], ['Country', p.country], ['Design stage', p.stage], ['Revision', p.rev], ['Date', p.date], ['Designer', p.designer], ['Checker', p.checker], ['Supply', R.X ? R.X.vln + '/' + R.X.vll + ' V' : ''], ['Earthing', c.earthing || '']].map(r => r.map(v => v ?? '')),
     [], [B(1, 'Standard / certificate'), B(1, 'Requirement')], ['LV wiring regulations', c.regs || ''], ['Certificate on completion', L.cert.cert], ['Notification / connection', L.cert.connect], ['Periodic inspection', L.cert.periodic], ['Certificate number', L.cert.no], ['Next inspection due', L.cert.next], ...hvStd(c)];
-  return [{ name: 'Dashboard', rows: dash }, { name: 'Project & standards', rows: proj }, { name: 'Design schedules', rows: XLSX.fromCsv(csvSchedules()) }, { name: 'Bill of quantities', rows: XLSX.fromCsv(csvBoq()) }, { name: 'LV test results', rows: XLSX.fromCsv(csvLV()) }, { name: 'Testing & commissioning', rows: XLSX.fromCsv(csvTc()) }, { name: 'Documents & risks', rows: XLSX.fromCsv(csvRegs()) }, { name: 'Facilities', rows: XLSX.fromCsv(csvFm()) }];
+  return [{ name: 'Dashboard', rows: dash }, { name: 'Project & standards', rows: proj }, { name: 'Design schedules', rows: XLSX.fromCsv(csvSchedules()) }, { name: 'MEP services', rows: XLSX.fromCsv(csvMep()) }, { name: 'Bill of quantities', rows: XLSX.fromCsv(csvBoq()) }, { name: 'LV test results', rows: XLSX.fromCsv(csvLV()) }, { name: 'Testing & commissioning', rows: XLSX.fromCsv(csvTc()) }, { name: 'Documents & risks', rows: XLSX.fromCsv(csvRegs()) }, { name: 'Facilities', rows: XLSX.fromCsv(csvFm()) }];
 }
 function xlsxProject() { return XLSX.book(xlsxSheets()).bytes; }
 // split one of the app's CSV exports into a sheet per titled section
@@ -3287,6 +3290,7 @@ function advNext() {
   if (!p.name || !p.designer || !p.checker) add('warn', 'Complete the project details', 'Project name, designer and checker appear on every report, certificate and export. Fill them in first.', 'project');
   if (!(S.zones || []).length && !(S.loads || []).length) add('bad', 'Add the loads', 'Nothing will size until there are loads. Add floor areas by building type, or list the equipment with its kW.', 'area');
   if (!R.txKva) add('bad', 'Review the supply sizing', 'No transformer size could be selected for the maximum demand. Check the loads, diversity and the transformer range.', 'sizing');
+  { const M = calcMep(); if (M.elec.length && M.sync.st === 'warn') add('warn', 'Include the MEP plant in the electrical design', M.sync.txt + '. Use "Send MEP loads to the electrical design" on Mechanical services.', 'mech'); if ((S.zones || []).length && !(S.fixtures || []).length) add('info', 'Schedule the sanitary fixtures', 'Water supply, hot water, drainage and sanitary provision are sized from the fixture schedule.', 'plumb'); }
   const cf = R.C.filter(c => c.fail && c.fail !== 'REVIEW'), cr = R.C.filter(c => c.fail === 'REVIEW');
   if (cf.length) add('bad', cf.length + ' circuit' + (cf.length > 1 ? 's' : '') + ' failing', 'Failing: ' + cf.slice(0, 6).map(c => c.k.ref).join(', ') + (cf.length > 6 ? '…' : '') + '. Increase the cable size, shorten the run, change the device or curve, or add an RCD – the reason is shown against each circuit.', 'circuits');
   if (cr.length) add('warn', cr.length + ' circuit' + (cr.length > 1 ? 's' : '') + ' to review', 'These need information or a judgement from you before they can pass: ' + cr.slice(0, 6).map(c => c.k.ref).join(', ') + '.', 'circuits');
@@ -3316,6 +3320,9 @@ function advNext() {
 }
 // A short guide to each page: what it is for, how to use it, and how to get the best result from it.
 const ADV_PAGE = {
+  mech: ['Heating, cooling and ventilation for every zone of the area schedule, with ducts, pipes, pumps and fans – and the electrical load of the plant.', ['Pick the system and heat source, and check the design temperatures for the site.', 'Enter wall, glazing and roof areas for each zone from the drawings – grey values are assumptions.', 'Check the duct and pipe sizes and the fan power against the limits.', 'Press "Send MEP loads to the electrical design" so the plant counts in the maximum demand.'], ['Cooling is a peak estimate – confirm overheating with a dynamic model (TM52 / TM59).', 'Reversible heat pumps count once, at the larger of heating or cooling input.']],
+  plumb: ['Sanitary provision, cold and hot water, storage, booster pumps, foul and rainwater drainage from the fixture schedule.', ['List the fixtures by location.', 'Check WCs and basins against the required provision, with at least one accessible WC.', 'Review the main, storage, hot water and drainage sizes.', 'Enter the roof area for rainwater.'], ['Hot water stored at 60 °C or more for Legionella control.', 'Send the booster and water heating to the electrical design from the panel at the foot of the page.']],
+  mepcomp: ['The mechanical, plumbing and drainage regulations for the chosen method set, checked against the design, with your status and evidence.', ['Clear every Action item first, then the Check items.', 'Record evidence for the manual items.', 'Save the MEP schedules as CSV for the design file.'], ['References follow the method set on Mechanical services – confirm the edition adopted locally.']],
   tasks: ['Your task dashboard: what needs doing in your stages, most urgent first, plus team tasks assigned to your role.', ['Work from the top – urgent first.', 'Each task links to the page that clears it; fix the cause and the task disappears.', 'Add team tasks for anything the app cannot see, and update their status.'], ['Save and share the project file so team tasks reach everyone.', 'The project lead sees every role in the team overview.']],
   home: ['The starting point. It shows where the project stands in each stage and links straight into it.', ['Watch the intro for a 35-second tour.', 'Explore the worked example to see every stage filled in.', 'Start a new project when you are ready – your work saves in this browser as you go.'], ['Save a .json copy of the project regularly and keep it with your project files.']],
   dashboard: ['A live red/amber/green view of design, testing, registers, maintenance and assets, plus the HV standards for the region.', ['Read the overall status, then open any amber or red stage.', 'Use it at project meetings as the one-page summary.'], ['The colours are calculated – fix the cause in its stage and the dashboard follows.']],
@@ -3345,6 +3352,8 @@ const ADV_PAGE = {
 };
 // Searchable help: [question, answer, page]
 const ADV_HELP = [
+  ['Where are the mechanical and plumbing designs?', 'Mechanical services, Plumbing & drainage and MEP compliance sit after Energy management. They use the same zones as the electrical area schedule.', 'mech'],
+  ['How do MEP loads reach the electrical design?', 'On Mechanical services or Plumbing & drainage press "Send MEP loads to the electrical design". Heat pumps, chillers, fans and water heating become equipment loads, and pumps go to Lifts & pumps, so the maximum demand includes them.', 'mech'],
   ['Where do I start a new project?', 'Use "Start a new project" on the Welcome page, or "New blank project" under Project file – at the foot of the stage menu, or at the foot of the page on a phone (press it twice to confirm). Set the country on Project & region first, then add loads.', 'project'],
   ['How do I save or reopen my work?', 'Work saves automatically in this browser. Use "Save project (.json + PDF)" to keep a copy, and "Open project (.json)" to load it on another computer or browser.', 'home'],
   ['How is maximum demand calculated?', 'Connected load from area densities, equipment, lifts, pumps and the data centre, with power factor, utilisation and diversity applied by category. The build-up is shown on Supply & equipment.', 'sizing'],
@@ -3418,19 +3427,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && ADV.open) 
 const ROLES = [
   ['lead', 'Project lead', 'Every stage, from first design to asset planning – full access.', null, null],
   ['design', 'Design engineer', 'Loads, supply, cables and protection, compliance, drawings, BOQ and the design report.',
-    ['dashboard', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
+    ['dashboard', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'mech', 'plumb', 'mepcomp', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
     ['project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'compliance', 'checklist', 'drawings', 'review', 'boq', 'report']],
+  ['mep', 'MEP engineer', 'Mechanical and plumbing services – heating, cooling, ventilation, water and drainage, their compliance, and the plant loads sent to the electrical design.',
+    ['dashboard', 'project', 'area', 'mech', 'plumb', 'mepcomp', 'equipment', 'lifts-pumps', 'energy', 'compliance', 'tc', 'report'],
+    ['mech', 'plumb', 'mepcomp', 'lifts-pumps']],
   ['impl', 'Implementation & deployment', 'Construction and commissioning: drawings, BOQ, document and risk registers, LV tests, T&C and handover.',
-    ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'report'],
+    ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'mepcomp', 'report'],
     ['drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover']],
   ['faceng', 'Facilities engineer', 'Building services planning, planned and reactive maintenance, plant condition and the facilities report.',
-    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'energy', 'lvcert', 'tc', 'handover'],
+    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'energy', 'mech', 'plumb', 'lvcert', 'tc', 'handover'],
     ['facilities', 'assets', 'fm', 'fmreport']],
   ['fm', 'Facility manager', 'Helpdesk and SLA, soft services, capital projects and the monthly facilities report.',
     ['dashboard', 'fm', 'fmreport', 'facilities', 'assets', 'handover', 'energy'],
     ['fm', 'fmreport', 'facilities']],
   ['energy', 'Energy manager', 'Annual energy, cost and carbon, efficiency measures, solar PV and the demand behind them.',
-    ['dashboard', 'energy', 'sizing', 'data-centre', 'fmreport', 'assets', 'report'],
+    ['dashboard', 'energy', 'sizing', 'data-centre', 'mech', 'fmreport', 'assets', 'report'],
     ['energy']],
   ['asset', 'Asset manager', 'Asset register, condition and risk, depreciation, life cycle and the capital replacement forecast.',
     ['dashboard', 'assets', 'fm', 'fmreport', 'handover', 'registers', 'report'],
@@ -3532,6 +3544,12 @@ function roleTasks(id = ROLE.id) {
     if (!+e.pv) add('info', 'Consider solar PV', 'No PV is included yet.', 'energy');
     if (+e.pfUn && +e.pfTg && +e.pfUn < +e.pfTg && E.q > 0) add('info', 'Power factor correction', 'About ' + f0(E.bank) + ' kvar to raise ' + e.pfUn + ' to ' + e.pfTg, 'energy');
   }
+  if (want(['mep', 'design'])) {
+    const M = calcMep();
+    if (id === 'mep' && !(S.zones || []).length) add('bad', 'Add zones in the area schedule', 'Heating, cooling, ventilation and water demand are worked out per zone.', 'area');
+    if (id !== 'design' && (S.zones || []).length && !(S.fixtures || []).length) add('warn', 'Schedule the sanitary fixtures', 'Water supply, hot water, drainage and sanitary provision are sized from them.', 'plumb');
+    MEP_REG.forEach(c => { const [txt, st] = c[4](M); if ((st === 'bad' || st === 'warn') && (id !== 'design' || c[0] === 'i-elec')) add(st, (c[0] === 'i-elec' ? '' : 'MEP: ') + c[2], txt, c[0] === 'i-elec' ? 'mech' : 'mepcomp'); });
+  }
   const today = new Date().toISOString().slice(0, 10), wk = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   (S.tasks || []).forEach(t => { if (t.st === 'Done' || (id !== 'lead' && t.role !== id)) return; add(t.due && t.due < today ? 'bad' : t.due && t.due <= wk || t.st === 'In progress' ? 'warn' : 'info', t.title || 'Untitled team task', 'Team task' + (t.by ? ' from ' + t.by : '') + (id === 'lead' ? ' · ' + roleOf(t.role)[1] : '') + (t.note ? ' · ' + t.note : ''), 'tasks', t.due); });
   const rank = { bad: 0, warn: 1, info: 2 };
@@ -3541,6 +3559,7 @@ function roleKpis(id = ROLE.id) {
   const cur = esc(S.energy.currency || ''), F = () => calcFM(), A = () => calcAssets();
   switch (id) {
     case 'design': return [['Maximum demand', f0(R.md) + ' kVA', R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : 'transformer to review'], ['Circuits passing', R.C.filter(c => !c.fail).length + ' / ' + R.C.length, R.C.filter(c => c.fail && c.fail !== 'REVIEW').length + ' failing'], ['Compliance', CHECKS.filter(c => c[2](R)[1] === 'ok').length + ' / ' + CHECKS.length, 'items met']];
+    case 'mep': { const M = calcMep(), st = MEP_REG.map(c => c[4](M)[1]); return [['Heating / cooling plant', f0(M.heatCap) + ' / ' + f0(M.coolCap) + ' kW', f0(M.oaTot) + ' l/s outdoor air'], ['Peak cold water', f2(M.peak) + ' l/s', M.fx.length + ' fixture lines'], ['MEP compliance', st.filter(x => x === 'ok').length + ' / ' + st.filter(x => x !== 'na').length, 'automatic checks OK'], ['MEP electrical input', f0(M.elecKw) + ' kW', M.sync.st === 'ok' ? 'in the electrical design' : 'not yet sent']]; }
     case 'impl': { const G = calcRegs(), T = calcTC(), L = calcLV(); return [['Documents approved', G.docPct == null ? '–' : pct(G.docPct), G.live.length + ' live'], ['Circuits certified', L.rows.filter(o => o.res === 'PASS').length + ' / ' + L.rows.length, L.fail ? L.fail + ' failing' : 'LV tests'], ['Commissioning', pct(T.total ? T.done / T.total : 0), T.done + ' of ' + T.total + ' tests']]; }
     case 'faceng': case 'fm': { const f = F(); return [['Open tickets', f.open, f.overdue + ' overdue'], ['SLA', f.slaPct == null ? '–' : pct(f.slaPct), 'fixed within target'], ['Soft services', f.soft.filter(r => r.st === 'ok').length + ' / ' + f.soft.length, 'performing']]; }
     case 'energy': { const E = R.E || {}; return [['Annual import', f0(E.imp || 0) + ' kWh', 'after measures and PV'], ['Carbon', (E.tco2 || 0).toFixed(1) + ' t CO₂e', 'a year'], ['Energy cost', f0(E.cost || 0) + ' ' + cur, 'a year']]; }
@@ -3565,6 +3584,420 @@ V.tasks = () => {
     + (all.length ? '' : '<p class="callout" style="border-left-color:var(--ok);background:var(--ok-soft)">Nothing outstanding in your stages. Well done.</p>')
     + lead + team + '</section>';
 };
+/* ---------- MEP: mechanical, plumbing and drainage – a parallel path to the electrical design ---------- */
+// Defaults live in functions (not consts) because upgrade() and exampleProject() run before this part of the script.
+function mepDefaults() {
+  return {
+    mech: { code: 'auto', sys: 'fcu', heatSrc: 'ashp', reversible: true, tWo: -3, tWi: 21, tSo: 28, tSi: 24, gSo: 11, gSi: 9.3, uWall: 0.26, uRoof: 0.16, uGlz: 1.6, uGnd: 0.18, tb: 0.05, fWall: 0.4, ach: 0.3, hr: 0.75, heatUp: 0.1, gVal: 0.4, solar: 400, shade: 0.7, sensP: 75, latP: 55, eqDiv: 0.75, supDT: 8, div: 0.85, margin: 0.1, cop: 2.8, eer: 3.0, boilerEff: 0.92, copMin: 2.5, eerMin: 2.5, hrMin: 0.73, sfpAhu: 1.6, sfpFcu: 0.3, sfpExt: 0.5, sfpLim: '', vMain: 6, vBranch: 4, ductMax: 1.5, lthwDT: '', chwDT: 6, paMax: 300, pipeLen: 300, termKpa: 40, pumpEff: 0.6, nPlant: 2, board: 'MCC-ROOF', replaceDup: true },
+    plumb: { bt: '', K: '', units: '', reqWcPub: '', reqBasinPub: '', tStore: 60, tCold: 10, peakShare: 0.35, recH: 2, storeH: 12, hwSrc: 'electric', hwCop: 2.5, floors: 6, floorH: 3.6, residual: 1.0, idxLen: 80, vMax: 1.5, nStacks: 2, drainGrad: 80, roofArea: '', rain: 0.021, outletCap: 4, fixOvr: {} },
+  };
+}
+function mepExampleFixtures() {
+  return [['Levels 1–4 WC cores', 'wc', 16], ['Levels 1–4 WC cores', 'wcacc', 4], ['Levels 1–4 WC cores', 'urinal', 8], ['Levels 1–4 WC cores', 'basin', 20], ['Levels 1–4 WC cores', 'cleaner', 4], ['Levels 1–4 tea points', 'sink', 4], ['Levels 1–4 tea points', 'dishwasher', 4], ['Cycle store showers', 'shower', 6],
+    ['Ground floor café', 'csink', 2], ['Ground floor café', 'dishwasher', 1], ['Ground floor café', 'wc', 2], ['Ground floor café', 'basin', 2], ['Ground floor café', 'gully', 2], ['Retail staff WCs', 'wc', 4], ['Retail staff WCs', 'basin', 4], ['Level 5 gym changing', 'shower', 10], ['Level 5 gym changing', 'wc', 4], ['Level 5 gym changing', 'basin', 6], ['External', 'hose', 2]]
+    .map(([loc, type, qty]) => ({ id: uid(), loc, type, qty }));
+}
+function mepUpgrade(o) {
+  const d = mepDefaults();
+  o.mech = Object.assign({}, d.mech, o.mech || {}); o.plumb = Object.assign({}, d.plumb, o.plumb || {});
+  if (!o.plumb.fixOvr || typeof o.plumb.fixOvr !== 'object') o.plumb.fixOvr = {};
+  if (!o.mechEnv || typeof o.mechEnv !== 'object') o.mechEnv = {};
+  if (!o.mepComp || typeof o.mepComp !== 'object') o.mepComp = {};
+  if (!Array.isArray(o.fixtures)) o.fixtures = o.project && o.project.example ? mepExampleFixtures() : [];
+}
+const nv = (v, d) => v === '' || v == null || !isFinite(+v) ? d : +v;
+
+// Space profiles by building / space type – editable design defaults, not code values for any one edition.
+// m2pp occupancy (m² per person), staff (m² per person for workplace sanitary provision), lps outdoor air l/s per person (UK practice),
+// rp/ra ASHRAE 62.1 (l/s per person, l/s per m²), ach extract-based air changes, light/equip W/m², hw/cw litres per person per day,
+// K EN 12056-2 frequency factor, din DIN 1988-300 building type, ipc IPC occupancy group, san sanitary method, h storey height m, wwr glazing share of façade.
+const MEP_DEF = { m2pp: 10, staff: 10, lps: 10, rp: 2.5, ra: 0.3, ach: 0, light: 8, equip: 15, hw: 5, cw: 40, K: 0.5, din: 'office', ipc: 'B', san: 'work', h: 3, wwr: 0.4, heat: true, cool: true };
+const MEP_PROF = [
+  ['external', 'External / public realm', /park(s)? and gardens|open space|plaza|street lighting/i, { m2pp: 0, staff: 0, lps: 0, rp: 0, ra: 0, light: 0, equip: 0, hw: 0, cw: 0, san: 'none', wwr: 0, heat: false, cool: false }],
+  ['carpark', 'Car park', /car park/i, { m2pp: 200, staff: 0, lps: 0, rp: 0, ra: 0, ach: 6, light: 3, equip: 0, hw: 0, cw: 0, ipc: 'S', san: 'none', wwr: 0, heat: false, cool: false }],
+  ['toilets', 'Public toilets / welfare', /public toilets|welfare/i, { m2pp: 5, staff: 0, lps: 0, ach: 6, light: 8, equip: 2, hw: 2, cw: 10, K: 1.0, ipc: 'A-3', san: 'public', wwr: 0.1, cool: false }],
+  ['landlord', 'Landlord / common areas', /landlord|common areas/i, { m2pp: 50, staff: 0, lps: 0, ach: 1, light: 6, equip: 2, hw: 0, cw: 0, din: 'residential', ipc: 'R-2', san: 'none', wwr: 0.2, cool: false }],
+  ['data', 'Data / comms', /data centre|server|comms|telecom/i, { m2pp: 100, staff: 100, equip: 300, hw: 0, cw: 0, wwr: 0, heat: false }],
+  ['lab', 'Laboratory / cleanroom', /laborator|clean ?room|semiconductor|pharmaceutical|life-science|r&d/i, { m2pp: 15, staff: 15, ach: 6, rp: 5, ra: 0.9, light: 12, equip: 40, K: 1.2 }],
+  ['office', 'Office / workplace', /office|bank|call centre|police|ambulance|civic/i, {}],
+  ['food', 'Restaurant / café / bar', /restaurant|caf[eé]|pub|bar\b|takeaway|kitchen|nightclub|casino/i, { m2pp: 1.5, staff: 15, rp: 3.8, ra: 0.9, light: 10, equip: 40, hw: 6, cw: 15, K: 0.7, din: 'hotel', ipc: 'A-2', san: 'public' }],
+  ['hotel', 'Hotel / serviced apartments', /hotel|aparthotel|serviced apartment|resort/i, { m2pp: 25, staff: 25, light: 8, equip: 8, hw: 100, cw: 200, K: 0.7, din: 'hotel', ipc: 'R-1', san: 'dwelling', wwr: 0.35 }],
+  ['health', 'Healthcare / care', /hospital|health|surgery|clinic|dental|mental|care home/i, { m2pp: 15, staff: 15, light: 12, equip: 20, hw: 30, cw: 150, K: 0.7, din: 'hospital' }],
+  ['resi', 'Residential', /residential|hmo|student|prison|dormitor|flat/i, { m2pp: 30, staff: 30, lps: 8, light: 5, equip: 6, hw: 45, cw: 125, din: 'residential', ipc: 'R-2', san: 'dwelling', wwr: 0.3, cool: false }],
+  ['edu', 'Education', /school|college|university|nursery|cr[eè]che/i, { m2pp: 3, staff: 3, lps: 8, rp: 5, ra: 0.6, light: 10, equip: 8, hw: 3, cw: 20, K: 0.7, din: 'school', ipc: 'E', cool: false }],
+  ['leisure', 'Gym / leisure / sport', /gym|fitness|leisure|sports|ice rink|pool|stadium/i, { m2pp: 5, staff: 5, lps: 12, rp: 10, ra: 0.3, light: 10, equip: 10, hw: 15, cw: 40, K: 0.7, din: 'hotel', ipc: 'A-3', san: 'public', h: 4 }],
+  ['assembly', 'Assembly / public building', /theatre|cinema|conference|exhibition|worship|church|chapel|mosque|community hall|library|museum|gallery|terminal|station|airport|court/i, { m2pp: 2, staff: 2, rp: 3.8, ra: 0.3, light: 10, equip: 5, hw: 1, cw: 6, K: 0.7, ipc: 'A-3', san: 'public', h: 4 }],
+  ['retail', 'Retail', /retail|shop|supermarket|convenience|mall|hypermarket|showroom|petrol|garden centre|superstore|big-box/i, { m2pp: 5, staff: 25, rp: 3.8, ra: 0.6, light: 12, equip: 5, hw: 1, cw: 5, ipc: 'M', wwr: 0.3 }],
+  ['industrial', 'Industrial / storage', /warehouse|logistics|distribution|cold store|storage|industrial|workshop|manufactur|depot|hangar|mill|plant|foundry|laundr|brewery|printing|treatment works|studio|factory|sortation|gigafactory/i, { m2pp: 50, staff: 50, rp: 0, ra: 0.3, light: 6, equip: 10, hw: 5, cw: 40, ipc: 'F', h: 8, wwr: 0.1, cool: false }],
+];
+function mepProf(type) {
+  const t = TYPES.find(x => x.name === type), name = String(type || ''), alt = t ? t.cat + ' ' + t.group : '';
+  const p = MEP_PROF.find(p => p[2].test(name)) || MEP_PROF.find(p => p[2].test(alt)) || MEP_PROF.find(p => p[0] === 'office');
+  const o = Object.assign({}, MEP_DEF, p[3], { key: p[0], label: p[1] });
+  if (/naturally ventilated/i.test(name)) o.cool = false;
+  return o;
+}
+const MEP_CODES = { uk: 'UK – Building Regulations with BS / BS EN standards', en: 'International – EN standards (adopt the national annex)', us: 'US – IPC / IMC with ASHRAE standards' };
+function mepCode() { const c = (S.mech || {}).code; if (MEP_CODES[c]) return c; const fam = R && R.X ? R.X.fam : 'IEC'; if (fam === 'NEC' || fam === 'CEC') return 'us'; return S.project.country === 'United Kingdom' ? 'uk' : 'en'; }
+
+// Sanitary appliances: DIN 1988-300 / EN 806-3 design flows VR (l/s, cold and hot), EN 12056-2 System III discharge units DU (l/s),
+// IPC drainage fixture units (DFU, Table 709.1) and water supply fixture units (WSFU, public use, Appendix E). Editable defaults.
+const FIX = [
+  ['wc', 'WC (6 l cistern)', 0.13, 0, 1.7, 4, 5],
+  ['wcacc', 'Accessible WC with basin (Doc M / ADA pack)', 0.2, 0.07, 2.0, 5, 7],
+  ['urinal', 'Urinal (flush valve)', 0.3, 0, 0.4, 2, 5],
+  ['urinalw', 'Urinal (waterless)', 0, 0, 0.1, 0.5, 0],
+  ['basin', 'Wash basin', 0.07, 0.07, 0.3, 1, 2],
+  ['shower', 'Shower (no plug)', 0.15, 0.15, 0.4, 2, 4],
+  ['bath', 'Bath', 0.15, 0.15, 1.3, 2, 4],
+  ['sink', 'Kitchen sink (tea point / domestic)', 0.07, 0.07, 1.3, 2, 1.4],
+  ['csink', 'Commercial kitchen sink', 0.15, 0.15, 1.3, 3, 4],
+  ['cleaner', "Cleaner's sink", 0.15, 0.15, 1.3, 3, 3],
+  ['dishwasher', 'Dishwasher', 0.07, 0, 0.2, 2, 1.4],
+  ['washer', 'Washing machine', 0.15, 0, 0.6, 3, 4],
+  ['fountain', 'Drinking fountain', 0.05, 0, 0.2, 0.5, 0.25],
+  ['gully', 'Floor gully (DN 50)', 0, 0, 0.6, 2, 0],
+  ['hose', 'Hose / bib tap', 0.3, 0, 0, 0, 2.5],
+];
+function fixLib(key) {
+  const b = FIX.find(f => f[0] === key) || FIX[0], o = ((S.plumb || {}).fixOvr || {})[b[0]] || {};
+  return { key: b[0], name: b[1], vc: nv(o.vc, b[2]), vh: nv(o.vh, b[3]), du: nv(o.du, b[4]), dfu: nv(o.dfu, b[5]), wsfu: nv(o.wsfu, b[6]), base: b };
+}
+// DIN 1988-300 peak flow Vs = a·(ΣVR)^b − c by building type
+const MEP_DIN = { residential: [1.48, 0.19, 0.94, 'Residential'], office: [0.91, 0.31, 0.38, 'Office / administration'], school: [0.91, 0.31, 0.38, 'School'], hotel: [0.70, 0.48, 0.13, 'Hotel'], hospital: [0.75, 0.44, 0.18, 'Hospital (bed wards)'], care: [1.48, 0.19, 0.94, 'Care home'] };
+// Hunter's curve, systems predominantly flush tanks (IPC Appendix E Table E103.3(3)): WSFU → gpm
+const HUNTER = [[0, 0], [1, 3], [2, 5], [3, 6.5], [4, 8], [5, 9.4], [6, 10.7], [8, 12.8], [10, 14.6], [12, 16], [15, 17.5], [20, 19.6], [25, 21.5], [30, 23.3], [40, 26.3], [50, 29.1], [60, 32], [80, 38], [100, 43.5], [120, 48], [150, 54.8], [200, 65], [250, 75], [300, 85], [400, 105], [500, 124], [750, 170], [1000, 208], [1500, 269], [2000, 325], [3000, 433], [5000, 593]];
+function hunterLs(w) { if (!(w > 0)) return 0; let i = HUNTER.findIndex(p => p[0] >= w); if (i < 0) return HUNTER[HUNTER.length - 1][1] * 0.06309; if (i === 0) return 0; const [x0, y0] = HUNTER[i - 1], [x1, y1] = HUNTER[i]; return (y0 + (y1 - y0) * (w - x0) / (x1 - x0)) * 0.06309; }
+// Pipe and duct tables
+const COPPER = [['15 mm', 13.6], ['22 mm', 20.2], ['28 mm', 26.2], ['35 mm', 32.6], ['42 mm', 39.6], ['54 mm', 51.6], ['66.7 mm', 64.3], ['76.1 mm', 72.1], ['108 mm', 103]];
+const STEEL = [['DN15', 16.1], ['DN20', 21.7], ['DN25', 27.3], ['DN32', 36.0], ['DN40', 41.9], ['DN50', 53.0], ['DN65', 68.8], ['DN80', 80.8], ['DN100', 105.3], ['DN125', 130.0], ['DN150', 155.4], ['DN200', 207.3], ['DN250', 260.4], ['DN300', 309.7]];
+const DUCTS = [100, 125, 150, 160, 200, 250, 315, 355, 400, 450, 500, 560, 630, 710, 800, 900, 1000, 1120, 1250, 1400, 1600];
+const EN_STACK = [[70, 1.5, 2.0], [80, 2.0, 2.6], [100, 4.0, 5.2], [125, 5.8, 7.6], [150, 9.5, 12.4], [200, 16.0, 21.0]]; // EN 12056-2 Table 11, primary ventilated, square / swept entries (l/s)
+const IPC_STACK = [['3"', 48], ['4"', 240], ['5"', 540], ['6"', 960], ['8"', 2200]]; // IPC Table 710.1(1), DFU
+const IPC_DRAIN = { q: [['3"', 42], ['4"', 216], ['5"', 480], ['6"', 840], ['8"', 1920]], e: [['4"', 180], ['5"', 390], ['6"', 700], ['8"', 1600]] }; // IPC Table 710.1(2): ¼" and ⅛" per foot
+const IPC_SAN = { B: [[25, 50, 50], [40, 80, 80], 100], M: [[500], [750], 1000], 'A-2': [[75], [200], 500], 'A-3': [[125], [200], 1000], E: [[50], [50], 100], F: [[100], [100], 400], S: [[100], [100], 1000], 'I-2': [[25, 50, 50], [40, 80, 80], 100] };
+// Darcy–Weisbach with the Swamee–Jain friction factor
+function darcy(Q, D, eps, nu, rho) { const A = Math.PI * D * D / 4, v = Q / A, Re = v * D / nu, f = Re < 2300 ? 64 / Math.max(Re, 1) : 0.25 / Math.pow(Math.log10(eps / (3.7 * D) + 5.74 / Math.pow(Re, 0.9)), 2); return { v, Re, f, paM: f / D * rho * v * v / 2 }; }
+function pipeSize(Q, table, eps, nu, rho, vmax, paMax) {
+  if (!(Q > 0)) return null; let last = null;
+  for (const [label, id] of table) { const D = id / 1000, r = darcy(Q, D, eps, nu, rho), vm = typeof vmax === 'function' ? vmax(id) : vmax; last = { label, D, ...r, vmax: vm, ok: r.v <= vm && r.paM <= paMax }; if (last.ok) return last; }
+  return last;
+}
+function ductSize(Q, vt) {
+  if (!(Q > 0)) return null; const need = Math.sqrt(4 * Q / (Math.PI * vt)) * 1000, d = DUCTS.find(x => x >= need);
+  const D = (d || need) / 1000, r = darcy(Q, D, 0.15e-3, 1.5e-5, 1.2);
+  const b = Math.ceil(D / (1.3 * Math.pow(2, 0.625) * Math.pow(3, -0.25)) * 1000 / 50) * 50; // 2:1 rectangle with the same pressure loss (Huebscher)
+  return { d: d || Math.round(need), over: !d, ...r, rect: (2 * b) + ' × ' + b };
+}
+function manning(D, slope, n) { const A = Math.PI * D * D / 4, Q = A * Math.pow(D / 4, 2 / 3) * Math.sqrt(slope) / n; return { Qfull: Q * 1000, v: Q / A }; }
+function sanL24(n) { if (!(n > 0)) return 0; if (n <= 5) return 1; if (n <= 25) return 2; if (n <= 50) return 3; if (n <= 75) return 4; if (n <= 100) return 5; return 5 + Math.ceil((n - 100) / 25); }
+function ipcN(n, r) { if (!(n > 0)) return 0; const [a, lim, b] = r; return b ? (n <= lim ? Math.ceil(n / a) : Math.ceil(lim / a) + Math.ceil((n - lim) / b)) : Math.ceil(n / a); }
+
+function calcMep() {
+  const m = S.mech, pl = S.plumb, code = mepCode(), env = S.mechEnv || {};
+  const dTw = nv(m.tWi, 21) - nv(m.tWo, -3), dTs = nv(m.tSo, 28) - nv(m.tSi, 24), dg = Math.max(0, nv(m.gSo, 11) - nv(m.gSi, 9.3));
+  const sys = m.sys || 'fcu', mechVent = sys !== 'natural', hr = mechVent ? Math.min(0.95, Math.max(0, nv(m.hr, 0.75))) : 0;
+  const uW = nv(m.uWall, 0.26), uG = nv(m.uGlz, 1.6), uR = nv(m.uRoof, 0.16), uF = nv(m.uGnd, 0.18), tb = nv(m.tb, 0.05);
+  const zones = (S.zones || []).map((z, i) => {
+    const zid = z.id || 'i' + i, P = mepProf(z.type), e = env[zid] || {}, A = Math.max(0, +z.area || 0);
+    const h = nv(e.h, P.h), V = A * h, ppl = nv(e.ppl, P.m2pp ? A / P.m2pp : 0), staff = P.staff ? A / P.staff : 0;
+    const wall = Math.max(0, nv(e.wall, P.heat || P.cool ? A * nv(m.fWall, 0.4) * h / 3 : 0)), glz = Math.min(wall, Math.max(0, nv(e.glz, wall * P.wwr))), roof = nv(e.roof, 0), gnd = nv(e.gnd, 0);
+    const heat = e.heat === 'yes' ? true : e.heat === 'no' ? false : P.heat, cool = e.cool === 'yes' ? true : e.cool === 'no' ? false : P.cool;
+    const oaReq = code === 'us' ? P.rp * ppl + P.ra * A : code === 'en' ? (P.lps ? 7 * ppl + 0.7 * A : 0) : P.lps * ppl;
+    const oaAuto = Math.max(oaReq, P.ach * V / 3.6), oa = Math.max(0, nv(e.oa, oaAuto)), extractOnly = !heat && !cool && oa > 0;
+    const HT = uW * (wall - glz) + uG * glz + uR * roof + uF * gnd * 0.5 + tb * (wall + roof + gnd);
+    const qInf = nv(m.ach, 0.3) * V, qOA = extractOnly ? 0 : oa * 3.6 * (mechVent ? 1 - hr : 1);
+    const phT = heat ? HT * dTw : 0, phV = heat ? 0.34 * (qInf + qOA) * dTw : 0, heatW = (phT + phV) * (1 + nv(m.heatUp, 0.1));
+    const c = cool ? { ppl: ppl * nv(m.sensP, 75), lat: ppl * nv(m.latP, 55), light: P.light * A, equip: P.equip * A * nv(m.eqDiv, 0.75), solar: glz * nv(m.gVal, 0.4) * nv(m.solar, 400) * nv(m.shade, 0.7), fabric: (uW * (wall - glz) + uG * glz) * dTs + uR * roof * (dTs + 15), oaS: 1.206 * oa * dTs, oaL: 2.94 * oa * dg } : { ppl: 0, lat: 0, light: 0, equip: 0, solar: 0, fabric: 0, oaS: 0, oaL: 0 };
+    const roomS = c.ppl + c.light + c.equip + c.solar + c.fabric, coolW = cool ? roomS + c.lat + c.oaS + c.oaL : 0;
+    const coolAir = cool ? roomS / (1.206 * Math.max(1, nv(m.supDT, 8))) : 0;
+    const supply = !mechVent || extractOnly ? 0 : sys === 'vav' ? Math.max(oa, coolAir) : oa;
+    const assumed = (e.wall === '' || e.wall == null) && (heat || cool);
+    return { z, zid, e, P, A, h, V, ppl, staff, wall, glz, roof, gnd, heat, cool, oa, oaAuto, extractOnly, HT, phT, phV, heatW, c, roomS, coolW, coolAir, supply, assumed, branch: supply > 0 ? ductSize(supply / 1000, nv(m.vBranch, 4)) : null };
+  });
+  const sum = f => zones.reduce((a, r) => a + f(r), 0);
+  const heatKw = sum(r => r.heatW) / 1000, coolPeak = sum(r => r.coolW) / 1000, div = nv(m.div, 0.85), coolKw = coolPeak * div, margin = nv(m.margin, 0.1);
+  const heatCap = heatKw * (1 + margin), coolCap = coolKw * (1 + margin), occ = sum(r => r.ppl);
+  const oaTot = sum(r => r.extractOnly ? 0 : r.oa), extTot = sum(r => r.extractOnly ? r.oa : 0), ahuQ = sum(r => r.supply), fcuQ = sys === 'fcu' ? sum(r => r.coolAir) : 0;
+  const src = m.heatSrc || 'ashp', cop = nv(m.cop, 2.8), eer = nv(m.eer, 3), rev = src === 'ashp' && m.reversible !== false && m.reversible !== 'false';
+  const heatElec = src === 'ashp' ? heatCap / cop : src === 'electric' ? heatCap : 0, gasKw = src === 'boiler' ? heatCap / nv(m.boilerEff, 0.92) : 0, coolElec = coolCap / eer;
+  const sfpA = nv(m.sfpAhu, 1.6), sfpF = nv(m.sfpFcu, 0.3), sfpE = nv(m.sfpExt, 0.5), sfpLim = nv(m.sfpLim, { vav: 1.6, fcu: 1.6, mvhr: 1.1 }[sys] ?? null);
+  const ahuKw = sfpA * ahuQ / 1000, fcuKw = sfpF * fcuQ / 1000, extKw = sfpE * extTot / 1000;
+  const mainDuct = ahuQ > 0 ? ductSize(ahuQ / 1000, nv(m.vMain, 6)) : null;
+  // heating and chilled water distribution (steel, EN 10255 medium): velocity ≤ 1.0 m/s to DN50, 1.5 m/s above; pressure loss ≤ paMax Pa/m
+  const vSteel = id => id <= 53 ? 1.0 : 1.5, lthwDT = nv(m.lthwDT, src === 'ashp' ? 5 : 10), chwDT = nv(m.chwDT, 6), paMax = nv(m.paMax, 300);
+  const lthwQ = heatCap > 0 && src !== 'electric' ? heatCap / (4.19 * lthwDT) : 0, chwQ = coolCap > 0 ? coolCap / (4.19 * chwDT) : 0;
+  const lthwP = pipeSize(lthwQ / 1000, STEEL, 0.046e-3, 0.41e-6, 977, vSteel, paMax), chwP = pipeSize(chwQ / 1000, STEEL, 0.046e-3, 1.3e-6, 1000, vSteel, paMax);
+  const pHead = p => p ? (p.paM * nv(m.pipeLen, 300) * 1.5 / 1000 + nv(m.termKpa, 40)) / 9.81 : 0, eta = nv(m.pumpEff, 0.6), pkw = (q, h) => 9.81 * q * h / eta / 1000;
+  // ---- plumbing ----
+  const fx = (S.fixtures || []).map((f, i) => { const L = fixLib(f.type), q = Math.max(0, +f.qty || 0); return { f, i, L, q, vc: L.vc * q, vh: L.vh * q, du: L.du * q, dfu: L.dfu * q, wsfu: L.wsfu * q, wsfuH: L.vh > 0 ? L.wsfu * 0.75 * q : 0 }; });
+  const fs = k => fx.reduce((a, r) => a + r[k], 0), cnt = (...ks) => fx.filter(r => ks.includes(r.L.key)).reduce((a, r) => a + r.q, 0);
+  const sVRc = fs('vc'), sVRh = fs('vh'), sVR = sVRc + sVRh, sDU = fs('du'), sDFU = fs('dfu'), sWSFU = fs('wsfu'), sWSFUh = fs('wsfuH');
+  const used = fx.filter(r => r.q > 0), maxVR = used.reduce((a, r) => Math.max(a, r.L.vc + r.L.vh), 0), maxVRh = used.reduce((a, r) => Math.max(a, r.L.vh), 0), maxDU = used.reduce((a, r) => Math.max(a, r.L.du), 0);
+  const real = zones.filter(r => r.A > 0 && r.P.key !== 'carpark' && r.P.key !== 'external');
+  const dom = real.slice().sort((a, b) => b.A - a.A)[0], bt = MEP_DIN[pl.bt] ? pl.bt : dom ? dom.P.din : 'office';
+  const din = (sv, mx) => { if (!(sv > 0)) return 0; const [a, b, c] = MEP_DIN[bt]; const v = sv <= 0.2 ? sv : a * Math.pow(sv, b) - c; return Math.min(sv, Math.max(v, mx)); };
+  const peak = code === 'us' ? hunterLs(sWSFU) : din(sVR, maxVR), peakH = code === 'us' ? hunterLs(sWSFUh) : din(sVRh, maxVRh);
+  const vMax = nv(pl.vMax, 1.5), main = pipeSize(peak / 1000, COPPER, 0.0015e-3, 1.31e-6, 1000, vMax, 1e9), hotMain = pipeSize(peakH / 1000, COPPER, 0.0015e-3, 0.55e-6, 985, vMax, 1e9);
+  const floors = nv(pl.floors, 1), boostH = floors * nv(pl.floorH, 3.6) + nv(pl.residual, 1) * 10.2 + (main ? main.paM * nv(pl.idxLen, 80) * 1.3 / 9810 : 0);
+  const cwDay = sum(r => r.ppl * r.P.cw), hwDay = sum(r => r.ppl * r.P.hw), cwStore = cwDay * nv(pl.storeH, 12) / 24;
+  const tS = nv(pl.tStore, 60), tC = nv(pl.tCold, 10), hwStore = hwDay * nv(pl.peakShare, 0.35), hwKw = hwStore * 4.19 * Math.max(0, tS - tC) / (3600 * Math.max(0.25, nv(pl.recH, 2)));
+  const hwSrc = pl.hwSrc || 'electric', hwElec = hwSrc === 'electric' ? hwKw : hwSrc === 'ashp' ? hwKw / nv(pl.hwCop, 2.5) : 0;
+  // sanitary provision
+  let reqWc = 0, reqBasin = 0, reqDf = 0, units = 0, pubNote = false; const sanRows = [];
+  if (code === 'us') {
+    real.forEach(r => { const g = r.P.ipc; if (r.P.san === 'none') return; if (g === 'R-1' || g === 'R-2') { const u = Math.ceil(r.ppl / 2); units += u; reqWc += u; reqBasin += u; sanRows.push([r.z.desc, g, u + ' units', u, u]); return; } const t = IPC_SAN[g] || IPC_SAN.B, w = ipcN(r.ppl, t[0]), b = ipcN(r.ppl, t[1]); reqWc += w; reqBasin += b; reqDf += Math.ceil(r.ppl / t[2]); sanRows.push([r.z.desc, g, f0(r.ppl) + ' occupants', w, b]); });
+  } else {
+    const work = real.filter(r => r.P.san === 'work').reduce((a, r) => a + r.staff, 0), dw = real.filter(r => r.P.san === 'dwelling').reduce((a, r) => a + r.ppl, 0);
+    units = nv(pl.units, Math.ceil(dw / 2)); reqWc = sanL24(work) + units; reqBasin = sanL24(work) + units;
+    if (work > 0) sanRows.push(['Workplace staff', 'L24 mixed-use table', f0(work) + ' people', sanL24(work), sanL24(work)]);
+    if (units > 0) sanRows.push(['Dwellings / rooms', 'Part G4 / G5', units + ' units', units, units]);
+    pubNote = real.some(r => r.P.san === 'public');
+    const pw = nv(pl.reqWcPub, 0), pb = nv(pl.reqBasinPub, 0); if (pw || pb) { reqWc += pw; reqBasin += pb; sanRows.push(['Customer / public provision', 'BS 6465-1 (entered)', '–', pw, pb]); }
+  }
+  const wcProv = cnt('wc', 'wcacc'), basinProv = cnt('basin', 'wcacc'), urinals = cnt('urinal', 'urinalw'), acc = cnt('wcacc');
+  const sanSt = !reqWc && !wcProv ? 'na' : wcProv >= reqWc && basinProv >= reqBasin ? 'ok' : wcProv + urinals >= reqWc && basinProv >= reqBasin ? 'warn' : 'bad';
+  // foul drainage – EN 12056-2 (System III) or IPC fixture units
+  const K = nv(pl.K, real.length ? Math.max(...real.map(r => r.P.K)) : 0.5), nSt = Math.max(1, Math.round(nv(pl.nStacks, 1))), hasWc = cnt('wc', 'wcacc') > 0;
+  const Qww = sDU > 0 ? Math.max(K * Math.sqrt(sDU), maxDU) : 0, Qst = sDU > 0 ? Math.max(K * Math.sqrt(sDU / nSt), maxDU) : 0;
+  const stack = Qst > 0 ? (EN_STACK.find(s => s[1] >= Qst && (!hasWc || s[0] >= 100)) || EN_STACK[EN_STACK.length - 1]) : null;
+  const grad = Math.max(10, nv(pl.drainGrad, 80)), drains = [[100, 0.1], [150, 0.15], [225, 0.225], [300, 0.3]].map(([dn, D]) => ({ dn, ...manning(D, 1 / grad, 0.012) }));
+  const drain = Qww > 0 ? (drains.find(d => d.Qfull / 2 >= Qww) || drains[drains.length - 1]) : null;
+  const wcs = cnt('wc', 'wcacc'), gradOk = !drain ? true : drain.dn === 100 ? (Qww <= 1 ? grad <= 40 : grad <= 80) : drain.dn === 150 ? grad <= (wcs >= 5 ? 150 : 80) : true;
+  const usStack = sDFU > 0 ? (IPC_STACK.find(s => s[1] >= sDFU / nSt) || IPC_STACK[IPC_STACK.length - 1]) : null, slopeQ = grad <= 50;
+  const usDrain = sDFU > 0 ? ((slopeQ ? IPC_DRAIN.q : IPC_DRAIN.e).find(s => s[1] >= sDFU) || null) : null;
+  const roofA = nv(pl.roofArea, 0), rainQ = roofA * nv(pl.rain, 0.021), outlets = rainQ > 0 ? Math.ceil(rainQ / Math.max(0.5, nv(pl.outletCap, 4))) : 0;
+  const food = real.some(r => r.P.key === 'food');
+  // ---- electrical loads from MEP plant ----
+  const nP = Math.max(1, Math.round(nv(m.nPlant, 2))), elec = [];
+  const L = (key, name, cat, kw, qty, basis) => { if (kw > 0.05) elec.push({ key, kind: 'load', name, cat, qty, kwEach: +(kw / qty).toFixed(1), kw: +(kw).toFixed(1), basis }); };
+  const Pp = (key, name, svc, q, h, basis) => { if (q > 0.01) elec.push({ key, kind: 'pump', name, svc, q: +q.toFixed(2), h: +h.toFixed(1), eff: eta, kw: +pkw(q, h).toFixed(2), basis }); };
+  if (rev) L('plant', 'Air-source heat pumps (reversible)', 'HVAC – chillers / heat pumps', Math.max(heatElec, coolElec), nP, 'max(heating ' + f0(heatCap) + ' kW ÷ COP ' + cop + ', cooling ' + f0(coolCap) + ' kW ÷ EER ' + eer + ')');
+  else { if (src === 'ashp') L('heat', 'Air-source heat pumps (heating)', 'HVAC – chillers / heat pumps', heatElec, nP, f0(heatCap) + ' kW ÷ COP ' + cop); L('chiller', 'Chillers', 'Central cooling – chillers & cooling towers', coolElec, nP, f0(coolCap) + ' kW ÷ EER ' + eer); }
+  if (src === 'electric') L('eheat', 'Direct electric heating', 'Electric heating – direct / panel', heatElec, 1, f0(heatCap) + ' kW at 100%');
+  if (src === 'boiler') L('boiler', 'Boiler ancillaries (burners, controls)', 'HVAC – AHUs / fans / pumps', gasKw * 0.01, 1, '≈ 1% of ' + f0(gasKw) + ' kW gas input');
+  L('ahu', 'Air handling unit fans', 'HVAC – AHUs / fans / pumps', ahuKw, 1, 'SFP ' + sfpA + ' W/(l/s) × ' + f0(ahuQ) + ' l/s');
+  L('fcu', 'Fan coil unit fans', 'HVAC – AHUs / fans / pumps', fcuKw, 1, 'SFP ' + sfpF + ' W/(l/s) × ' + f0(fcuQ) + ' l/s');
+  L('ext', 'Extract ventilation fans (car park / WC / plant)', 'HVAC – AHUs / fans / pumps', extKw, 1, 'SFP ' + sfpE + ' W/(l/s) × ' + f0(extTot) + ' l/s');
+  L('dhw', hwSrc === 'ashp' ? 'Hot water heat pump' : 'Hot water heaters (storage)', hwSrc === 'ashp' ? 'HVAC – chillers / heat pumps' : 'Water heating – storage / thermostatic', hwElec, 1, f0(hwKw) + ' kW recovery' + (hwSrc === 'ashp' ? ' ÷ COP ' + nv(pl.hwCop, 2.5) : ''));
+  Pp('lthw', 'LTHW heating pumps', 'LTHW heating', lthwQ, pHead(lthwP), f2(lthwQ) + ' l/s at ' + lthwDT + ' K');
+  Pp('chw', 'Chilled water pumps', 'Chilled water', chwQ, pHead(chwP), f2(chwQ) + ' l/s at ' + chwDT + ' K');
+  if (floors > 2 || code !== 'uk') Pp('boost', 'Domestic water booster set', 'Domestic water booster', peak, boostH, f2(peak) + ' l/s at ' + f1(boostH) + ' m');
+  const elecKw = elec.reduce((a, e) => a + e.kw, 0);
+  const tagL = (S.loads || []).filter(l => l.mep), tagP = (S.pumps || []).filter(p => p.mep);
+  const sig = a => JSON.stringify(a.slice().sort((x, y) => x.key.localeCompare(y.key)).map(e => [e.key, e.kind === 'load' ? e.qty * e.kwEach : e.q, e.kind === 'pump' ? e.h : 0].map(v => typeof v === 'number' ? Math.round(v * 10) / 10 : v)));
+  const now = sig(elec), sent = sig([...tagL.map(l => ({ key: l.mep, kind: 'load', qty: +l.qty, kwEach: +l.kw })), ...tagP.map(p => ({ key: p.mep, kind: 'pump', q: +p.q, h: +p.h }))]);
+  const dupL = (S.loads || []).filter(l => !l.mep && /^(HVAC|Air conditioning|Central cooling|Chilled|Electric heating|Water heating|Domestic water booster)/.test(l.cat || '')), dupP = (S.pumps || []).filter(p => !p.mep && ['Domestic water booster', 'Chilled water', 'LTHW heating', 'Condenser water'].includes(p.svc));
+  const sync = !elec.length ? { st: 'na', txt: 'No MEP plant loads yet' } : !tagL.length && !tagP.length ? { st: 'warn', txt: f1(elecKw) + ' kW of MEP plant not yet sent to the electrical design' } : now === sent ? { st: 'ok', txt: f1(elecKw) + ' kW of MEP plant included in the electrical design' } : { st: 'warn', txt: 'MEP design has changed since its loads were sent – send them again' };
+  return { code, zones, dTw, dTs, dg, sys, hr, heatKw, coolPeak, coolKw, div, heatCap, coolCap, occ, oaTot, extTot, ahuQ, fcuQ, src, cop, eer, rev, heatElec, gasKw, coolElec, sfpA, sfpF, sfpE, sfpLim, ahuKw, fcuKw, extKw, mainDuct,
+    lthwDT, chwDT, lthwQ, chwQ, lthwP, chwP, lthwH: pHead(lthwP), chwH: pHead(chwP), paMax,
+    fx, sVRc, sVRh, sVR, sDU, sDFU, sWSFU, maxVR, maxDU, bt, peak, peakH, main, hotMain, vMax, floors, boostH, cwDay, hwDay, cwStore, tS, tC, hwStore, hwKw, hwSrc, hwElec,
+    reqWc, reqBasin, reqDf, units, pubNote, sanRows, wcProv, basinProv, urinals, acc, sanSt, K, nSt, Qww, Qst, stack, grad, drain, gradOk, usStack, usDrain, slopeQ, roofA, rainQ, outlets, food, hasWc,
+    elec, elecKw, dupL, dupP, sync, assumed: zones.some(r => r.assumed) };
+}
+
+// MEP compliance register: [id, discipline, requirement, {uk, en, us} references, M => [result, status]]
+const MEP_REG = [
+  ['m-vent', 'Mechanical', 'Outdoor air / ventilation rates', { uk: 'Approved Document F Vol 2; CIBSE Guide A Table 1.5 (10 l/s per person, offices)', en: 'EN 16798-1 Category II (7 l/s per person + 0.7 l/s per m²)', us: 'ASHRAE 62.1 Table 6-1 (Rp·Pz + Ra·Az); IMC Section 403' }, M => M.zones.length ? [f0(M.oaTot) + ' l/s outdoor air for about ' + f0(M.occ) + ' people' + (M.extTot ? '; ' + f0(M.extTot) + ' l/s extract-only' : ''), M.oaTot + M.extTot > 0 ? 'ok' : 'warn'] : ['No zones in the area schedule', 'na']],
+  ['m-heat', 'Mechanical', 'Heating design load', { uk: 'BS EN 12831-1; CIBSE Guide A Section 5', en: 'EN 12831-1', us: 'ASHRAE Handbook – Fundamentals Ch. 18; IECC C403.1.1' }, M => M.heatKw > 0 ? [f1(M.heatKw) + ' kW at ' + S.mech.tWo + ' °C outside / ' + S.mech.tWi + ' °C inside; plant ' + f1(M.heatCap) + ' kW' + (M.assumed ? ' – envelope areas assumed for some zones' : ''), M.assumed ? 'warn' : 'ok'] : ['No heated zones', 'na']],
+  ['m-cool', 'Mechanical', 'Cooling design load and overheating risk', { uk: 'CIBSE Guide A Section 5; CIBSE TM52 (non-domestic); Approved Document O and TM59 (dwellings)', en: 'EN 16798-1; EN ISO 52016-1', us: 'ASHRAE Handbook – Fundamentals Ch. 18; ASHRAE 55' }, M => M.coolKw > 0 ? [f1(M.coolKw) + ' kW block load (' + pct(M.div) + ' of ' + f1(M.coolPeak) + ' kW zone peaks); plant ' + f1(M.coolCap) + ' kW – peak estimate, confirm with a dynamic thermal model', 'na'] : ['No cooled zones', 'na']],
+  ['m-sfp', 'Mechanical', 'Specific fan power within the limit', { uk: 'Approved Document L Vol 2 (2021) Table 6.3', en: 'EN 16798-3 SFP categories; national energy code', us: 'ASHRAE 90.1 Section 6.5.3.1 fan power limitation' }, M => M.sfpLim == null || !M.ahuQ ? ['No central air handling plant', 'na'] : ['AHU ' + M.sfpA + ' W/(l/s) against a limit of ' + M.sfpLim, M.sfpA <= M.sfpLim + 1e-9 ? 'ok' : 'bad']],
+  ['m-hr', 'Mechanical', 'Heat recovery on mechanical ventilation', { uk: 'Ecodesign (EU 1253/2014 as retained): ≥ 73% thermal efficiency for non-residential units; Approved Document L Vol 2', en: 'Ecodesign Regulation (EU) 1253/2014; EN 16798-3', us: 'ASHRAE 90.1 Section 6.5.6.1 exhaust air energy recovery' }, M => M.sys === 'natural' ? ['Natural ventilation – no heat recovery', 'na'] : [pct(M.hr) + ' heat recovery against a target of ' + pct(nv(S.mech.hrMin, 0.73)), M.hr + 1e-9 >= nv(S.mech.hrMin, 0.73) ? 'ok' : 'warn']],
+  ['m-eff', 'Mechanical', 'Heating and cooling plant efficiency', { uk: 'Approved Document L Vol 2; Non-domestic Building Services Compliance Guide', en: 'Ecodesign Regulation (EU) 2016/2281; national energy code', us: 'ASHRAE 90.1 Tables 6.8.1-1 to 6.8.1-16' }, M => [(M.src === 'ashp' ? 'Heat pump COP ' + M.cop + ', ' : M.src === 'boiler' ? 'Boiler efficiency ' + pct(nv(S.mech.boilerEff, 0.92)) + ', ' : '') + 'cooling EER ' + M.eer + ' (design minimums COP ' + S.mech.copMin + ', EER ' + S.mech.eerMin + ')', (M.src !== 'ashp' || M.cop >= nv(S.mech.copMin, 2.5)) && (!M.coolKw || M.eer >= nv(S.mech.eerMin, 2.5)) ? 'ok' : 'warn']],
+  ['m-duct', 'Mechanical', 'Ductwork sizing, velocity and airtightness', { uk: 'BESA DW/144; CIBSE Guide C Section 4; BS EN 12237 / BS EN 1507 leakage classes', en: 'EN 12237; EN 1507; EN 16798-3', us: 'SMACNA HVAC Duct Construction Standards; IMC Chapter 6' }, M => M.mainDuct ? ['Main duct Ø' + M.mainDuct.d + ' mm (' + M.mainDuct.rect + ' mm), ' + f1(M.mainDuct.v) + ' m/s, ' + f2(M.mainDuct.paM) + ' Pa/m', M.mainDuct.over ? 'warn' : M.mainDuct.paM <= nv(S.mech.ductMax, 1.5) ? 'ok' : 'warn'] : ['No supply ductwork', 'na']],
+  ['m-pipe', 'Mechanical', 'Heating and chilled water pipework', { uk: 'CIBSE Guide C Section 4; BSRIA BG 29 pre-commission cleaning', en: 'EN 12828 heating systems design; EN 14336', us: 'ASHRAE Handbook – Fundamentals Ch. 22; IMC Chapter 12' }, M => { const ps = [M.lthwP && ['LTHW', M.lthwP], M.chwP && ['CHW', M.chwP]].filter(Boolean); return ps.length ? [ps.map(([n, p]) => n + ' ' + p.label + ' ' + f2(p.v) + ' m/s, ' + f0(p.paM) + ' Pa/m').join('; '), ps.every(([, p]) => p.ok) ? 'ok' : 'warn'] : ['No wet heating or cooling distribution', 'na']; }],
+  ['m-fgas', 'Mechanical', 'Refrigerants and F-gas', { uk: 'BS EN 378-1 to -4; F-gas Regulation (retained EU 517/2014) – leak checks, certified technicians', en: 'EN 378; F-gas Regulation (EU) 2024/573', us: 'ASHRAE 15 and 34; EPA Clean Air Act Section 608; IMC Chapter 11' }, M => [M.coolKw || M.src === 'ashp' ? 'Refrigerant plant – confirm charge per occupied space, leak detection and the F-gas log' : 'No refrigerant plant', 'na']],
+  ['m-gas', 'Mechanical', 'Combustion appliances and gas safety', { uk: 'Approved Document J; Gas Safety (Installation and Use) Regulations 1998; IGEM/UP/2', en: 'EN 15502; EN 1775; national gas rules', us: 'International Fuel Gas Code; NFPA 54' }, M => [M.src === 'boiler' ? 'Gas boilers ' + f0(M.gasKw) + ' kW input – flues, combustion air, Gas Safe / registered installer' : 'No combustion plant', 'na']],
+  ['m-fire', 'Mechanical', 'Fire / smoke dampers and smoke control', { uk: 'Approved Document B; BS 9999; BS EN 15650; BS 7346-7 (car parks: 6 ACH normal, 10 ACH fire)', en: 'EN 15650; EN 12101 series', us: 'IBC Section 717; IMC Section 607; NFPA 90A and 92' }, M => [M.zones.some(r => r.P.key === 'carpark') ? 'Car park extract ' + f0(M.extTot) + ' l/s – confirm fire mode and jet fans' : 'Confirm dampers where ducts cross compartment walls', 'na']],
+  ['m-ctrl', 'Mechanical', 'Controls, metering and building automation', { uk: 'Approved Document L Vol 2 (zone controls, sub-metering); BS EN ISO 52120-1', en: 'EN ISO 52120-1; EPBD building automation', us: 'ASHRAE 90.1 Sections 6.4.3 and 8.4.3' }, () => ['Confirm zone controls, BMS and sub-metering of plant', 'na']],
+  ['m-cx', 'Mechanical', 'Commissioning of mechanical systems', { uk: 'CIBSE Commissioning Codes A, B, C, M, R, W; BSRIA BG 49; Part L commissioning notice', en: 'EN 12599 (air); EN 14336 (heating)', us: 'ASHRAE 202; ASHRAE 90.1 Section 4.2.5' }, () => ['Required at completion – record in Testing & commissioning', 'na']],
+  ['p-san', 'Plumbing & drainage', 'Sanitary provision', { uk: 'Workplace (Health, Safety and Welfare) Regulations 1992 ACoP L24; BS 6465-1; Approved Document G4 / G5', en: 'National workplace and sanitary rules; EN 12056', us: 'IPC Table 2902.1' }, M => [M.wcProv + ' WCs / ' + M.basinProv + ' basins provided against ' + M.reqWc + ' / ' + M.reqBasin + ' required' + (M.urinals ? ' (' + M.urinals + ' urinals)' : '') + (M.pubNote && M.code !== 'us' ? '; customer provision to BS 6465-1 entered separately' : ''), M.sanSt]],
+  ['p-acc', 'Plumbing & drainage', 'Accessible WC', { uk: 'Approved Document M Vol 2; BS 8300-2', en: 'EN 17210; national accessibility code', us: 'ICC A117.1; 2010 ADA Standards Section 213' }, M => !M.reqWc && !M.wcProv ? ['No WCs', 'na'] : [M.acc + ' accessible WC' + (M.acc === 1 ? '' : 's'), M.acc >= 1 ? 'ok' : 'bad']],
+  ['p-back', 'Plumbing & drainage', 'Cold water supply and backflow protection', { uk: 'Water Supply (Water Fittings) Regulations 1999 Schedule 2 (fluid categories 1–5); BS EN 1717; WRAS-approved fittings; notify the water undertaker (Reg. 5)', en: 'EN 1717; EN 806-1 to -5', us: 'IPC Section 608; ASSE-listed devices' }, () => ['Confirm fluid category and backflow device at each appliance', 'na']],
+  ['p-pipe', 'Plumbing & drainage', 'Water supply design flow and pipe sizing', { uk: 'BS EN 806-3; BS 8558', en: 'EN 806-3; DIN 1988-300', us: 'IPC Section 604; IPC Appendix E (Hunter)' }, M => M.main ? ['Peak ' + f2(M.peak) + ' l/s; main ' + M.main.label + ' copper at ' + f2(M.main.v) + ' m/s, ' + f0(M.main.paM) + ' Pa/m', M.main.v <= M.vMax + 1e-9 ? 'ok' : 'warn'] : ['No fixtures scheduled', 'na']],
+  ['p-store', 'Plumbing & drainage', 'Cold water storage', { uk: 'BS 8558; BS EN 806-2; Water Regulations (covered, insulated, screened vents)', en: 'EN 806-2', us: 'IPC Sections 606.5 and 607' }, M => M.cwDay ? [f0(M.cwStore) + ' l stored (' + S.plumb.storeH + ' h of ' + f0(M.cwDay) + ' l/day)', nv(S.plumb.storeH, 12) <= 24 ? 'ok' : 'warn'] : ['No water demand', 'na']],
+  ['p-hw', 'Plumbing & drainage', 'Hot water safety and unvented systems', { uk: 'Approved Document G3 (unvented > 15 l: competent installer, T&P relief, discharge); bath outlets ≤ 48 °C', en: 'EN 806-2; EN 12897', us: 'IPC Sections 504 and 607; ASSE 1070 mixing valves' }, M => M.hwStore ? [f0(M.hwStore) + ' l stored at ' + M.tS + ' °C, ' + f1(M.hwKw) + ' kW recovery – confirm relief valves, discharge and TMVs', 'na'] : ['No hot water demand', 'na']],
+  ['p-leg', 'Plumbing & drainage', 'Legionella control temperatures', { uk: 'HSE ACoP L8; HSG274 Part 2; BS 8580-1 risk assessment', en: 'National Legionella rules; EN 806-2', us: 'ASHRAE 188; CDC water management toolkit' }, M => M.hwStore ? ['Store ' + M.tS + ' °C (≥ 60 °C); return ≥ 50 °C; outlets ≥ 50 °C within 1 min; cold < 20 °C within 2 min', M.tS >= 60 ? 'ok' : 'bad'] : ['No stored hot water', 'na']],
+  ['p-eff', 'Plumbing & drainage', 'Water efficiency', { uk: 'Approved Document G2 (dwellings 125 l per person per day); BREEAM Wat 01', en: 'National water efficiency targets', us: 'IPC Section 604.4 maximum flow rates; EPA WaterSense' }, M => ['Daily demand ' + f0(M.cwDay) + ' l – confirm fitting flow rates', 'na']],
+  ['p-foul', 'Plumbing & drainage', 'Foul drainage – stacks and drains', { uk: 'Approved Document H1; BS EN 12056-2 (System III); BS EN 752', en: 'EN 12056-2; EN 752', us: 'IPC Chapter 7; Tables 710.1(1) and 710.1(2)' }, M => !M.sDU ? ['No fixtures scheduled', 'na'] : M.code === 'us' ? [f1(M.sDFU) + ' DFU; stacks ' + (M.usStack ? M.usStack[0] : '–') + ', building drain ' + (M.usDrain ? M.usDrain[0] : 'over table – split'), M.usDrain ? 'ok' : 'warn'] : ['Qww ' + f2(M.Qww) + ' l/s (K ' + M.K + '); ' + M.nSt + ' stack' + (M.nSt > 1 ? 's' : '') + ' DN' + (M.stack ? M.stack[0] : '–') + '; drain DN' + (M.drain ? M.drain.dn : '–') + ' at 1:' + M.grad, M.stack && M.stack[1] >= M.Qst && M.drain && M.drain.Qfull / 2 >= M.Qww ? 'ok' : 'bad']],
+  ['p-grad', 'Plumbing & drainage', 'Drain gradient and self-cleansing velocity', { uk: 'Approved Document H1 para 2.39 (100 mm with a WC no flatter than 1:80; 150 mm with 5 WCs 1:150)', en: 'EN 12056-2; EN 752 (self-cleansing ≥ 0.7 m/s)', us: 'IPC Section 704.1 (¼" per foot up to 3", ⅛" per foot 4" and larger)' }, M => !M.drain ? ['No drainage', 'na'] : ['1:' + M.grad + ', ' + f2(M.drain.v) + ' m/s full-bore velocity', M.drain.v >= 0.7 && M.gradOk ? 'ok' : 'warn']],
+  ['p-rain', 'Plumbing & drainage', 'Rainwater drainage', { uk: 'Approved Document H3; BS EN 12056-3', en: 'EN 12056-3', us: 'IPC Chapter 11' }, M => M.roofA ? [f1(M.rainQ) + ' l/s from ' + f0(M.roofA) + ' m² – ' + M.outlets + ' outlets', 'ok'] : ['Enter the roof area on Plumbing & drainage', 'warn']],
+  ['p-fog', 'Plumbing & drainage', 'Grease separation for food premises', { uk: 'Approved Document H1 para 2.21; BS EN 1825', en: 'EN 1825', us: 'IPC Section 1003' }, M => M.food ? ['Kitchen drainage – provide a grease separator sized to BS EN 1825', 'warn'] : ['No food premises', 'na']],
+  ['p-test', 'Plumbing & drainage', 'Testing and disinfection', { uk: 'BS EN 806-4; BS 8558 (test at 1.5 × working pressure; disinfect); BS EN 1610 drains', en: 'EN 806-4; EN 1610', us: 'IPC Sections 312 and 610' }, () => ['Required before handover – record in Testing & commissioning', 'na']],
+  ['i-elec', 'Integration', 'MEP plant loads in the electrical maximum demand', { uk: 'BS 7671 Regulation 311.1; Equipment loads and Lifts & pumps stages', en: 'IEC 60364-3 / HD 60364-3; Equipment loads and Lifts & pumps stages', us: 'NEC Article 220 and 440; Equipment loads and Lifts & pumps stages' }, M => [M.sync.txt, M.sync.st]],
+  ['i-ess', 'Integration', 'Life-safety mechanical loads on essential supplies', { uk: 'BS 7671 Chapter 56; BS 8519; Approved Document B', en: 'IEC 60364-5-56; EN 12101-10', us: 'NEC Articles 695 and 700; NFPA 92' }, () => ['Confirm smoke extract and sprinkler pumps are on the essential-load schedule (Supply & equipment)', 'na']],
+  ['i-coord', 'Integration', 'Plant spaces, access, weights and services coordination', { uk: 'CDM Regulations 2015; BSRIA BG 6 design framework', en: 'National construction rules', us: 'IMC Section 306 access; IBC structural' }, () => ['Coordinate plant rooms, risers and roof plant with the architect and structure', 'na']],
+];
+const mepRefs = c => c[3][mepCode()] || c[3].uk;
+function mepStat(disc) { const M = calcMep(), st = MEP_REG.filter(c => !disc || c[1] === disc).map(c => c[4](M)[1]); return st.includes('bad') ? 'bad' : st.includes('warn') ? 'warn' : st.includes('ok') ? 'ok' : ''; }
+function mepRail(id) { return id === 'mech' ? mepStat('Mechanical') : id === 'plumb' ? mepStat('Plumbing & drainage') : mepStat(); }
+function mepDash(add) {
+  const M = calcMep(), st = MEP_REG.map(c => c[4](M)[1]), app = st.filter(s => s !== 'na');
+  add('MEP services', 'mep', 'MEP compliance', app.length ? app.filter(s => s === 'ok').length / app.length : null, app.filter(s => s === 'ok').length + ' of ' + app.length + ' checks OK', '#mepcomp', st.includes('bad'));
+  if (M.elec.length) add('MEP services', 'mep-elec', 'MEP loads in the electrical design', M.sync.st === 'ok' ? 1 : 0, M.sync.txt, '#mech', false);
+}
+function mepAct(act) {
+  if (act === 'mep-send') {
+    const M = calcMep(), db = S.mech.board || 'MCC-ROOF';
+    if (S.mech.replaceDup) { const dl = new Set(M.dupL), dp = new Set(M.dupP); S.loads = S.loads.filter(l => !dl.has(l)); S.pumps = S.pumps.filter(p => !dp.has(p)); }
+    S.loads = S.loads.filter(l => !l.mep); S.pumps = S.pumps.filter(p => !p.mep);
+    M.elec.forEach(e => { if (e.kind === 'load') S.loads.push({ id: uid(), db, desc: e.name + ' (MEP)', cat: e.cat, qty: e.qty, kw: e.kwEach, pf: 0.9, ku: '', df: '', mep: e.key }); else S.pumps.push({ id: uid(), desc: e.name + ' (MEP)', svc: e.svc, q: e.q, h: e.h, eff: e.eff, duty: 1, stby: 1, mep: e.key }); });
+    R = calcAll(); persist(); render(); toast('MEP plant sent to the electrical design – maximum demand is now ' + f0(R.md) + ' kVA'); return;
+  }
+  if (act === 'mep-remove') { S.loads = S.loads.filter(l => !l.mep); S.pumps = S.pumps.filter(p => !p.mep); R = calcAll(); persist(); render(); toast('MEP plant loads removed from the electrical design'); }
+}
+
+// ---- MEP stage pages ----
+const mNum = (path, label, hint) => { const ks = path.split('.'); let v = S; ks.forEach(k => v = v == null ? '' : v[k]); return fld(label, inp(path, v ?? '', 'number'), hint); };
+const mKpi = (a, b, c) => `<div class="kpi"><span>${a}</span><b>${b}</b><small>${c}</small></div>`;
+function mepElecPanel(M) {
+  if (!M.elec.length) return '<h3>Electrical loads from MEP plant</h3><p class="note">No MEP plant yet – add zones in the area schedule and fixtures on Plumbing & drainage.</p>';
+  const dbs = [...new Set([...R.DBR.rows.map(d => d.name), ...S.loads.map(l => l.db).filter(Boolean), S.mech.board || 'MCC-ROOF'])].sort();
+  const rows = M.elec.map(e => `<tr><td>${esc(e.name)}</td><td class="note">${esc(e.kind === 'load' ? e.cat : 'Pump – ' + e.svc)}</td><td class="n">${e.kind === 'load' ? e.qty + ' × ' + f1(e.kwEach) : f2(e.q) + ' l/s · ' + f1(e.h) + ' m'}</td><td class="n"><b>${f1(e.kw)}</b></td><td class="note">${esc(e.basis)}</td></tr>`).join('');
+  const dup = [...M.dupL.map(l => (l.desc || l.cat) + ' (' + (l.db || 'no board') + ')'), ...M.dupP.map(p => p.desc + ' (pump)')];
+  return `<h3>Electrical loads from MEP plant</h3>
+  <p class="note">The mechanical and plumbing plant becomes equipment loads (Stage 3) and pumps (Lifts & pumps) in the electrical design, so the maximum demand, transformer, boards and cables include it. ${pill(M.sync.st === 'ok' ? 'ok' : M.sync.st === 'na' ? 'na' : 'warn', M.sync.txt)}</p>
+  <div class="tbl-wrap"><table><thead><tr><th>Plant</th><th>Electrical category</th><th>Units</th><th>Electrical kW</th><th>Basis</th></tr></thead><tbody>${rows}<tr class="total"><td colspan="3">Total MEP electrical input (before electrical demand factors)</td><td class="n">${f1(M.elecKw)}</td><td class="note">${R.md ? pct(M.elecKw / 0.95 / R.md) + ' of the current maximum demand' : ''}</td></tr></tbody></table></div>
+  <div class="row" style="align-items:flex-end;margin:8px 0">${fld('Board for MEP plant loads', `<select data-p="mech.board" id="mech_board">${opt(dbs, S.mech.board || 'MCC-ROOF')}</select>`, 'Pumps go to Lifts & pumps')}
+  <label class="row" style="gap:6px;align-items:center"><input type="checkbox" data-p="mech.replaceDup" style="width:auto"${S.mech.replaceDup ? ' checked' : ''}> Replace hand-entered rows these supersede</label>
+  <button class="btn primary" data-act="mep-send">${M.sync.st === 'ok' ? 'Send again' : 'Send MEP loads to the electrical design'}</button>${(S.loads || []).some(l => l.mep) || (S.pumps || []).some(p => p.mep) ? '<button class="btn ghost" data-act="mep-remove">Remove MEP loads</button>' : ''}</div>
+  ${dup.length ? `<p class="callout">Hand-entered electrical rows that look like the same plant: ${esc(dup.join('; '))}. ${S.mech.replaceDup ? 'They will be replaced when you send.' : 'They will be kept – check you are not counting the plant twice.'}</p>` : ''}`;
+}
+V.mech = () => {
+  const M = calcMep(), m = S.mech;
+  (S.zones || []).forEach((z, i) => { const k = z.id || 'i' + i; if (!S.mechEnv[k] || typeof S.mechEnv[k] !== 'object') S.mechEnv[k] = {}; });
+  const zi = (r, k, ph, w = 70) => `<input type="number" step="any" style="width:${w}px" data-p="mechEnv.${r.zid}.${k}" id="mechEnv_${r.zid}_${k}" value="${esc(r.e[k] ?? '')}" placeholder="${esc(ph)}" aria-label="${k} ${esc(r.z.desc)}">`;
+  const zs = (r, k) => `<select data-p="mechEnv.${r.zid}.${k}" id="mechEnv_${r.zid}_${k}" aria-label="${k} ${esc(r.z.desc)}">${opt([{ v: '', t: 'Auto (' + (r[k] ? 'yes' : 'no') + ')' }, { v: 'yes', t: 'Yes' }, { v: 'no', t: 'No' }], r.e[k] || '')}</select>`;
+  const rows = M.zones.map(r => `<tr><td><b>${esc(r.z.desc || 'Zone')}</b><br><span class="note">${esc(r.P.label)} · ${f0(r.A)} m²</span></td>
+    <td>${zi(r, 'h', r.P.h, 56)}</td><td>${zi(r, 'ppl', f0(r.P.m2pp ? r.A / r.P.m2pp : 0))}</td>
+    <td>${zi(r, 'wall', f0(r.wall))}</td><td>${zi(r, 'glz', f0(r.glz))}</td><td>${zi(r, 'roof', '0')}</td><td>${zi(r, 'gnd', '0')}</td>
+    <td>${zs(r, 'heat')}</td><td>${zs(r, 'cool')}</td><td>${zi(r, 'oa', f0(r.oaAuto))}</td>
+    <td class="n">${f1(r.phT / 1000)} + ${f1(r.phV / 1000)}<br><b>${f1(r.heatW / 1000)}</b></td>
+    <td class="n">${r.cool ? f1(r.roomS / 1000) + ' + ' + f1((r.c.lat + r.c.oaS + r.c.oaL) / 1000) + '<br><b>' + f1(r.coolW / 1000) + '</b>' : '–'}</td>
+    <td class="n">${f0(r.supply || (r.extractOnly ? r.oa : 0))}${r.extractOnly ? '<br><span class="note">extract</span>' : ''}</td><td class="note">${r.branch ? 'Ø' + r.branch.d + ' / ' + r.branch.rect : '–'}</td></tr>`).join('');
+  const sumC = k => M.zones.reduce((a, r) => a + r.c[k], 0) / 1000;
+  const brk = [['People – sensible', sumC('ppl')], ['People – latent', sumC('lat')], ['Lighting', sumC('light')], ['Equipment (× diversity)', sumC('equip')], ['Solar through glazing', sumC('solar')], ['Fabric conduction', sumC('fabric')], ['Outdoor air – sensible', sumC('oaS')], ['Outdoor air – latent', sumC('oaL')]];
+  const pipeRow = (n, q, dt, p, h) => p ? `<tr><td>${n}</td><td class="n">${f2(q)}</td><td class="n">${dt}</td><td>${p.label}</td><td class="n">${f2(p.v)}</td><td class="n">${f0(p.paM)}</td><td class="n">${f1(h)}</td><td class="n">${f2(9.81 * q * h / nv(m.pumpEff, 0.6) / 1000)}</td><td>${pill(p.ok ? 'ok' : 'warn', p.ok ? 'OK' : 'Above limits')}</td></tr>` : '';
+  return `<section class="sheet">${head('MEP · Mechanical', 'Mechanical services', `Heating, cooling and ventilation for every zone in the area schedule, worked out with <b>${esc(MEP_CODES[M.code])}</b> methods. The plant then feeds the electrical design as equipment and pump loads. Values are editable design defaults – a design pre-check, not certification.`)}
+  <div class="kpis">${mKpi('Heating load', f0(M.heatKw) + ' kW', 'plant ' + f0(M.heatCap) + ' kW')}${mKpi('Cooling load', f0(M.coolKw) + ' kW', 'block · plant ' + f0(M.coolCap) + ' kW')}${mKpi('Outdoor air', f0(M.oaTot) + ' l/s', '≈ ' + f0(M.occ) + ' people')}${mKpi('Air handling', f0(M.ahuQ) + ' l/s', M.mainDuct ? 'main duct Ø' + M.mainDuct.d + ' mm' : 'no central AHU')}${mKpi('Electrical input', f0(M.elecKw) + ' kW', 'all MEP plant')}</div>
+  <h3>Design basis</h3><div class="grid">
+   ${fld('Standards and methods', sel('mech.code', [{ v: 'auto', t: 'Auto from the project region (' + MEP_CODES[mepCode()].split(' –')[0] + ')' }, ...Object.entries(MEP_CODES).map(([v, t]) => ({ v, t }))], m.code || 'auto'))}
+   ${fld('System', sel('mech.sys', [{ v: 'fcu', t: 'Fan coils + dedicated outdoor-air AHU' }, { v: 'vav', t: 'All-air VAV' }, { v: 'mvhr', t: 'VRF / split + MVHR' }, { v: 'natural', t: 'Natural ventilation + radiators' }], m.sys))}
+   ${fld('Heat source', sel('mech.heatSrc', [{ v: 'ashp', t: 'Air-source heat pumps' }, { v: 'boiler', t: 'Gas boilers' }, { v: 'electric', t: 'Direct electric' }, { v: 'district', t: 'District heat / heat network' }], m.heatSrc))}
+   ${fld('Reversible heat pumps also cool', `<select data-p="mech.reversible" id="mech_reversible">${opt([{ v: 'true', t: 'Yes – one plant for heating and cooling' }, { v: 'false', t: 'No – separate chillers' }], String(m.reversible !== false && m.reversible !== 'false'))}</select>`)}
+   ${mNum('mech.tWo', 'Winter outside design °C', 'CIBSE Guide A / ASHRAE 99.6%')}${mNum('mech.tWi', 'Winter inside °C')}${mNum('mech.tSo', 'Summer outside dry bulb °C')}${mNum('mech.tSi', 'Summer inside °C')}
+   ${mNum('mech.gSo', 'Summer outside moisture g/kg')}${mNum('mech.gSi', 'Inside moisture g/kg', '24 °C 50% RH ≈ 9.3')}${mNum('mech.div', 'Cooling block diversity', 'Zone peaks are not coincident')}${mNum('mech.margin', 'Plant margin', '0.10 = 10%')}
+  </div>
+  <details style="margin-top:10px"><summary><b>Envelope, gains and ventilation</b> – U-values, solar, people and heat recovery</summary><div class="grid" style="margin-top:8px">
+   ${mNum('mech.uWall', 'Wall U W/m²K')}${mNum('mech.uGlz', 'Glazing U W/m²K')}${mNum('mech.uRoof', 'Roof U W/m²K')}${mNum('mech.uGnd', 'Ground floor U W/m²K')}${mNum('mech.tb', 'Thermal bridging ΔU W/m²K')}
+   ${mNum('mech.fWall', 'Façade m² per m² floor (auto)', 'Used when a zone has no wall area')}${mNum('mech.ach', 'Infiltration ach')}${mNum('mech.hr', 'Heat recovery efficiency')}${mNum('mech.heatUp', 'Heat-up allowance')}
+   ${mNum('mech.gVal', 'Glazing g-value')}${mNum('mech.solar', 'Peak solar W/m²')}${mNum('mech.shade', 'Shading factor')}${mNum('mech.sensP', 'People sensible W')}${mNum('mech.latP', 'People latent W')}${mNum('mech.eqDiv', 'Equipment diversity')}${mNum('mech.supDT', 'Supply air ΔT K')}
+  </div></details>
+  <details style="margin-top:8px"><summary><b>Plant and distribution</b> – efficiencies, fan power, ducts and pipes</summary><div class="grid" style="margin-top:8px">
+   ${mNum('mech.cop', 'Heat pump COP at design')}${mNum('mech.eer', 'Cooling EER')}${mNum('mech.boilerEff', 'Boiler efficiency')}${mNum('mech.nPlant', 'Number of plant units')}${mNum('mech.copMin', 'Minimum COP (check)')}${mNum('mech.eerMin', 'Minimum EER (check)')}${mNum('mech.hrMin', 'Heat recovery target')}
+   ${mNum('mech.sfpAhu', 'AHU SFP W/(l/s)')}${mNum('mech.sfpLim', 'AHU SFP limit', 'Blank = Part L 2021 value for the system')}${mNum('mech.sfpFcu', 'Fan coil SFP W/(l/s)')}${mNum('mech.sfpExt', 'Extract fan SFP W/(l/s)')}
+   ${mNum('mech.vMain', 'Main duct velocity m/s')}${mNum('mech.vBranch', 'Branch duct velocity m/s')}${mNum('mech.ductMax', 'Duct pressure loss limit Pa/m')}
+   ${mNum('mech.lthwDT', 'Heating ΔT K', 'Blank = 5 K heat pumps, 10 K boilers')}${mNum('mech.chwDT', 'Chilled water ΔT K')}${mNum('mech.paMax', 'Pipe pressure loss limit Pa/m')}${mNum('mech.pipeLen', 'Index circuit length m')}${mNum('mech.termKpa', 'Plant + terminal loss kPa')}${mNum('mech.pumpEff', 'Pump efficiency')}
+  </div></details>
+  <h3>Zones – heating, cooling and air</h3>
+  ${M.zones.length ? `<div class="tbl-wrap"><table><thead><tr><th>Zone</th><th>Height m</th><th>People</th><th>Ext. wall m²</th><th>Glazing m²</th><th>Roof m²</th><th>Ground m²</th><th>Heated</th><th>Cooled</th><th>Outdoor air l/s</th><th>Heat loss kW<br><span class="note">fabric + air</span></th><th>Cooling kW<br><span class="note">room + latent/air</span></th><th>Supply air l/s</th><th>Branch duct mm</th></tr></thead><tbody>${rows}
+   <tr class="total"><td>Total</td><td colspan="9"></td><td class="n">${f1(M.heatKw)}</td><td class="n">${f1(M.coolPeak)}</td><td class="n">${f0(M.ahuQ + M.extTot)}</td><td></td></tr></tbody></table></div>
+   <p class="note">Leave a cell blank to use the value in grey. Wall and glazing areas in grey are assumptions (façade ${m.fWall} m² per m² of floor, glazing share by space type) – enter them from the drawings. Heat loss to BS EN 12831-1 (simplified): fabric ΣU·A·ΔT with a ground-floor factor of 0.5, plus 0.34 × (infiltration + outdoor air after heat recovery) × ΔT, plus the heat-up allowance. Cooling is a peak block estimate (gains, solar, fabric and outdoor air) – confirm with a dynamic thermal model for TM52 / TM59.</p>` : '<p class="callout">Add zones in the Area load schedule – each zone becomes a mechanical zone here.</p>'}
+  ${M.coolPeak ? `<h3>Cooling load breakdown</h3><div class="tbl-wrap"><table><thead><tr><th>Component</th><th>kW</th><th>Share</th></tr></thead><tbody>${brk.map(([n, v]) => `<tr><td>${n}</td><td class="n">${f1(v)}</td><td class="n">${pct(v / M.coolPeak)}</td></tr>`).join('')}<tr class="total"><td>Sum of zone peaks × ${M.div} diversity</td><td class="n">${f1(M.coolKw)}</td><td></td></tr></tbody></table></div>` : ''}
+  <h3>Air systems and ductwork</h3><div class="tbl-wrap"><table><thead><tr><th>System</th><th>Air l/s</th><th>SFP W/(l/s)</th><th>Fan kW</th><th>Main duct</th><th>Velocity m/s</th><th>Pa/m</th><th>Check</th></tr></thead><tbody>
+   <tr><td>Air handling unit${M.sys === 'fcu' ? ' (outdoor air)' : ''}</td><td class="n">${f0(M.ahuQ)}</td><td class="n">${M.sfpA}${M.sfpLim != null ? ' / ' + M.sfpLim : ''}</td><td class="n">${f2(M.ahuKw)}</td><td>${M.mainDuct ? 'Ø' + M.mainDuct.d + ' or ' + M.mainDuct.rect : '–'}</td><td class="n">${M.mainDuct ? f2(M.mainDuct.v) : '–'}</td><td class="n">${M.mainDuct ? f2(M.mainDuct.paM) : '–'}</td><td>${!M.ahuQ ? pill('na', 'n/a') : pill(M.sfpLim == null || M.sfpA <= M.sfpLim ? (M.mainDuct && M.mainDuct.paM > nv(m.ductMax, 1.5) ? 'warn' : 'ok') : 'bad', M.sfpLim != null && M.sfpA > M.sfpLim ? 'SFP over limit' : M.mainDuct && M.mainDuct.paM > nv(m.ductMax, 1.5) ? 'High Pa/m' : 'OK')}</td></tr>
+   ${M.fcuQ ? `<tr><td>Fan coil units (recirculation)</td><td class="n">${f0(M.fcuQ)}</td><td class="n">${M.sfpF}</td><td class="n">${f2(M.fcuKw)}</td><td colspan="4" class="note">Room sensible load ÷ (1.2 × ${m.supDT} K)</td></tr>` : ''}
+   ${M.extTot ? `<tr><td>Extract-only (car park, plant, WCs)</td><td class="n">${f0(M.extTot)}</td><td class="n">${M.sfpE}</td><td class="n">${f2(M.extKw)}</td><td colspan="4" class="note">Air changes by space type</td></tr>` : ''}
+  </tbody></table></div><p class="note">Ducts sized at ${m.vMain} m/s main and ${m.vBranch} m/s branch to DW/144 round sizes; pressure loss by Darcy–Weisbach (galvanised steel, ε 0.15 mm). The rectangle has the same pressure loss at a 2:1 aspect ratio.</p>
+  <h3>Heating and chilled water</h3>${M.lthwP || M.chwP ? `<div class="tbl-wrap"><table><thead><tr><th>Circuit</th><th>Flow l/s</th><th>ΔT K</th><th>Main pipe (steel)</th><th>Velocity m/s</th><th>Pa/m</th><th>Pump head m</th><th>Pump kW</th><th>Check</th></tr></thead><tbody>${pipeRow('LTHW heating', M.lthwQ, M.lthwDT, M.lthwP, M.lthwH)}${pipeRow('Chilled water', M.chwQ, M.chwDT, M.chwP, M.chwH)}</tbody></table></div>
+   <p class="note">Flow = kW ÷ (4.19 × ΔT). Velocity ≤ 1.0 m/s to DN50 and 1.5 m/s above, pressure loss ≤ ${M.paMax} Pa/m. Pump head = Pa/m × ${m.pipeLen} m index circuit × 1.5 for fittings + ${m.termKpa} kPa plant and terminal losses.</p>` : '<p class="note">No wet heating or chilled water distribution for this selection.</p>'}
+  ${M.src === 'boiler' ? `<p class="note">Gas input ${f0(M.gasKw)} kW – size the gas supply and flues (Approved Document J, IGEM/UP/2).</p>` : ''}
+  ${mepElecPanel(M)}</section>`;
+};
+V.plumb = () => {
+  const M = calcMep(), pl = S.plumb, us = M.code === 'us';
+  FIX.forEach(f => { if (!pl.fixOvr[f[0]] || typeof pl.fixOvr[f[0]] !== 'object') pl.fixOvr[f[0]] = {}; });
+  const fxRows = M.fx.map(r => `<tr><td><input data-arr="fixtures" data-i="${r.i}" data-k="loc" value="${esc(r.f.loc)}" aria-label="Location"></td><td class="wide"><select data-arr="fixtures" data-i="${r.i}" data-k="type" aria-label="Fixture">${opt(FIX.map(f => ({ v: f[0], t: f[1] })), r.f.type)}</select></td><td><input type="number" step="any" style="width:64px" data-arr="fixtures" data-i="${r.i}" data-k="qty" value="${esc(r.f.qty)}" aria-label="Quantity"></td>
+    <td class="n">${f2(r.vc)}</td><td class="n">${f2(r.vh)}</td><td class="n">${f1(r.du)}</td><td class="n">${f1(r.dfu)}</td><td class="n">${f1(r.wsfu)}</td><td><button class="btn small ghost" data-del="fixtures" data-i="${r.i}">Remove</button></td></tr>`).join('');
+  const lib = FIX.map(f => { const o = pl.fixOvr[f[0]], c = (k, i) => `<input type="number" step="any" style="width:64px" data-p="plumb.fixOvr.${f[0]}.${k}" id="fx_${f[0]}_${k}" value="${esc(o[k] ?? '')}" placeholder="${f[i]}" aria-label="${k} ${esc(f[1])}">`; return `<tr><td>${esc(f[1])}</td><td>${c('vc', 2)}</td><td>${c('vh', 3)}</td><td>${c('du', 4)}</td><td>${c('dfu', 5)}</td><td>${c('wsfu', 6)}</td></tr>`; }).join('');
+  const san = M.sanRows.map(r => `<tr><td>${esc(r[0])}</td><td class="note">${esc(r[1])}</td><td>${esc(r[2])}</td><td class="n">${r[3]}</td><td class="n">${r[4]}</td></tr>`).join('');
+  return `<section class="sheet">${head('MEP · Plumbing', 'Plumbing & drainage', `Sanitary provision, cold and hot water, storage, foul and rainwater drainage from the fixture schedule and the occupancy of each zone, worked out with <b>${esc(MEP_CODES[M.code])}</b> methods. Values are editable design defaults – a design pre-check, not certification.`, '<button class="btn" data-add="fixtures">Add fixture</button>')}
+  <div class="kpis">${mKpi('Occupants', f0(M.occ), 'from the area schedule')}${mKpi('Peak cold water', f2(M.peak) + ' l/s', M.main ? M.main.label + ' main' : 'no fixtures')}${mKpi('Hot water', f0(M.hwStore) + ' l', f0(M.hwKw) + ' kW recovery')}${mKpi('Foul drainage', us ? f0(M.sDFU) + ' DFU' : f2(M.Qww) + ' l/s', us ? 'IPC fixture units' : 'ΣDU ' + f1(M.sDU))}${mKpi('Sanitary provision', M.wcProv + ' / ' + M.reqWc + ' WCs', 'provided / required')}</div>
+  <h3>Fixture schedule</h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Location</th><th>Fixture</th><th>Qty</th><th>ΣVR cold l/s</th><th>ΣVR hot l/s</th><th>ΣDU l/s</th><th>DFU</th><th>WSFU</th><th></th></tr></thead><tbody>${fxRows || '<tr><td colspan="9" class="note">No fixtures yet – press Add fixture.</td></tr>'}
+   <tr class="total"><td colspan="3">Total</td><td class="n">${f2(M.sVRc)}</td><td class="n">${f2(M.sVRh)}</td><td class="n">${f1(M.sDU)}</td><td class="n">${f1(M.sDFU)}</td><td class="n">${f1(M.sWSFU)}</td><td></td></tr></tbody></table></div>
+  <h3>Sanitary provision</h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Basis</th><th>Rule</th><th>Population</th><th>WCs required</th><th>Basins required</th></tr></thead><tbody>${san || '<tr><td colspan="5" class="note">No occupied zones</td></tr>'}
+   <tr class="total"><td colspan="3">Required / provided</td><td class="n">${M.reqWc} / ${M.wcProv}</td><td class="n">${M.reqBasin} / ${M.basinProv}</td></tr></tbody></table></div>
+  <p class="note">${pill(M.sanSt, { ok: 'Provision met', warn: 'Met only if urinals substitute', bad: 'Short of the requirement', na: 'n/a' }[M.sanSt])} Accessible WCs: ${M.acc} ${pill(M.acc || (!M.reqWc && !M.wcProv) ? 'ok' : 'bad', M.acc ? 'OK' : 'Provide at least one')}. ${us ? 'IPC Table 2902.1 by occupancy group – fixtures are distributed equally between the sexes (2902.1.1); dwelling units take 2 people each.' : 'Workplace staff to the Workplace Regulations ACoP L24 mixed-use table (also BS 6465-1); urinals may replace some WCs for men only. Dwellings and hotel rooms need their own WC, basin and bath or shower (Part G4 / G5).'}${M.pubNote && !us ? ' Customer and public provision for shops, restaurants, leisure and assembly comes from BS 6465-1 by building type – enter it below.' : ''}</p>
+  <h3>Design inputs</h3><div class="grid">
+   ${fld('Simultaneity building type', sel('plumb.bt', [{ v: '', t: 'Auto (' + MEP_DIN[M.bt][3] + ')' }, ...Object.entries(MEP_DIN).map(([v, d]) => ({ v, t: d[3] }))], pl.bt || ''), us ? 'Used outside the US method' : 'DIN 1988-300 coefficients')}
+   ${mNum('plumb.units', 'Dwellings / rooms (override)')}${us ? '' : mNum('plumb.reqWcPub', 'Customer WCs required (BS 6465-1)') + mNum('plumb.reqBasinPub', 'Customer basins required (BS 6465-1)')}
+   ${mNum('plumb.floors', 'Floors above the water main')}${mNum('plumb.floorH', 'Floor height m')}${mNum('plumb.residual', 'Residual pressure at top outlet bar')}${mNum('plumb.idxLen', 'Index run m')}${mNum('plumb.vMax', 'Maximum pipe velocity m/s')}
+   ${mNum('plumb.storeH', 'Cold storage hours of daily use', 'BS 8558: 12–24 h; less reduces stagnation')}
+   ${fld('Hot water source', sel('plumb.hwSrc', [{ v: 'electric', t: 'Electric storage heaters' }, { v: 'ashp', t: 'Heat pump water heater' }, { v: 'gas', t: 'Gas-fired' }, { v: 'district', t: 'Heat network / LTHW plant' }], pl.hwSrc))}
+   ${mNum('plumb.hwCop', 'Hot water heat pump COP')}${mNum('plumb.tStore', 'Storage temperature °C', '≥ 60 °C (HSG274)')}${mNum('plumb.tCold', 'Cold feed °C')}${mNum('plumb.peakShare', 'Peak-period share of daily hot water')}${mNum('plumb.recH', 'Recovery time h')}
+   ${mNum('plumb.K', 'Drainage frequency factor K', 'Blank = from the space types (0.5 / 0.7 / 1.0 / 1.2)')}${mNum('plumb.nStacks', 'Number of soil stacks')}${mNum('plumb.drainGrad', 'Drain gradient 1 in …')}
+   ${mNum('plumb.roofArea', 'Roof area for rainwater m²')}${mNum('plumb.rain', 'Design rainfall l/s per m²', '0.021 ≈ 75 mm/h – use the BS EN 12056-3 map / local data')}${mNum('plumb.outletCap', 'Roof outlet capacity l/s')}
+  </div>
+  <h3>Water supply</h3><div class="tbl-wrap"><table><tbody>
+   <tr><th>Design flow method</th><td>${us ? 'Hunter’s curve (IPC Appendix E, flush tanks): ' + f1(M.sWSFU) + ' WSFU' : 'DIN 1988-300 / EN 806-3: Vs = a·ΣVR^b − c (' + MEP_DIN[M.bt][3] + '), ΣVR ' + f2(M.sVR) + ' l/s'}</td></tr>
+   <tr><th>Peak flow – cold main / hot</th><td><b>${f2(M.peak)} l/s</b> / ${f2(M.peakH)} l/s</td></tr>
+   <tr><th>Incoming main (copper)</th><td>${M.main ? M.main.label + ' – ' + f2(M.main.v) + ' m/s, ' + f0(M.main.paM) + ' Pa/m ' + pill(M.main.v <= M.vMax + 1e-9 ? 'ok' : 'warn', M.main.v <= M.vMax + 1e-9 ? 'OK' : 'Over velocity – split or use plastic') : '–'}</td></tr>
+   <tr><th>Hot water flow main</th><td>${M.hotMain ? M.hotMain.label + ' – ' + f2(M.hotMain.v) + ' m/s' : '–'}</td></tr>
+   <tr><th>Booster set duty</th><td>${f2(M.peak)} l/s at ${f1(M.boostH)} m (static ${f1(M.floors * nv(pl.floorH, 3.6))} m + residual ${f1(nv(pl.residual, 1) * 10.2)} m + friction)${M.floors <= 2 && M.code === 'uk' ? ' – mains pressure may be enough; confirm with the water company' : ''}</td></tr>
+   <tr><th>Daily water use</th><td>${f0(M.cwDay)} l total, ${f0(M.hwDay)} l hot at 60 °C</td></tr>
+   <tr><th>Cold water storage</th><td><b>${f0(M.cwStore)} l</b> (${f1(M.cwStore / 1000)} m³) – twin-compartment sectional tank so one half can be cleaned</td></tr>
+   <tr><th>Hot water storage and heat</th><td><b>${f0(M.hwStore)} l</b> at ${M.tS} °C, ${f1(M.hwKw)} kW to recover in ${pl.recH} h ${M.hwElec ? '(' + f1(M.hwElec) + ' kW electrical)' : ''} ${pill(M.tS >= 60 ? 'ok' : 'bad', M.tS >= 60 ? 'Legionella: store ≥ 60 °C' : 'Store below 60 °C')}</td></tr>
+  </tbody></table></div>
+  <h3>Foul and rainwater drainage</h3><div class="tbl-wrap"><table><tbody>
+   ${us ? `<tr><th>Drainage fixture units</th><td>${f1(M.sDFU)} DFU</td></tr><tr><th>Soil stacks (IPC Table 710.1(1))</th><td>${M.nSt} × ${M.usStack ? M.usStack[0] + ' (up to ' + M.usStack[1] + ' DFU each)' : '–'}</td></tr><tr><th>Building drain (IPC Table 710.1(2), ${M.slopeQ ? '¼' : '⅛'}" per ft)</th><td>${M.usDrain ? M.usDrain[0] + ' (up to ' + M.usDrain[1] + ' DFU)' : M.sDFU ? 'Over the table – split the drain' : '–'}</td></tr>`
+     : `<tr><th>Discharge units (System III)</th><td>ΣDU ${f1(M.sDU)} l/s, K ${M.K}</td></tr><tr><th>Wastewater flow</th><td>Qww = K√ΣDU = <b>${f2(M.Qww)} l/s</b> (not less than the largest appliance ${f1(M.maxDU)} l/s)</td></tr>
+     <tr><th>Soil stacks (EN 12056-2 Table 11)</th><td>${M.nSt} × DN${M.stack ? M.stack[0] : '–'} – ${f2(M.Qst)} l/s each against ${M.stack ? f1(M.stack[1]) : '–'} l/s capacity${M.hasWc ? ' (DN100 minimum with WCs)' : ''}</td></tr>
+     <tr><th>Building drain</th><td>${M.drain ? 'DN' + M.drain.dn + ' at 1:' + M.grad + ' – ' + f2(M.drain.Qfull / 2) + ' l/s half full, ' + f2(M.drain.v) + ' m/s ' + pill(M.drain.v >= 0.7 && M.gradOk ? 'ok' : 'warn', M.drain.v < 0.7 ? 'Below self-cleansing 0.7 m/s' : M.gradOk ? 'OK' : 'Flatter than Part H allows') : '–'}</td></tr>`}
+   <tr><th>Rainwater (EN 12056-3)</th><td>${M.roofA ? f1(M.rainQ) + ' l/s from ' + f0(M.roofA) + ' m² – ' + M.outlets + ' outlet' + (M.outlets > 1 ? 's' : '') + ' at ' + pl.outletCap + ' l/s' : 'Enter the roof area'}</td></tr>
+   ${M.food ? '<tr><th>Grease separation</th><td>Food premises – grease separator to BS EN 1825 on the kitchen drainage</td></tr>' : ''}
+  </tbody></table></div>
+  <p class="note">Drains by Manning (n 0.012, half full); stacks primary-ventilated with square entries. Confirm ventilation of the drainage system, access points and connection consent with the sewerage undertaker.</p>
+  <details style="margin-top:8px"><summary><b>Fixture data</b> – design flows, discharge and fixture units (editable)</summary><div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Fixture</th><th>VR cold l/s</th><th>VR hot l/s</th><th>DU l/s (System III)</th><th>DFU</th><th>WSFU</th></tr></thead><tbody>${lib}</tbody></table></div><p class="note">Defaults from DIN 1988-300 / EN 806-3, EN 12056-2 and IPC Table 709.1 / Appendix E. Type a value to replace a default for this project.</p></details>
+  ${mepElecPanel(M)}</section>`;
+};
+V.mepcomp = () => {
+  const M = calcMep(), code = M.code;
+  MEP_REG.forEach(c => { if (!S.mepComp[c[0]] || typeof S.mepComp[c[0]] !== 'object') S.mepComp[c[0]] = {}; });
+  let disc = '';
+  const rows = MEP_REG.map((c, i) => { const [res, st] = c[4](M), s = S.mepComp[c[0]], h = c[1] !== disc ? (disc = c[1], `<tr class="total"><td colspan="7">${esc(c[1])}</td></tr>`) : '';
+    return h + `<tr><td class="n">${i + 1}</td><td>${esc(c[2])}</td><td class="note">${esc(mepRefs(c))}</td><td>${esc(res)}</td><td>${pill(st, { ok: 'OK', bad: 'Action', warn: 'Check', na: 'Manual' }[st])}</td><td><select data-p="mepComp.${c[0]}.st" id="mepComp_${c[0]}_st" aria-label="Status ${esc(c[2])}">${opt(['Not checked', 'Complies', 'Complies with departure', 'Action required', 'Not applicable'], s.st || 'Not checked')}</select></td><td><input data-p="mepComp.${c[0]}.note" id="mepComp_${c[0]}_note" value="${esc(s.note || '')}" placeholder="Evidence / note" aria-label="Evidence ${esc(c[2])}"></td></tr>`; }).join('');
+  const st = MEP_REG.map(c => c[4](M)[1]);
+  return `<section class="sheet">${head('MEP · Compliance', 'MEP compliance', `Mechanical, plumbing and drainage requirements with references for <b>${esc(MEP_CODES[code])}</b>, checked against the design results, and the link to the electrical design. Record your own status and evidence for each item.`, '<button class="btn" data-act="dl-mep-csv">Save MEP schedules (.csv)</button>')}
+  <div class="kpis">${mKpi('Automatic checks OK', st.filter(s => s === 'ok').length + ' / ' + st.filter(s => s !== 'na').length, 'calculated items')}${mKpi('Actions', st.filter(s => s === 'bad').length, 'to fix')}${mKpi('To check', st.filter(s => s === 'warn').length, 'review')}${mKpi('Manual items', st.filter(s => s === 'na').length, 'confirm and record')}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Requirement</th><th>Reference</th><th>Design result</th><th>Auto</th><th>Engineer status</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="note">References are guidance for the method set chosen on Mechanical services; confirm the edition adopted locally (for example the Building Regulations of Scotland, Wales or Northern Ireland, or a state plumbing code). This register supports, and does not replace, design verification, building control approval and certification by a competent person.</p></section>`;
+};
+function csvMep() {
+  const M = calcMep(), q = v => { let t = String(v ?? ''); if (/^[=+@\t\r]/.test(t) || /^-(?![\d.])/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; }, L = [], row = a => L.push(a.map(q).join(','));
+  row(['Project', S.project.name, 'Ref', S.project.ref, 'Methods', MEP_CODES[M.code]]);
+  L.push(''); row(['MECHANICAL ZONES']); row(['Zone', 'Space profile', 'Area m2', 'People', 'Wall m2', 'Glazing m2', 'Roof m2', 'Ground m2', 'Heated', 'Cooled', 'Outdoor air l/s', 'Heat loss kW', 'Cooling kW', 'Supply air l/s']);
+  M.zones.forEach(r => row([r.z.desc, r.P.label, r.A, r.ppl.toFixed(0), r.wall.toFixed(0), r.glz.toFixed(0), r.roof, r.gnd, r.heat ? 'Yes' : 'No', r.cool ? 'Yes' : 'No', r.oa.toFixed(0), (r.heatW / 1000).toFixed(1), (r.coolW / 1000).toFixed(1), r.supply.toFixed(0)]));
+  row(['Totals', '', '', M.occ.toFixed(0), '', '', '', '', '', '', M.oaTot.toFixed(0), M.heatKw.toFixed(1), M.coolKw.toFixed(1) + ' (block)', M.ahuQ.toFixed(0)]);
+  L.push(''); row(['FIXTURES']); row(['Location', 'Fixture', 'Qty', 'VR cold l/s', 'VR hot l/s', 'DU l/s', 'DFU', 'WSFU']);
+  M.fx.forEach(r => row([r.f.loc, r.L.name, r.q, r.vc.toFixed(2), r.vh.toFixed(2), r.du.toFixed(1), r.dfu.toFixed(1), r.wsfu.toFixed(1)]));
+  L.push(''); row(['MEP RESULTS']); row(['Item', 'Value']);
+  [['Heating plant kW', M.heatCap.toFixed(1)], ['Cooling plant kW', M.coolCap.toFixed(1)], ['AHU air l/s', M.ahuQ.toFixed(0)], ['Main duct', M.mainDuct ? 'Ø' + M.mainDuct.d + ' mm' : ''], ['LTHW main', M.lthwP ? M.lthwP.label : ''], ['CHW main', M.chwP ? M.chwP.label : ''], ['Peak cold water l/s', M.peak.toFixed(2)], ['Water main', M.main ? M.main.label : ''], ['Cold storage l', M.cwStore.toFixed(0)], ['Hot water storage l', M.hwStore.toFixed(0)], ['Hot water recovery kW', M.hwKw.toFixed(1)], ['Wastewater flow l/s', M.Qww.toFixed(2)], ['Soil stack', M.stack ? 'DN' + M.stack[0] : ''], ['Building drain', M.drain ? 'DN' + M.drain.dn : ''], ['Rainwater l/s', M.rainQ.toFixed(1)], ['WCs required / provided', M.reqWc + ' / ' + M.wcProv], ['MEP electrical input kW', M.elecKw.toFixed(1)]].forEach(row);
+  L.push(''); row(['ELECTRICAL LOADS FROM MEP PLANT']); row(['Plant', 'Category / service', 'Units', 'kW', 'Basis']);
+  M.elec.forEach(e => row([e.name, e.kind === 'load' ? e.cat : e.svc, e.kind === 'load' ? e.qty + ' x ' + e.kwEach : e.q + ' l/s at ' + e.h + ' m', e.kw, e.basis]));
+  L.push(''); row(['MEP COMPLIANCE']); row(['#', 'Discipline', 'Requirement', 'Reference', 'Design result', 'Auto', 'Engineer status', 'Evidence']);
+  MEP_REG.forEach((c, i) => { const [res, st] = c[4](M), s = S.mepComp[c[0]] || {}; row([i + 1, c[1], c[2], mepRefs(c), res, st, s.st || 'Not checked', s.note || '']); });
+  return L.join('\r\n');
+}
+function mepReportSection(sec) {
+  const M = calcMep();
+  if (!M.zones.length && !M.fx.length) return '';
+  const kv = [['Methods', esc(MEP_CODES[M.code])], ['Heating', `${f1(M.heatKw)} kW design load, ${f1(M.heatCap)} kW plant (${esc({ ashp: 'air-source heat pumps', boiler: 'gas boilers', electric: 'direct electric', district: 'heat network' }[M.src])})`], ['Cooling', M.coolKw ? `${f1(M.coolKw)} kW block load, ${f1(M.coolCap)} kW plant` : 'None'], ['Ventilation', `${f0(M.oaTot)} l/s outdoor air${M.ahuQ ? ', AHU ' + f0(M.ahuQ) + ' l/s, SFP ' + M.sfpA + ' W/(l/s)' : ''}${M.extTot ? ', extract ' + f0(M.extTot) + ' l/s' : ''}`], ['Water supply', M.peak ? `${f2(M.peak)} l/s peak, ${M.main ? M.main.label : ''} main; ${f0(M.cwStore)} l cold storage` : 'No fixtures'], ['Hot water', M.hwStore ? `${f0(M.hwStore)} l at ${M.tS} °C, ${f1(M.hwKw)} kW recovery` : 'None'], ['Drainage', M.sDU ? (M.code === 'us' ? f1(M.sDFU) + ' DFU' : `${f2(M.Qww)} l/s; stacks DN${M.stack ? M.stack[0] : '–'}, drain DN${M.drain ? M.drain.dn : '–'} at 1:${M.grad}`) : 'None'], ['Sanitary provision', `${M.wcProv} WCs / ${M.basinProv} basins provided against ${M.reqWc} / ${M.reqBasin} required; ${M.acc} accessible`], ['Electrical input of MEP plant', `${f1(M.elecKw)} kW – ${esc(M.sync.txt)}`]];
+  const comp = MEP_REG.map((c, i) => { const [res, st] = c[4](M); return [i + 1, esc(c[2]), esc(mepRefs(c)), esc(res), esc((S.mepComp[c[0]] || {}).st || 'Not checked')]; });
+  return sec('Mechanical and plumbing services (MEP)') + `<table class="r kv"><tbody>${kv.map(([a, b]) => `<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</tbody></table>` + tbl(['#', 'MEP requirement', 'Reference', 'Design result', 'Engineer status'], comp);
+}
+
 /* ---------- Welcome page: one connected life cycle – design, implement, commission, maintain, manage assets ---------- */
 V.home = () => {
   const p = S.project, D = calcDash(), G = calcRegs(), T = D.T, F = D.F, A = D.A, L = calcLV(), cur = esc(S.energy.currency || '');
@@ -3981,6 +4414,7 @@ function reportBody() {
   ${sec('Compliance checklist')}${tbl(['#', 'Requirement', 'Reference', 'Design result', 'Engineer status'], comp)}
   ${(() => { const so = S.signoff || {}, it = so.items || {}, SS = signoffState(); return sec('Design review and sign-off') + `<p><b>${esc(SS.label)}</b></p>` + tbl(['Review item', 'Status', 'Reviewed by', 'Date', 'Comments'], SIGNOFF_ITEMS.map(([k, label]) => { const v = it[k] || {}; return [esc(label), esc(v.status || 'Not reviewed'), esc(v.by || ''), esc(v.date || ''), esc(v.comment || '')]; })) + `<table class="r kv"><tbody><tr><th>Designed by</th><td>${esc(p.designer || '—')}</td></tr><tr><th>Checked by</th><td>${esc(p.checker || '—')}</td></tr><tr><th>Approved by</th><td>${so.approver ? esc(so.approver) + (so.approverQual ? ', ' + esc(so.approverQual) : '') + (so.approverDate ? ' – ' + esc(so.approverDate) : '') : '—'}</td></tr></tbody></table>`; })()}
   ${R.W.rooms.length ? `<div class="dwg-appendix">${sec('Appendix – electrical layout drawing')}${toSVG(dwgGeom(R.W))}<p class="s">${esc(S.dwg.board)} – generated layout; the AutoCAD DXF is available from the Electrical drawings stage.</p></div>` : ''}
+  ${mepReportSection(sec)}
   ${sec('Assumptions and limitations')}<ul class="s"><li>${tr('Load densities are indicative rules of thumb after diversity; replace with measured or manufacturer data at detailed design.')}</li><li>${tr('Regional factors, demand factors and code values are editable defaults and must be verified against the edition of each code adopted locally.')}</li><li>${tr('Cable ratings are BS 7671 Appendix 4 copper values; use local tables where another code family applies.')}</li><li>${tr('Transformer fault levels assume an infinite source; the utility confirms the network fault level and point of connection.')}</li><li>${tr('This report supports, and does not replace, design verification and certification by a competent person.')}</li></ul>
   <p class="s">${tr('Generated')} ${new Date().toLocaleString(rLang() === 'en' ? 'en-GB' : rLang())} · NexvoraHub Studio</p>`;
 }
@@ -4105,12 +4539,14 @@ document.addEventListener('input', e => { if (e.target.matches('input:not([type=
 document.addEventListener('change', e => { if (e.target.matches('select,input[type=checkbox],input[type=date]')) onEdit(e, true); });
 const BLANK = { docs: () => ({ id: uid(), src: '', no: docPre() + '-' + String((S.docs || []).length + 1).padStart(3, '0'), title: '', type: 'Drawing', disc: 'Electrical – general', rev: 'P01', st: 'Work in progress', date: '', to: '', due: '', code: '', by: '', note: '' }), risks: () => ({ id: uid(), src: '', no: 'R-' + String((S.risks || []).length + 1).padStart(3, '0'), cat: 'Design', title: '', cause: '', l: 3, i: 3, mit: '', owner: '', rl: '', ri: '', st: 'Open', due: '' }), tickets: () => ({ id: uid(), no: 'T-' + String((S.tickets || []).length + 1).padStart(4, '0'), pri: 'P3', prop: '', trade: '', issue: '', loc: '', target: '', desc: '', kind: 'Reactive breakdown', who: '', raised: new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), attended: '', done: '', st: 'Open' }), soft: () => ({ id: uid(), svc: 'clean', scope: '', prov: 'Contractor', who: '', freq: '', std: '', perf: 'Good', func: 'Fully operational', last: '', kpi: '', cost: '' }), capProj: () => ({ id: uid(), src: '', name: 'New capital project', cat: CAP_CAT[0], asset: '', stage: 'Concept', pct: 0, rag: '', budget: '', spent: '', start: '', end: '', summary: '', update: '' }), milestones: () => ({ id: uid(), pid: '', name: 'Milestone', due: '', st: 'Not started' }), assets: () => ({ id: uid(), src: '', cls: 'wtp', tag: '', desc: '', loc: '', qty: 1, cap: '', type: '', year: new Date().getFullYear(), cost: '', life: '', cond: 1, crit: '', fails: '', maint: '' }), essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: (R && R.DBR && R.DBR.rows[0] && R.DBR.rows[0].name) || 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', uf: '', ku: '', df: '', lf: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
 let armedNew = false;
+BLANK.fixtures = () => ({ id: uid(), loc: '', type: 'wc', qty: 1 });
 BLANK.tasks = () => ({ id: uid(), title: '', role: ROLE.id === 'lead' || ROLE.id === 'guest' ? 'design' : ROLE.id, due: '', st: 'To do', by: REG ? REG.name : '', note: '' });
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.add) { S[b.dataset.add].push(BLANK[b.dataset.add]()); persist(); render(); return; }
   if (b.dataset.del) { S[b.dataset.del].splice(+b.dataset.i, 1); persist(); render(); return; }
   const act = b.dataset.act;
+  if (act && act.startsWith('mep-')) { mepAct(act); return; }
   if (act && act.startsWith('intro-')) { introAct(act); return; }
   if (act && act.startsWith('adv-')) { advAct(act, b); return; }
   if (act && act.startsWith('role-')) { roleAct(act, b); return; }
@@ -4137,7 +4573,7 @@ document.addEventListener('click', async e => {
   if (act === 'lift-import') { const add = assetsFromDesign().filter(a => a.cls === 'lift' || a.cls === 'esc'); S.assets = [...(S.assets || []), ...add]; persist(); render(); toast('Added ' + add.length + ' lifts / escalators from the design'); return; }
   if (act === 'asset-import') { const add = assetsFromDesign(); S.assets = [...(S.assets || []), ...add]; persist(); render(); toast('Added ' + add.length + ' assets from the design'); return; }
   if (act === 'add-db') { const el = document.getElementById('newDb'), n = String(el && el.value || '').trim().slice(0, 40); if (!n) { toast('Type a board name first'); return; } S.boards = S.boards || {}; S.boards[n] = Object.assign(S.boards[n] || {}, { reg: true }); persist(); render(); toast('Added board ' + n); return; }
-  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {}, cl: {} }; persist(); render(); toast('Started a blank project'); }
+  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {}, cl: {}, fixtures: [], mechEnv: {}, mepComp: {}, plumb: mepDefaults().plumb }; persist(); render(); toast('Started a blank project'); }
   if (act === 'save-json') await saveProjectFiles();
   if (act === 'save-json-only') save(projectFileName('json'), JSON.stringify(S, null, 1), 'Project file');
   if (act === 'load-json') $('#fileIn').click();
@@ -4155,6 +4591,7 @@ document.addEventListener('click', async e => {
   if (act === 'dl-boq-pdf') printReport('In the print window, choose "Save as PDF" as the printer for the bill of quantities', 'boq');
   if (act === 'dl-boq-csv') save(`${(S.project.ref || 'project').replace(/[\\/:*?"<>|]+/g, '_')}-bill-of-quantities.csv`, csvBoq(), 'Bill of quantities');
   if (act === 'dl-coverage') save('nexvorahub-regional-coverage.csv', csvCoverage(), 'Coverage register');
+  if (act === 'dl-mep-csv') { save((S.project.ref || 'project').replace(/[^\w-]+/g, '_') + '-mep-schedules.csv', csvMep(), 'MEP schedules'); return; }
   if (act === 'dl-csv') save(`${S.project.ref || 'project'}-load-schedules.csv`, csvSchedules(), 'Schedules');
   if (act === 'copy-report') { const t = $('#paper').innerText; try { await navigator.clipboard.writeText(t); toast('Report text copied'); } catch (err) { const r = document.createRange(); r.selectNodeContents($('#paper')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Report selected – press Ctrl+C to copy'); } }
 });

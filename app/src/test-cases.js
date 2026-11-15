@@ -1029,7 +1029,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
 // ---------- role workspaces ----------
 { const rF = [], rchk = (n, ok, got) => { if (!ok) rF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const R0 = { ...ROLE }, V0 = view;
-  rchk('seven roles, lead edits everything', ROLES.length === 7 && ROLE.id === 'lead' && VIEWS.every(v => canEdit(v[0], 'lead') && roleShows(v[0], 'lead')));
+  rchk('eight roles, lead edits everything', ROLES.length === 8 && ROLE.id === 'lead' && VIEWS.every(v => canEdit(v[0], 'lead') && roleShows(v[0], 'lead')));
   rchk('every role stage is a real page and edit ⊂ view', ROLES.filter(r => r[3]).every(r => r[3].concat(r[4]).every(v => VIEWS.some(x => x[0] === v)) && r[4].every(v => r[3].includes(v))));
   rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'tasks', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
   rchk('design engineer edits circuits, not FM', canEdit('circuits', 'design') && !canEdit('fm', 'design') && !roleShows('fm', 'design'));
@@ -1150,6 +1150,65 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
 { const pF = []; renderRail(); const m = document.querySelector('#mfoot').innerHTML || '';
   if (!/Project file/.test(m) || !['save-json', 'load-json', 'new'].every(x => m.includes('data-act="' + x + '"'))) pF.push('phone foot missing project-file buttons');
   out.phoneChecks = pF.length ? pF : 'all passed'; }
+// MEP: mechanical, plumbing and drainage – hand-checked calculations and the link to the electrical design
+{ const mF = [], mchk = (n, ok, v) => { if (!ok) mF.push(n + (v !== undefined ? ' ' + JSON.stringify(v) : '')); }, near = (a, b, t = 1e-3) => Math.abs(a - b) <= t * Math.max(1, Math.abs(b));
+  const S0 = S, R0v = view, ROLE0 = ROLE.id;
+  // primitives
+  mchk('L24 table: 1–5 → 1, 100 → 5, 101 → 6, 420 → 18', sanL24(5) === 1 && sanL24(100) === 5 && sanL24(101) === 6 && sanL24(420) === 18);
+  mchk('IPC B occupancy WCs: 120 occupants → 4', ipcN(120, IPC_SAN.B[0]) === 4 && ipcN(50, IPC_SAN.B[0]) === 2);
+  { const d = darcy(2 * Math.PI * 0.05 * 0.05 / 4, 0.05, 0, 1e-6, 1000); mchk('Swamee–Jain smooth pipe ≈ Blasius at Re 1e5', near(d.Re, 1e5, 1e-6) && near(d.f, 0.316 / Math.pow(1e5, 0.25), 0.03), [d.Re, d.f]); }
+  mchk('Manning DN100 at 1:100 (n 0.012) ≈ 5.6 l/s full bore', near(manning(0.1, 0.01, 0.012).Qfull, 5.60, 0.01), manning(0.1, 0.01, 0.012).Qfull);
+  mchk("Hunter's curve: 10 WSFU = 14.6 gpm", near(hunterLs(10), 14.6 * 0.06309));
+  mchk('ductSize: 1 m³/s at 6 m/s → Ø500 mm', ductSize(1, 6).d === 500 && near(ductSize(1, 6).v, 1 / (Math.PI * 0.25 * 0.25), 1e-6));
+  // a one-zone hand calculation
+  S = exampleProject(); upgrade(S); S.project.example = false; S.mech.code = 'uk';
+  S.zones = [{ id: 'z1', desc: 'Test office', type: 'Office – fully air-conditioned', area: 100, ovr: '' }];
+  S.mechEnv = { z1: { h: 3, ppl: 10, wall: 40, glz: 0, roof: 0, gnd: 0, oa: 100 } };
+  let M = calcMep(), z = M.zones[0];
+  mchk('heat loss = (ΣU·A + bridging)·ΔT + 0.34·(infiltration + OA after HR)·ΔT, + 10%', near(z.heatW, ((0.26 * 40 + 0.05 * 40) * 24 + 0.34 * (0.3 * 300 + 100 * 3.6 * 0.25) * 24) * 1.1, 1e-9), z.heatW);
+  mchk('cooling = people + lights + equipment + solar + fabric + outdoor air', near(z.coolW, 750 + 550 + 800 + 1125 + 0 + 0.26 * 40 * 4 + 1.206 * 100 * 4 + 2.94 * 100 * 1.7, 1e-9), z.coolW);
+  mchk('heat pump electrical input = plant ÷ COP (reversible: larger of heating / cooling)', near(M.elec.find(e => e.key === 'plant').kw, Math.max(M.heatCap / 2.8, M.coolCap / 3), 0.05));
+  mchk('fan coil air = room sensible ÷ (1.206 × 8 K)', near(z.coolAir, z.roomS / (1.206 * 8), 1e-9));
+  mchk('SFP check passes at 1.6 and fails above the limit', MEP_REG.find(c => c[0] === 'm-sfp')[4](M)[1] === 'ok' && (S.mech.sfpAhu = 2.2, MEP_REG.find(c => c[0] === 'm-sfp')[4](calcMep())[1] === 'bad'));
+  S.mech.sfpAhu = 1.6;
+  // plumbing hand calculation
+  S.fixtures = [{ id: 'a', loc: 'Core', type: 'wc', qty: 10 }, { id: 'b', loc: 'Core', type: 'basin', qty: 10 }, { id: 'c', loc: 'Core', type: 'wcacc', qty: 1 }];
+  M = calcMep();
+  const sv = 10 * 0.13 + 10 * 0.14 + 0.27;
+  mchk('DIN 1988-300 office peak = 0.91·ΣVR^0.31 − 0.38', near(M.peak, 0.91 * Math.pow(sv, 0.31) - 0.38, 1e-9), [M.peak, sv]);
+  mchk('EN 12056-2 Qww = K·√ΣDU (K 0.5)', near(M.Qww, Math.max(0.5 * Math.sqrt(10 * 1.7 + 10 * 0.3 + 2.0), 2.0), 1e-9), M.Qww);
+  mchk('stack DN100 minimum with WCs', M.stack && M.stack[0] === 100);
+  mchk('legionella: 55 °C store fails', (S.plumb.tStore = 55, MEP_REG.find(c => c[0] === 'p-leg')[4](calcMep())[1] === 'bad'));
+  S.plumb.tStore = 60;
+  mchk('hot water recovery kW = V·4.19·ΔT ÷ (3600·h)', near(calcMep().hwKw, calcMep().hwStore * 4.19 * 50 / 7200, 1e-9));
+  // US method set
+  S.mech.code = 'us'; M = calcMep();
+  mchk('US: peak from Hunter WSFU and IPC sanitary table', near(M.peak, hunterLs(M.sWSFU), 1e-9) && M.reqWc === ipcN(10, IPC_SAN.B[0]) && M.zones[0].oa === 100);
+  S.mechEnv.z1.oa = ''; M = calcMep();
+  mchk('US outdoor air = Rp·Pz + Ra·Az (ASHRAE 62.1 office)', near(M.zones[0].oa, 2.5 * 10 + 0.3 * 100, 1e-9), M.zones[0].oa);
+  S.mech.code = 'en'; mchk('EN 16798-1 Cat II = 7 l/s·p + 0.7 l/s·m²', near(calcMep().zones[0].oa, 7 * 10 + 0.7 * 100, 1e-9));
+  // worked example: provision, integration with the electrical design
+  S = exampleProject(); upgrade(S); R = calcAll(); M = calcMep();
+  mchk('example: office + retail staff 454 → 20 WCs required, provision met', M.reqWc === 20 && M.sanSt === 'ok' && M.acc === 4, [M.reqWc, M.wcProv, M.sanSt]);
+  mchk('example: every regulation has UK, EN and US references; ids unique', MEP_REG.every(c => c[3].uk && c[3].en && c[3].us) && new Set(MEP_REG.map(c => c[0])).size === MEP_REG.length);
+  const md0 = R.md, nL = S.loads.length;
+  mchk('example: MEP loads not yet sent', M.sync.st === 'warn' && M.dupL.length === 1 && M.dupP.length === 1);
+  mepAct('mep-send'); M = calcMep();
+  mchk('send: loads and pumps tagged, duplicates replaced, demand updated, in sync', S.loads.some(l => l.mep === 'plant') && S.pumps.some(p => p.mep === 'boost') && !S.loads.some(l => l.desc === 'Air-source heat pumps') && M.sync.st === 'ok' && R.md !== md0, [R.md, md0]);
+  S.mech.margin = 0.3; mchk('changing the design flags the electrical loads as stale', calcMep().sync.st === 'warn');
+  mepAct('mep-remove'); mchk('remove: no MEP rows left', !S.loads.some(l => l.mep) && !S.pumps.some(p => p.mep));
+  // pages, roles and exports
+  ['mech', 'plumb', 'mepcomp'].forEach(v => { view = v; render(); const h = document.querySelector('#main').innerHTML; mchk(v + ' page renders', h.length > 2000 && !/undefined|NaN/.test(h.replace(/data-[a-z]+="[^"]*"/g, '')), (h.match(/.{40}(undefined|NaN).{40}/) || [])[0]); });
+  { const h = (view = 'plumb', render(), document.querySelector('#main').innerHTML); mchk('plumbing page shows fixtures, sanitary table and drainage', /Fixture schedule/.test(h) && /Sanitary provision/.test(h) && /Qww = K√ΣDU/.test(h) && /data-add="fixtures"/.test(h)); }
+  mchk('CSV and report include MEP', /MECHANICAL ZONES/.test(csvMep()) && /MEP COMPLIANCE/.test(csvMep()) && /Mechanical and plumbing services/.test(reportBody()));
+  mchk('MEP engineer role edits the MEP stages only', canEdit('mech', 'mep') && canEdit('plumb', 'mep') && !canEdit('circuits', 'mep') && roleShows('mech', 'design') && !canEdit('mech', 'design'));
+  mchk('MEP engineer has KPIs and tasks with real links', roleKpis('mep').length >= 3 && roleTasks('mep').every(o => VIEWS.some(v => v[0] === o.v)));
+  mchk('Advisor has a guide for each MEP stage', ['mech', 'plumb', 'mepcomp'].every(v => ADV_PAGE[v]));
+  // blank project
+  S = exampleProject(); upgrade(S); S.zones = []; S.fixtures = []; S.loads = []; S.pumps = []; R = calcAll(); M = calcMep();
+  mchk('blank project: no MEP loads, pages render', !M.elec.length && M.sync.st === 'na' && ['mech', 'plumb', 'mepcomp'].every(v => { view = v; render(); return !/NaN/.test(document.querySelector('#main').innerHTML); }));
+  S = S0; R = calcAll(); view = R0v; ROLE.id = ROLE0; render();
+  out.mepChecks = mF.length ? mF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
