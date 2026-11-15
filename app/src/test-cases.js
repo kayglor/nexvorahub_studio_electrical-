@@ -1010,9 +1010,9 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
 // ---------- intro film and advisor ----------
 { const aF = [], achk = (n, ok, got) => { if (!ok) aF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const V0 = view; view = 'home'; render(); const h = document.querySelector('#main').innerHTML;
-  achk('intro player on the welcome page', /class="intro/.test(h) && /data-act="intro-play"/.test(h) && /Watch the 35-second intro/.test(h));
+  achk('intro player on the welcome page', /class="intro/.test(h) && /data-act="intro-play"/.test(h) && /Watch the 40-second intro/.test(h));
   const sc = introScenes();
-  achk('seven scenes with live figures', sc.length === 7 && sc[0].cap.includes(f0(R.md) + ' kVA') && sc.every(x => /<b>/.test(x.cap) && x.svg.length > 100), sc.length);
+  achk('eight scenes with live figures, MEP included', sc.length === 8 && /Mechanical and plumbing/.test(sc[1].cap) && !/NaN|undefined/.test(sc[1].cap + sc[1].svg) && sc[0].cap.includes(f0(R.md) + ' kVA') && sc.every(x => /<b>/.test(x.cap) && x.svg.length > 100), sc.length);
   INTRO.i = 0; INTRO.started = false; introAct('intro-next'); achk('next scene', INTRO.i === 1 && INTRO.started); introAct('intro-prev'); achk('previous scene', INTRO.i === 0); introStop();
   achk('advisor button on the welcome page', /data-act="adv-open"/.test(h));
   const N = advNext();

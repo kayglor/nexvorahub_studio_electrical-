@@ -30,7 +30,7 @@ const site = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="NexvoraHub Studio – electrical load assessment, design, drawing review and AutoCAD output for 94 countries and regions.">
+<meta name="description" content="NexvoraHub Studio – MEP building services design: electrical, mechanical and plumbing, water and sewage treatment, pools, construction, commissioning and asset management for 94 countries and regions.">
 <style>${reset}</style>
 </head>
 <body>
