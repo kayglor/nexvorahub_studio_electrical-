@@ -256,7 +256,26 @@ tr.total td{font-weight:600;background:var(--sunk)}
 /* report preview */
 .paper{background:#fff;color:#1b1f1d;border:1px solid var(--line);border-radius:4px;max-width:900px;margin:0 auto;padding:36px 40px;box-shadow:0 1px 0 var(--line)}
 .paper *{color:inherit}
-@media (max-width:900px){.shell{grid-template-columns:1fr}nav.rail{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}nav.rail a{grid-template-columns:auto auto auto;white-space:nowrap}.rail-foot{display:none}.split{grid-template-columns:1fr}.paper{padding:20px}}
+@media (max-width:900px){.shell{grid-template-columns:1fr}nav.rail{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}nav.rail a{grid-template-columns:auto auto auto;white-space:nowrap}nav.rail .rail-foot{display:none}nav.rail>.btn{white-space:nowrap;margin-top:0!important}.split{grid-template-columns:1fr}.paper{padding:20px}}
+/* Phones and tablets: project-file buttons at the foot of the page, compact top bar */
+.mfoot{display:none}
+@media (max-width:900px){.mfoot{display:block;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:24px}.mfoot h3{margin:0 0 4px;font-family:var(--f-display);font-size:19px}.mfoot .rail-foot{margin:0;padding:0;border:0;flex-direction:row;flex-wrap:wrap;align-items:center}}
+@media (max-width:600px){
+.band-in{gap:6px 14px;padding-block:8px}
+.brand{flex-wrap:wrap;row-gap:4px;width:100%}
+.brand h1{font-size:20px}
+.brand .proj{order:3;flex-basis:100%;max-width:100%;font-size:13px}
+.role-chip{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;margin-left:auto}
+.readouts{margin-left:0;gap:4px 14px}
+.readouts .ro:not(.main){display:none}
+.ro b{font-size:16px}
+.adv-btn{margin-left:auto}
+.tgrid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi b{overflow-wrap:anywhere}
+input,select,textarea,.adv .q{font-size:16px}
+.btn{min-height:40px}
+.btn.small{min-height:36px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -270,6 +289,7 @@ tr.total td{font-weight:600;background:var(--sunk)}
 <div class="shell gutter">
   <nav class="rail" id="rail" aria-label="Design stages"></nav>
   <main id="main"></main>
+  <div class="mfoot" id="mfoot"></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 <aside class="adv" id="advisor" role="dialog" aria-label="Advisor" hidden></aside>
@@ -1586,7 +1606,13 @@ function railStatus(id) {
 }
 function renderRail() {
   $('#rail').innerHTML = roleRail().map(([[id, t], i]) => `<a href="#${id}" ${id === view ? 'aria-current="page"' : ''}${canEdit(id) ? '' : ' title="View only for your role"'}><span class="k">${String(i + 1).padStart(2, '0')}</span><span>${t}${canEdit(id) ? '' : ' <i class="lk">· view</i>'}</span><i class="dot ${railStatus(id)}"></i></a>`).join('') + (roleOf()[3] ? `<button class="btn small ghost" data-act="role-all" style="margin-top:6px">${ROLE.all ? 'Show my stages only' : 'Show all stages'}</button>` : '') +
-    `<div class="rail-foot">${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json" title="Saves the project (.json) and the report as PDF">Save project (.json + PDF)</button><button class="btn small ghost" data-act="save-json-only" title="Project file only">Save .json only</button><button class="btn small" data-act="load-json" title="Open a saved .json project file to continue editing">Open project (.json)</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
+    railFoot();
+  const m = $('#mfoot'); if (m) m.innerHTML = '<h3>Project file</h3>' + railFoot();
+  const rl = $('#rail'), cur = $('#rail a[aria-current="page"]');
+  if (cur && rl.getBoundingClientRect && rl.scrollWidth > rl.clientWidth) { const a = rl.getBoundingClientRect(), c = cur.getBoundingClientRect(); rl.scrollLeft += (c.left + c.width / 2) - (a.left + a.width / 2); }
+}
+function railFoot() {
+  return `<div class="rail-foot">${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json" title="Saves the project (.json) and the report as PDF">Save project (.json + PDF)</button><button class="btn small ghost" data-act="save-json-only" title="Project file only">Save .json only</button><button class="btn small" data-act="load-json" title="Open a saved .json project file to continue editing">Open project (.json)</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
 }
 function head(eb, title, sub, right = '') { return `<div class="sheet-head"><div><div class="eyebrow">${eb}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div><div class="row">${right}</div></div>`; }
 
@@ -1594,7 +1620,7 @@ const V = {};
 V.project = () => {
   const p = S.project, c = R.X.c;
   return `<section class="sheet">${head('Stage 1', 'Project & region', 'Pick the country first. It sets the supply voltage, frequency, voltage-drop limits, wiring code, factor set and load-density region used everywhere else.')}
-  ${p.example ? `<p class="callout">This is a worked example so you can see every stage filled in. Replace the figures with your project data, or start a new blank project from the left menu.</p>` : ''}
+  ${p.example ? `<p class="callout">This is a worked example so you can see every stage filled in. Replace the figures with your project data, or start a new blank project from the stage menu (Project file, at the foot of the page on a phone).</p>` : ''}
   <h3>Project</h3><div class="grid">
    ${fld('Project name', inp('project.name', p.name))}${fld('Reference', inp('project.ref', p.ref))}${fld('Client', inp('project.client', p.client))}${fld('Site / address', inp('project.site', p.site))}
    ${fld('Revision', inp('project.rev', p.rev))}${fld('Date', inp('project.date', p.date, 'date'))}${fld('Designer', inp('project.designer', p.designer))}${fld('Checker', inp('project.checker', p.checker))}
@@ -3181,7 +3207,7 @@ function advNext() {
   const T = calcTC(), L = calcLV(), G = calcRegs(), F = calcFM(), A = calcAssets();
   if (ROLE.id === 'guest') add('warn', 'Register with your role', 'The app is view only until you register on the Welcome page. Your role decides which stages you can edit and fills in your task dashboard.', 'home');
   { const tt = roleTasks().filter(o => o.v === 'tasks' && o.s !== 'info'); if (tt.length) add(tt[0].s, tt.length + ' team task' + (tt.length > 1 ? 's' : '') + ' due or in progress', tt.slice(0, 3).map(o => o.t).join('; '), 'tasks'); }
-  if (p.example) add('info', 'You are looking at the worked example', 'Every stage is filled in so you can see what good output looks like. When you are ready, start a new blank project from the left menu and work through the stages in order.', 'home');
+  if (p.example) add('info', 'You are looking at the worked example', 'Every stage is filled in so you can see what good output looks like. When you are ready, start a new blank project and work through the stages in order.', 'home');
   if (!p.name || !p.designer || !p.checker) add('warn', 'Complete the project details', 'Project name, designer and checker appear on every report, certificate and export. Fill them in first.', 'project');
   if (!(S.zones || []).length && !(S.loads || []).length) add('bad', 'Add the loads', 'Nothing will size until there are loads. Add floor areas by building type, or list the equipment with its kW.', 'area');
   if (!R.txKva) add('bad', 'Review the supply sizing', 'No transformer size could be selected for the maximum demand. Check the loads, diversity and the transformer range.', 'sizing');
@@ -3243,7 +3269,7 @@ const ADV_PAGE = {
 };
 // Searchable help: [question, answer, page]
 const ADV_HELP = [
-  ['Where do I start a new project?', 'Use "New blank project" at the foot of the left menu (press it twice to confirm). Set the country on Project & region first, then add loads.', 'project'],
+  ['Where do I start a new project?', 'Use "Start a new project" on the Welcome page, or "New blank project" under Project file – at the foot of the stage menu, or at the foot of the page on a phone (press it twice to confirm). Set the country on Project & region first, then add loads.', 'project'],
   ['How do I save or reopen my work?', 'Work saves automatically in this browser. Use "Save project (.json + PDF)" to keep a copy, and "Open project (.json)" to load it on another computer or browser.', 'home'],
   ['How is maximum demand calculated?', 'Connected load from area densities, equipment, lifts, pumps and the data centre, with power factor, utilisation and diversity applied by category. The build-up is shown on Supply & equipment.', 'sizing'],
   ['Why is my circuit failing?', 'The reason is shown against the circuit: current capacity, voltage drop, earth fault loop (Zs), breaking capacity or RCD. Change cable size, length, device type or curve, or add an RCD.', 'circuits'],
@@ -3377,7 +3403,7 @@ function roleAct(act, b) {
     const v = id => { const e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }, ch = document.querySelector('input[name="regRole"]:checked'), role = ch ? ch.value : '', name = v('regName');
     const m = document.getElementById('regMsg');
     if (!name || !role) { if (m) m.textContent = !name ? 'Enter your name.' : 'Pick your role.'; const f = document.getElementById(!name ? 'regName' : 'roles'); if (f && f.focus) f.focus(); return; }
-    REG = { name, org: v('regOrg'), qual: v('regQual'), role, at: (REG && REG.at) || new Date().toISOString().slice(0, 10) }; ROLE.id = role; REG_EDIT = false; roleSave(); render(); toast('Welcome, ' + name + ' – your workspace is set for ' + roleOf()[1]); return;
+    REG = { name, org: v('regOrg'), qual: v('regQual'), role, at: (REG && REG.at) || new Date().toISOString().slice(0, 10) }; ROLE.id = role; REG_EDIT = false; roleSave(); render(); { const p = document.getElementById('roles'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'center' }); } toast('Welcome, ' + name + ' – your workspace is set for ' + roleOf()[1]); return;
   }
   if (act === 'role-edit') { REG_EDIT = true; render(); const f = document.getElementById('regName'); if (f && f.focus) f.focus(); }
   if (act === 'role-cancel') { REG_EDIT = false; render(); }

@@ -1146,6 +1146,10 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   cc('rail lists the new stages', VIEWS.some(v => v[0] === 'checklist') && VIEWS.some(v => v[0] === 'facilities'));
   S.cl = JSON.parse(CL0); S.energy = JSON.parse(EN0); view = V0; R = calcAll();
   out.checklistChecks = cF.length ? cF : 'all passed'; }
+// phone layout: project-file buttons repeated at the foot of the page
+{ const pF = []; renderRail(); const m = document.querySelector('#mfoot').innerHTML || '';
+  if (!/Project file/.test(m) || !['save-json', 'load-json', 'new'].every(x => m.includes('data-act="' + x + '"'))) pF.push('phone foot missing project-file buttons');
+  out.phoneChecks = pF.length ? pF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
