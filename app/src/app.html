@@ -138,7 +138,18 @@ aside.adv[hidden]{display:none}
 .adv details p{margin:6px 0 0;font-size:14px}
 .adv details a{font-weight:600;color:var(--accent);font-size:13.5px}
 .adv .af{border-top:1px solid var(--line);padding:10px 16px;font-size:12px;color:var(--muted)}
-@media print{aside.adv,.adv-btn{display:none!important}}
+@media print{aside.adv,.adv-btn,.chat-fab,aside.chat{display:none!important}}
+.faq-cats{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}.faq-cats a{font-size:13px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:inherit;background:var(--panel)}
+.faq h3{margin:22px 0 8px;font-family:var(--f-display);font-size:20px}.faq details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 0 8px;background:var(--panel)}.faq summary{cursor:pointer;font-weight:600}.faq details p{margin:8px 0 6px;color:var(--muted)}
+.faq input.q{width:100%;max-width:560px;padding:10px 12px;font-size:15px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:inherit}
+.chat-fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:25;border-radius:999px;padding:11px 16px;font-weight:600;border:0;background:var(--accent,#1f7a5a);color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;font-size:14px}
+aside.chat{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(390px,calc(100vw - 24px));height:min(580px,calc(100vh - 24px));z-index:32;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
+aside.chat[hidden]{display:none}.chat .ch{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}.chat .ch h2{margin:0;flex:1;font-family:var(--f-display);font-size:20px}.chat .ch small{display:block;font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:400}
+.chat .log{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}.chat .m{max-width:88%;padding:9px 12px;border-radius:12px;font-size:14px;line-height:1.45}.chat .m.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}.chat .m.me{align-self:flex-end;background:var(--accent,#1f7a5a);color:#fff}
+.chat .m a{display:inline-block;margin-top:6px;font-weight:600}.chat .sg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chat .sg button{font-size:12.5px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:inherit;cursor:pointer;text-align:left}
+.chat .cf{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}.chat .cf input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:inherit;font-size:15px}.chat .cn{padding:0 14px 10px;font-size:11.5px;color:var(--muted)}
+.toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+@media (max-width:600px){aside.chat{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0}}
 /* Welcome page: dark control-room hero with a live "busbar" of the project life cycle */
 .home{display:grid;gap:18px;min-width:0}
 .hero{position:relative;overflow:hidden;border-radius:10px;padding:34px 30px 26px;color:#e9f1ec;background:radial-gradient(120% 140% at 85% 0%,#1f3a33 0%,#0f1c18 45%,#0a1210 100%);border:1px solid #24322d}
@@ -300,6 +311,8 @@ input,select,textarea,.adv .q{font-size:16px}
 </div>
 <div class="toast" id="toast" hidden></div>
 <aside class="adv" id="advisor" role="dialog" aria-label="Advisor" hidden></aside>
+<button class="chat-fab" id="chatBtn" data-act="chat-open" aria-controls="chat" aria-expanded="false" title="Ask the help assistant">💬 Ask a question</button>
+<aside class="chat" id="chat" role="dialog" aria-label="Help assistant" hidden></aside>
 <input type="file" id="fileIn" accept=".json,application/json" hidden>
 
 <script type="application/json" id="dd">/*DATA*/</script>
@@ -1644,7 +1657,7 @@ const VIEWS = [
   ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['tasks', 'My tasks'], ['admin', 'Admin centre'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
   ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['treat', 'Water & sewage treatment'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
-const EXTRA_VIEWS = ['account', 'tcreport', 'regreport'];
+const EXTRA_VIEWS = ['account', 'tcreport', 'regreport', 'faq'];
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'home';
 let R = calcAll();
 function opt(list, sel, map = x => x) { return list.map(x => { const v = typeof x === 'object' ? x.v : x, t = typeof x === 'object' ? x.t : map(x); return `<option value="${esc(v)}"${String(v) === String(sel) ? ' selected' : ''}>${esc(t)}</option>`; }).join(''); }
@@ -1682,7 +1695,7 @@ function renderRail() {
   if (cur && rl.getBoundingClientRect && rl.scrollWidth > rl.clientWidth) { const a = rl.getBoundingClientRect(), c = cur.getBoundingClientRect(); rl.scrollLeft += (c.left + c.width / 2) - (a.left + a.width / 2); }
 }
 function railFoot() {
-  return `<div class="rail-foot"><a class="btn small ghost" href="#guide">▶ How to use the app</a><a class="btn small ghost" href="#video">🎬 Video guide (MP4)</a><a class="btn small ghost" href="${contactHref('problem')}" title="Email ${CONTACT} with an idea or a problem">✉ Contact the developer</a>${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json" title="Saves the project (.json) and the report as PDF">Save project (.json + PDF)</button><button class="btn small ghost" data-act="save-json-only" title="Project file only">Save .json only</button><button class="btn small" data-act="load-json" title="Open a saved .json project file to continue editing">Open project (.json)</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
+  return `<div class="rail-foot"><a class="btn small ghost" href="#guide">▶ How to use the app</a><a class="btn small ghost" href="#video">🎬 Video guide (MP4)</a><a class="btn small ghost" href="#faq">❓ FAQ</a><button class="btn small ghost" data-act="chat-open">💬 Help assistant</button><a class="btn small ghost" href="${contactHref('problem')}" title="Email ${CONTACT} with an idea or a problem">✉ Contact the developer</a>${legalLinks()}${proMode() ? `<a class="btn small${licenceOK() ? ' ghost' : ' primary'}" href="#account">${licenceOK() ? 'Pro – licence active' : 'Get Pro'}</a>` : ''}<button class="btn small" data-act="save-json" title="Saves the project (.json) and the report as PDF">Save project (.json + PDF)</button><button class="btn small ghost" data-act="save-json-only" title="Project file only">Save .json only</button><button class="btn small" data-act="load-json" title="Open a saved .json project file to continue editing">Open project (.json)</button><button class="btn small ghost" data-act="new" id="newBtn">New blank project</button><span>Your work is kept in this browser automatically.</span></div>`;
 }
 function head(eb, title, sub, right = '') { return `<div class="sheet-head"><div><div class="eyebrow">${eb}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div><div class="row">${right}</div></div>`; }
 
@@ -3368,7 +3381,7 @@ function introAct(act) {
 }
 /* ---------- Advisor: next best steps from the project, a guide to the page you are on, and searchable help ---------- */
 const ADV = { open: false, tab: 'next', q: '' };
-const vName = id => (VIEWS.find(v => v[0] === id) || [id, id])[1];
+const vName = id => (VIEWS.find(v => v[0] === id) || [id, id === 'faq' ? 'FAQ' : id])[1];
 // What to do next, worked out from the project itself. s: bad | warn | info | ok
 function advNext() {
   const out = [], p = S.project, add = (s, t, d, v) => out.push({ s, t, d, v });
@@ -3444,6 +3457,11 @@ const ADV_PAGE = {
 // Searchable help: [question, answer, page]
 const ADV_HELP = [
   ['How do I contact the developer with an idea or a problem?', 'Email ' + CONTACT + ' – or use ✉ Contact the developer at the bottom of the stage menu or on the Welcome page, which starts an email with the page, your role and your browser filled in. Ideas, bugs and missing standards are all welcome.', 'home'],
+  ['Is there a chatbot or an FAQ?', 'Yes. Press 💬 Ask a question at the bottom right of any page to chat with the help assistant – it answers from these FAQs and from your project (try “what should I do next?”), works offline and sends nothing anywhere. The full FAQ is at ❓ FAQ at the bottom of the stage menu.', 'faq'],
+  ['Is the app free?', 'Yes – the app is free to use. Results are a design pre-check, not certification.', 'home'],
+  ['Does it work offline?', 'Yes. Once loaded, everything runs in your browser. You can also keep the offline copy of the app (a single HTML file) and open it without an internet connection; only the MP4 video guide needs the website.', 'home'],
+  ['Can I use it on a phone or tablet?', 'Yes. On a phone the stage menu becomes a scrolling bar at the top, and the project file buttons, guides and contact links are at the foot of the page. Large tables scroll sideways.', 'home'],
+  ['Can several people work on one project?', 'Yes – share the project (.json) file. Each person registers their own role in their own browser, so the same file opens with the right stages for each of them. The Admin centre keeps the team and the project log.', 'admin'],
   ['How do I use the app? Is there a video guide?', 'Yes – there is a 2-minute narrated MP4 video guide with captions on the Welcome page (🎬 Video guide at the bottom of the stage menu), and you can download it. Or press ▶ How to use the app for the animated guide. The 1-minute guide shows how to register, find your way with the stage menu, read the live figures, enter data, use My tasks and the Advisor, export, and save and share the project file.', 'home'],
   ['Who manages the whole project life cycle?', 'Register as Project controller. The Admin centre shows every life-cycle stage from concept to end of life with live progress, a stage gate for each, the programme and budget, the team and their access, and the project log.', 'admin'],
   ['How do I choose a water, sewage or pool treatment system?', 'Open Water & sewage treatment. Each dropdown lists the options open to the client and consultant with what they suit, their pros and cons, and a suggested option from the raw water, flows or pool use. The comparison tables show power and energy for each option and capacity.', 'treat'],
@@ -3479,19 +3497,84 @@ const ADV_HELP = [
   ['Energy, cost and carbon', 'Energy management estimates annual energy from demand and load factor, then applies efficiency measures and solar PV with regional carbon factors.', 'energy'],
 ];
 function advSearch(q) {
-  const w = String(q || '').toLowerCase().split(/[^a-z0-9]+/).filter(x => x.length > 2);
+  const w = String(q || '').toLowerCase().split(/[^a-z0-9]+/).filter(x => x.length > 2 || /^(zs|pv|hv|lv|md|tc|fm|pf)$/.test(x));
   if (!w.length) return ADV_HELP.slice(0, 8);
   return ADV_HELP.map(h => { const t = (h[0] + ' ' + h[1] + ' ' + vName(h[2])).toLowerCase(), q0 = h[0].toLowerCase(); return [w.reduce((a, x) => a + (q0.includes(x) ? 3 : 0) + (t.includes(x) ? 1 : 0) + (t.includes(x.slice(0, 4)) ? 0.5 : 0), 0), h]; })
     .filter(x => x[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
 }
 function advHelpHtml(q) { const r = advSearch(q); return r.length ? r.map(h => '<details><summary>' + esc(h[0]) + '</summary><p>' + esc(h[1]) + '</p><a href="#' + h[2] + '">Go to ' + esc(vName(h[2])) + ' →</a></details>').join('') : '<p class="note">No match. Try other words, such as “cable”, “certificate”, “ticket” or “export”.</p>'; }
+// FAQ page: every help answer, grouped by topic and searchable
+const FAQ_CATS = [['start', 'Getting started & support', ['home', 'faq', 'tasks', 'project', 'admin', 'dashboard', 'coverage']], ['elec', 'Electrical design', ['sizing', 'circuits', 'checklist', 'drawings', 'review', 'data-centre', 'lifts-pumps', 'energy', 'area', 'equipment', 'compliance']], ['mep', 'Mechanical, plumbing & treatment', ['mech', 'plumb', 'treat', 'mepcomp']], ['rec', 'Certificates, records & handover', ['lvcert', 'tc', 'handover', 'registers', 'report', 'boq']], ['fm', 'Facilities & assets', ['fm', 'assets', 'fmreport', 'facilities']]];
+function faqCat(h) { return (FAQ_CATS.find(c => c[2].includes(h[2])) || FAQ_CATS[0])[0]; }
+let FAQ_Q = '';
+function faqItem(h) { return '<details><summary>' + esc(h[0]) + '</summary><p>' + esc(h[1]) + '</p>' + (h[2] === 'faq' ? '<button class="btn small" data-act="chat-open">💬 Open the help assistant</button>' : '<a href="#' + h[2] + '">Go to ' + esc(vName(h[2])) + ' →</a>') + '</details>'; }
+function faqResHtml(q) {
+  if (String(q || '').trim()) { const r = advSearch(q); return r.length ? '<h3>Best matches</h3>' + r.map(faqItem).join('') : '<p class="note">No match. Try other words, or ask the help assistant or the developer below.</p>'; }
+  return FAQ_CATS.map(c => { const it = ADV_HELP.filter(h => faqCat(h) === c[0]); return it.length ? '<h3 id="faq-' + c[0] + '">' + esc(c[1]) + '</h3>' + it.map(faqItem).join('') : ''; }).join('');
+}
+V.faq = () => '<section class="sheet faq">' + head('Help', 'Frequently asked questions', ADV_HELP.length + ' answers about using the app, grouped by topic. Search them, or ask the help assistant – it answers from these FAQs and your project.', '<button class="btn small primary" data-act="chat-open">💬 Ask the help assistant</button><a class="btn small ghost" href="#contact">✉ Contact the developer</a>')
+  + '<label for="faqQ" class="note">Search the FAQ</label><input id="faqQ" class="q" type="search" autocomplete="off" placeholder="e.g. voltage drop, save, certificate" value="' + esc(FAQ_Q) + '">'
+  + '<nav class="faq-cats" aria-label="FAQ topics">' + FAQ_CATS.map(c => '<a href="#faq" data-faq="' + c[0] + '">' + esc(c[1]) + '</a>').join('') + '</nav>'
+  + '<div id="faqRes">' + faqResHtml(FAQ_Q) + '</div>' + contactHtml() + '</section>';
+document.addEventListener('input', e => { if (e.target && e.target.id === 'faqQ') { FAQ_Q = e.target.value; const r = document.getElementById('faqRes'); if (r) r.innerHTML = faqResHtml(FAQ_Q); } });
+document.addEventListener('click', e => { const a = e.target && e.target.closest && e.target.closest('a[data-faq]'); if (!a) return; e.preventDefault(); FAQ_Q = ''; const q = document.getElementById('faqQ'); if (q) q.value = ''; const r = document.getElementById('faqRes'); if (r) r.innerHTML = faqResHtml(''); const h = document.getElementById('faq-' + a.dataset.faq); if (h && h.scrollIntoView) h.scrollIntoView({ block: 'start' }); });
+
+// Help assistant (chat): answers from the FAQ and the live project, in this browser – no AI service, nothing is sent
+const CHAT = { open: false, msgs: [] };
+const CHAT_STOP = new Set('the and for are how can what why where when which who does did do you your yours with this that from into have has had will would should could about there their them they its it is am was were been be my me mine our a an to of in on at or if not any some all get got use using need want please tell know show help hi hello'.split(' '));
+const CHAT_START = ['What should I do next?', 'Why is my circuit failing?', 'How do I save or reopen my work?', 'How do I contact the developer?'];
+function chatReply(text) {
+  const t = String(text || '').trim(), lo = t.toLowerCase();
+  if (/^(hi|hello|hey|hiya|good (morning|afternoon|evening))\b/.test(lo) && lo.split(/\s+/).length <= 4) return { t: 'Hello' + (REG && REG.name ? ' ' + REG.name : '') + '! Ask me anything about using the app – I answer from the FAQ and your project.', sg: CHAT_START };
+  if (/^(thanks|thank you|cheers|ta|great|ok|okay|perfect)\b/.test(lo) && lo.split(/\s+/).length <= 4) return { t: 'You are welcome. Anything else?', sg: CHAT_START.slice(1) };
+  if (/(contact|email|e-mail|developer|human|real person|support team|speak to|talk to|report (a )?(bug|problem)|bug|feedback|suggest|feature request)/.test(lo)) return { t: 'You can email the developer at ' + CONTACT + ' with ideas, problems or questions. The buttons below start an email with the page, your role and your browser filled in. Please do not send client-confidential project files.', ln: [[contactHref('problem'), '⚠ Report a problem'], [contactHref('idea'), '💡 Suggest an idea']] };
+  if (/(what (should|do) i do|what next|next step|where (do|should) i (start|begin)|my tasks)/.test(lo)) {
+    let N = null; try { N = advNext(); } catch (e) { }
+    const st = N ? N.steps.filter(x => x.s === 'bad' || x.s === 'warn').slice(0, 3) : [];
+    if (!st.length && N && N.steps.length) st.push(N.steps[0]);
+    return st.length ? { t: 'From your project, as ' + roleOf()[1] + (N.total ? ' (' + N.done + ' of ' + N.total + ' done)' : '') + ':\n' + st.map((x, i) => (i + 1) + '. ' + x.t + ' – ' + x.d).join('\n'), ln: st.filter(x => x.v !== view).slice(0, 2).map(x => ['#' + x.v, 'Open ' + vName(x.v) + ' →']) }
+      : { t: 'Register your role on the Welcome page, set the country on Project & region, then add loads.', ln: [['#home', 'Go to Welcome →']] };
+  }
+  if (/(this page|where am i|what is this page|what does this page)/.test(lo)) { const g = ADV_PAGE[view]; return g ? { t: vName(view) + ': ' + g[0] + '\nHow to use it: ' + g[1].join(' ') + '\nTip: ' + g[2].join(' ') } : { t: 'This is ' + vName(view) + '. Open the Advisor (top right) and choose “This page” for a guide to any stage.' }; }
+  const q = lo.split(/[^a-z0-9]+/).filter(w => w.length > 1 && !CHAT_STOP.has(w)).join(' ');
+  const r = q ? advSearch(q) : [];
+  if (!r.length) return { t: 'Sorry, I could not find that in the FAQ. Try other words – such as “cable”, “certificate”, “ticket” or “export” – browse the FAQ, or ask the developer.', ln: [['#faq', '❓ Browse the FAQ'], [contactHref('question'), '✉ Ask the developer']] };
+  const h = r[0];
+  return { t: h[1], ln: h[2] === 'faq' ? [['#faq', '❓ Open the FAQ']] : h[2] !== view ? [['#' + h[2], 'Go to ' + vName(h[2]) + ' →']] : [], sg: r.slice(1, 4).map(x => x[0]) };
+}
+function chatSay(text) { const t = String(text || '').trim(); if (!t) return; CHAT.msgs.push({ me: 1, t: t.slice(0, 500) }); CHAT.msgs.push(chatReply(t)); if (CHAT.msgs.length > 60) CHAT.msgs.splice(0, CHAT.msgs.length - 60); }
+function chatMsgHtml(m) { return '<div class="m ' + (m.me ? 'me' : 'bot') + '">' + esc(m.t).replace(/\n/g, '<br>') + (m.ln && m.ln.length ? '<div>' + m.ln.map(l => '<a href="' + esc(l[0]) + '"' + (/^mailto:/.test(l[0]) ? '' : ' data-chatnav="1"') + '>' + esc(l[1]) + '</a>').join(' &nbsp; ') + '</div>' : '') + (m.sg && m.sg.length ? '<div class="sg">' + m.sg.map(q => '<button data-act="chat-ask" data-q="' + esc(q) + '">' + esc(q) + '</button>').join('') + '</div>' : '') + '</div>'; }
+function renderChat() {
+  const b = document.getElementById('chatBtn'); if (b) { b.hidden = CHAT.open; if (b.setAttribute) b.setAttribute('aria-expanded', CHAT.open ? 'true' : 'false'); }
+  const el = document.getElementById('chat'); if (!el) return; el.hidden = !CHAT.open; if (!CHAT.open) { el.innerHTML = ''; return; }
+  const hello = { t: 'Hi' + (REG && REG.name ? ' ' + REG.name : '') + ' – I am the help assistant. Ask how to do something in the app, or what to do next on your project.', sg: CHAT_START };
+  el.innerHTML = '<div class="ch"><h2>Help assistant<small>Answers from the FAQ and your project</small></h2><button class="btn small ghost" data-act="chat-clear" title="Clear the conversation">Clear</button><button class="btn small" data-act="chat-close" aria-label="Close the help assistant">Close</button></div>'
+    + '<div class="log" id="chatLog" role="log" aria-live="polite">' + [hello].concat(CHAT.msgs).map(chatMsgHtml).join('') + '</div>'
+    + '<div class="cf"><input id="chatIn" type="text" autocomplete="off" maxlength="500" placeholder="Type a question…" aria-label="Your question"><button class="btn small primary" data-act="chat-send">Send</button></div>'
+    + '<div class="cn">Works in your browser – nothing is sent anywhere. Guidance, not certification. <a href="#faq" data-chatnav="1">All FAQs</a></div>';
+  const lg = document.getElementById('chatLog'); if (lg) lg.scrollTop = lg.scrollHeight;
+}
+function chatAct(act, b) {
+  if (act === 'chat-open') CHAT.open = true;
+  if (act === 'chat-close') CHAT.open = false;
+  if (act === 'chat-clear') CHAT.msgs = [];
+  if (act === 'chat-ask') { CHAT.open = true; chatSay(b.dataset.q); }
+  if (act === 'chat-send') { const i = document.getElementById('chatIn'); chatSay(i && i.value); }
+  renderChat();
+  const f = document.getElementById(CHAT.open ? 'chatIn' : 'chatBtn'); if (f && f.focus) f.focus();
+}
+document.addEventListener('keydown', e => {
+  if (e.target && e.target.id === 'chatIn' && e.key === 'Enter') { e.preventDefault(); chatSay(e.target.value); renderChat(); const i = document.getElementById('chatIn'); if (i && i.focus) i.focus(); return; }
+  if (e.key === 'Escape' && CHAT.open) { CHAT.open = false; renderChat(); const cb = document.getElementById('chatBtn'); if (cb && cb.focus) cb.focus(); }
+});
+document.addEventListener('click', e => { const a = e.target && e.target.closest && e.target.closest('a[data-chatnav]'); if (a && typeof innerWidth === 'number' && innerWidth < 600) { CHAT.open = false; renderChat(); } });
 function advBody() {
   if (ADV.tab === 'page') {
     const g = ADV_PAGE[view] || ['Reports and records generated from the project.', ['Check the content, then save or print.'], ['Correct the inputs in their stage – reports follow automatically.']];
     return '<h3>' + esc(vName(view)) + '</h3>' + (canEdit() ? '' : '<p class="callout" style="margin:0 0 8px">View only for ' + esc(roleOf()[1]) + '. Use it for reference and exports; ' + esc(roleOwners(view).join(', ') || 'the project lead') + ' keep' + (roleOwners(view).length === 1 ? 's' : '') + ' it up to date.</p>') + '<p style="margin:0 0 6px">' + esc(g[0]) + '</p><h3>How to use it</h3><ul>' + g[1].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul><h3>Get the best result</h3><ul>' + g[2].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
   }
   if (ADV.tab === 'ask') return '<label for="advQ" class="note">Type a question or a few words</label><input id="advQ" class="q" type="search" autocomplete="off" placeholder="e.g. why is my circuit failing" value="' + esc(ADV.q) + '">'
-    + '<div class="chips">' + ['voltage drop', 'Zs', 'certificate', 'Excel', 'save', 'ticket'].map(c => '<button data-act="adv-chip" data-q="' + c + '">' + c + '</button>').join('') + '</div><div id="advRes">' + advHelpHtml(ADV.q) + '</div>';
+    + '<div class="chips">' + ['voltage drop', 'Zs', 'certificate', 'Excel', 'save', 'ticket'].map(c => '<button data-act="adv-chip" data-q="' + c + '">' + c + '</button>').join('') + '</div><div id="advRes">' + advHelpHtml(ADV.q) + '</div><p class="note" style="margin-top:10px"><a href="#faq">❓ All FAQs</a> · <a href="#contact">✉ Contact the developer</a></p>';
   const N = advNext();
   return '<p class="note" style="margin:0 0 8px">Workspace: <b>' + esc(roleOf()[1]) + '</b> · <a href="#home">change</a></p>' + (N.total ? '<div class="score"><span class="note" style="margin:0">Progress</span><div class="bar"><i style="width:' + Math.round(N.done / N.total * 100) + '%;background:var(--ok)"></i></div><b>' + N.done + ' / ' + N.total + '</b></div>' : '')
     + '<ol class="steps">' + N.steps.map(s => '<li class="' + s.s + '"><b>' + esc(s.t) + '</b><p>' + esc(s.d) + '</p>' + (s.v !== view ? '<a href="#' + s.v + '">Open ' + esc(vName(s.v)) + ' →</a>' : '') + '</li>').join('') + '</ol>';
@@ -4519,7 +4602,7 @@ V.home = () => {
     + '<div class="hero"><div class="k">NexvoraHub Studio · MEP engineering platform – electrical, mechanical and plumbing</div>'
     + '<h1>Design it. Build it. Prove it. <em>Keep it running.</em></h1>'
     + '<p class="lead">One connected workspace for the whole life of a building’s MEP services – electrical, mechanical and plumbing infrastructure. Work from the first load schedule, heat-loss and ventilation calculation and water-demand estimate. Carry on through water and sewage treatment, pools, construction, testing and handover, then everyday maintenance and long-term asset planning. Every discipline and every stage shares one model. A change in the design flows through to the electrical supply, the bill of quantities, the test schedule, the asset register and the maintenance plan.</p>'
-    + '<div class="acts">' + (REG ? '' : '<a class="btn primary" href="#register">Register to start working</a>') + '<button class="btn" data-act="intro-guide">▶ How to use the app</button><a class="btn' + (REG ? ' primary' : '') + '" href="#dashboard">Open the project dashboard</a><a class="btn" href="#tasks">My tasks</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button><button class="btn" data-act="adv-open" data-tab="next">Ask the Advisor</button><a class="btn ghost" href="#contact">✉ Contact the developer</a></div>'
+    + '<div class="acts">' + (REG ? '' : '<a class="btn primary" href="#register">Register to start working</a>') + '<button class="btn" data-act="intro-guide">▶ How to use the app</button><a class="btn' + (REG ? ' primary' : '') + '" href="#dashboard">Open the project dashboard</a><a class="btn" href="#tasks">My tasks</a><a class="btn" href="#project">' + (p.example ? 'Explore the worked example' : 'Continue: ' + esc(p.name || 'your project')) + '</a><button class="btn" data-act="new">Start a new project</button><button class="btn" data-act="load-json">Open a saved project</button><button class="btn" data-act="adv-open" data-tab="next">Ask the Advisor</button><a class="btn ghost" href="#faq">❓ FAQ</a><a class="btn ghost" href="#contact">✉ Contact the developer</a></div>'
     + bus
     + '<div class="snap"><span>Project <b>' + esc(p.name || 'Untitled') + '</b></span><span>Region <b>' + esc(p.country || '') + '</b></span><span>Status <b>' + esc(rag) + '</b></span><span>Transformer <b>' + (R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA' : '–') + '</b></span></div></div>'
     + introHtml() + vidHtml() + rolePicker() + contactHtml() + '<div class="life">' + stages.map(s => '<a class="card" href="' + s[4] + '"><span class="n">' + s[0] + ' / 05</span><h3>' + s[1] + '</h3><p>' + esc(s[2]) + '</p><span class="fig">' + esc(s[3]) + '</span><span class="go">' + s[5] + ' →</span></a>').join('') + '</div>'
@@ -4998,7 +5081,7 @@ function csvSchedules() {
 /* ---------- render + events ---------- */
 function render(keepFocus) {
   R = calcAll();
-  renderBand(); renderRail(); renderAdvisor();
+  renderBand(); renderRail(); renderAdvisor(); if (!CHAT.open) renderChat();
   const a = document.activeElement, id = a && a.id, pos = a && a.selectionStart, ds = a && a.dataset ? { ...a.dataset } : null;
   $('#main').innerHTML = roleBanner() + V[view]();
   // accessibility: inputs inside tables are named after their column heading (and the row's first cell)
@@ -5063,6 +5146,7 @@ document.addEventListener('click', async e => {
   if (act && act.startsWith('mep-')) { mepAct(act); return; }
   if (act && act.startsWith('intro-')) { introAct(act); return; }
   if (act && act.startsWith('adv-')) { advAct(act, b); return; }
+  if (act && act.startsWith('chat-')) { chatAct(act, b); return; }
   if (act && act.startsWith('role-')) { roleAct(act, b); return; }
   if (!canEdit() && !roleSafe(b) && b.closest('#main')) { toast('View only for your role – change role on the Welcome page'); return; }
   if (proBlocked(act)) { toast(projectNotOffered() ? 'Pro is not offered in this region' : 'This is a Pro feature – see Plan & licence'); location.hash = '#account'; return; }
@@ -5157,7 +5241,7 @@ document.addEventListener('change', e => {
 let tT; function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => t.hidden = true, 3200); }
 document.addEventListener('change', e => { const t = e.target; if (t && t.name === 'regRole') { document.querySelectorAll('.rolegrid label.role').forEach(l => { const i = l.querySelector('input'); if (l.classList) l.classList[i && i.checked ? 'add' : 'remove']('on'); }); const g = document.querySelector('.rolegrid'); if (g && g.classList) g.classList.remove('miss'); const m = document.getElementById('regMsg'); if (m) { m.className = 'note'; m.textContent = 'Role: ' + roleOf(t.value)[1] + ' – now press ' + (REG ? 'Save registration' : 'Register'); } } });
 document.addEventListener('submit', e => { if (e.target && e.target.id === 'regForm') e.preventDefault(); });
-addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ADV.open && typeof innerWidth === 'number' && innerWidth < 760) ADV.open = false; if (h === 'register') { regGo(); return; } if (h === 'guide') { guideGo(); return; } if (h === 'video') { vidGo(); return; } if (h === 'contact') { view = 'home'; render(); const c = document.getElementById('contact'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center' }); return; } if (VIEWS.some(v => v[0] === h) || EXTRA_VIEWS.includes(h)) { view = h; render(); scrollTo(0, 0); } });
+addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ADV.open && typeof innerWidth === 'number' && innerWidth < 760) ADV.open = false; if (h === 'register') { regGo(); return; } if (h === 'guide') { guideGo(); return; } if (h === 'video') { vidGo(); return; } if (h === 'contact') { if (view !== 'faq') { view = 'home'; render(); } const c = document.getElementById('contact'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center' }); return; } if (VIEWS.some(v => v[0] === h) || EXTRA_VIEWS.includes(h)) { view = h; render(); scrollTo(0, 0); } });
 render();
 if (location.hash === '#register') regGo(); else if (location.hash === '#guide') guideGo(); else if (location.hash === '#video') vidGo();
 </script>

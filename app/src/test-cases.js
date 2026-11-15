@@ -1020,7 +1020,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   achk('worked example noted', N.steps.some(x => /worked example/.test(x.t)));
   { const S0 = S; S = exampleProject(); upgrade(S); S.circuits[0].icn = 1; R = calcAll(); const st = advNext().steps, k = st.findIndex(x => x.v === 'circuits' && /failing/.test(x.t)); achk('a failing circuit is raised as urgent', k >= 0 && st[k].s === 'bad' && st[k].d.includes(S.circuits[0].ref) && st.slice(0, k).every(x => x.s === 'bad'), st.slice(0, 3)); S = S0; R = calcAll(); }
   achk('a guide for every stage', VIEWS.every(v => ADV_PAGE[v[0]] && ADV_PAGE[v[0]][1].length && ADV_PAGE[v[0]][2].length), VIEWS.filter(v => !ADV_PAGE[v[0]]).map(v => v[0]));
-  achk('help links to real pages', ADV_HELP.every(x => VIEWS.some(v => v[0] === x[2])));
+  achk('help links to real pages', ADV_HELP.every(x => VIEWS.some(v => v[0] === x[2]) || EXTRA_VIEWS.includes(x[2])));
   achk('help search finds the answer', /circuit/i.test(advSearch('why is my circuit failing')[0][0]) && /Excel/.test(advSearch('excel export')[0][0]) && /save/i.test(advSearch('save my work')[0][0]), advSearch('save my work')[0]);
   ADV.open = true; ['next', 'page', 'ask'].forEach(k => { ADV.tab = k; renderAdvisor(); const x = document.getElementById('advisor').innerHTML; achk('advisor tab ' + k, /Advisor/.test(x) && /adv-close/.test(x) && x.length > 400, x.length); });
   ADV.open = false; ADV.tab = 'next'; renderAdvisor();
@@ -1318,6 +1318,30 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   ck('Advisor help answers how to contact the developer', ADV_HELP.some(x => /contact the developer/i.test(x[0]) && x[1].includes('info@nexvorahubconnection.com')));
   REG = RG; view = V0; render();
   out.videoContactChecks = cF.length ? cF : 'all passed'; }
+// FAQ page and help assistant (chat)
+{ const qF = [], qk = (n, ok, v) => { if (!ok) qF.push(n + (v !== undefined ? ' ' + JSON.stringify(v) : '')); }, V0 = view, RG = REG;
+  REG = null; CHAT.open = false; CHAT.msgs = []; FAQ_Q = '';
+  view = 'faq'; render(); let h = document.querySelector('#main').innerHTML;
+  qk('FAQ page renders every answer, grouped by topic', /Frequently asked questions/.test(h) && FAQ_CATS.every(c => h.includes(c[1].replace(/&/g, '&amp;'))) && ADV_HELP.every(x => h.includes(esc(x[0]))) && /id="faqQ"/.test(h) && /id="contact"/.test(h) && !/NaN|undefined/.test(h), ADV_HELP.length);
+  qk('every answer sits in a topic', ADV_HELP.every(x => FAQ_CATS.some(c => c[0] === faqCat(x))));
+  qk('FAQ search ranks the right answer', /Voltage drop too high/.test(faqResHtml('voltage drop').split('</details>')[0]) && /No match/.test(faqResHtml('zzqqxx')));
+  qk('FAQ is named and editable for every role', vName('faq') === 'FAQ' && EXTRA_VIEWS.includes('faq') && canEdit('faq'));
+  const r1 = chatReply('Why is my circuit failing?'); qk('chat answers from the FAQ with a link to the stage', /current capacity/.test(r1.t) && r1.ln.some(l => l[0] === '#circuits'), r1);
+  const r2 = chatReply('how do I contact the developer'); qk('chat gives the contact email', r2.t.includes('info@nexvorahubconnection.com') && r2.ln.some(l => /^mailto:info@/.test(l[0])), r2.t);
+  const r3 = chatReply('what should I do next?'); qk('chat gives next steps from the project', /^From your project/.test(r3.t) || /Register your role/.test(r3.t), r3.t);
+  const r4 = chatReply('qwzx blorp'); qk('chat admits when it has no answer and offers the developer', /could not find/.test(r4.t) && r4.ln.some(l => /^mailto:/.test(l[0])));
+  qk('chat greets and thanks', /^Hello/.test(chatReply('hi').t) && /welcome/.test(chatReply('thanks').t));
+  const r5 = chatReply('how do I save my project'); qk('chat: saving', /Save project/.test(r5.t), r5.t);
+  const r6 = chatReply('how do I raise a maintenance ticket'); qk('chat: FM ticket', r6.ln.some(l => l[0] === '#fm'), r6);
+  chatAct('chat-open', {}); let c = document.getElementById('chat').innerHTML; qk('chat opens with a welcome and starter questions', !document.getElementById('chat').hidden && /Help assistant/.test(c) && /data-act="chat-ask"/.test(c) && /id="chatIn"/.test(c));
+  chatAct('chat-ask', { dataset: { q: 'Zs too high' } }); c = document.getElementById('chat').innerHTML; qk('asking adds the question and the answer', CHAT.msgs.length === 2 && /class="m me"/.test(c) && /CPC/.test(c));
+  chatAct('chat-ask', { dataset: { q: '<img src=x onerror=alert(1)>' } }); c = document.getElementById('chat').innerHTML; qk('chat escapes what people type', !/<img/.test(c) && /&lt;img/.test(c));
+  chatAct('chat-clear', {}); chatAct('chat-close', {}); qk('chat clears and closes', CHAT.msgs.length === 0 && document.getElementById('chat').hidden);
+  const rf = railFoot(); qk('menu footer: FAQ and help assistant', /href="#faq"/.test(rf) && /data-act="chat-open"/.test(rf));
+  view = 'home'; render(); h = document.querySelector('#main').innerHTML; qk('Welcome page links to the FAQ', /href="#faq"/.test(h));
+  qk('Advisor help mentions the chatbot and FAQ', ADV_HELP.some(x => /chatbot or an FAQ/.test(x[0])));
+  REG = RG; view = V0; render();
+  out.faqChatChecks = qF.length ? qF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
