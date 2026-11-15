@@ -20,8 +20,12 @@ JSON.parse(accSrc);
 const acc = accSrc.replace(/</g, '\\u003c');
 const page = tpl.replace('/*DATA*/', () => data).replace('/*AIDC*/', () => aidc).replace('/*COVERAGE*/', () => cov).replace('/*ACCESS*/', () => acc);
 
+// Offline copy (load-designer.html): the MP4 video guide and its poster are embedded so they play without the website
+const media = path.join(__dirname, '..', '..', 'site');
+const b64 = f => fs.existsSync(path.join(media, f)) ? fs.readFileSync(path.join(media, f)).toString('base64') : '';
+const vEmb = b64('how-to-use.mp4') ? JSON.stringify({ mp4: b64('how-to-use.mp4'), poster: b64('how-to-use-poster.jpg') }) : 'null';
 const out = path.join(__dirname, '..', 'load-designer.html');
-fs.writeFileSync(out, page);
+fs.writeFileSync(out, page.replace('/*VIDEO_EMBED*/null', () => vEmb));
 console.log('written', out, fs.statSync(out).size, 'bytes');
 
 const reset = ':root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}';

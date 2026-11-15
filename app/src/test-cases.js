@@ -1316,6 +1316,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   REG = { name: 'Pat', role: 'design' }; ck('registered role appears in the email', decodeURIComponent(contactHref('idea')).includes('Role: ' + roleOf('design')[1]) && /idea \/ suggestion/.test(decodeURIComponent(contactHref('idea'))));
   const rf = railFoot(); ck('menu footer: video guide and contact links', /href="#video"/.test(rf) && /Contact the developer/.test(rf) && /mailto:info@/.test(rf));
   ck('Advisor help answers how to contact the developer', ADV_HELP.some(x => /contact the developer/i.test(x[0]) && x[1].includes('info@nexvorahubconnection.com')));
+  ck('offline copy carries the MP4 and poster inside the file', !!VIDEO_EMBED && VIDEO_EMBED.mp4.length > 1e6 && VIDEO_EMBED.poster.length > 1000 && /^AAAA/.test(VIDEO_EMBED.mp4));
   REG = RG; view = V0; render();
   out.videoContactChecks = cF.length ? cF : 'all passed'; }
 // FAQ page and help assistant (chat)
