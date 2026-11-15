@@ -515,7 +515,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.sizing.essential = 1; S.sizing.genMargin = 5; R = calcAll();
   gchk('auto: fewest sets that fit the largest standard rating', R.genCfg.duty > 1 && R.genCfg.unit === nextStd(GEN, R.ess / R.genCfg.duty) && !nextStd(GEN, R.ess / (R.genCfg.duty - 1)), [R.ess, R.genCfg]);
   S.sizing.genRed = 'N+1'; R = calcAll(); gchk('N+1 adds a standby set', R.genCfg.installed === R.genCfg.duty + 1 && R.genCfg.parallel);
-  S.sizing.genSets = 6; R = calcAll(); gchk('chosen number of duty sets', R.genCfg.duty === 6 && R.genCfg.unit === nextStd(GEN, R.ess / 6) && /7 × .* kVA prime \(N\+1, 6 duty\)/.test(genText()), genText());
+  S.sizing.genSets = 6; R = calcAll(); gchk('chosen number of duty sets', R.genCfg.duty === 6 && R.genCfg.unit === nextStd(GEN, R.ess / 6) && /7 × .* kVA standby \(N\+1, 6 duty, 1 spare\)/.test(genText()), genText());
   gchk('motor start compared with duty capacity', R.genInfo.bigStart ? near(R.genInfo.startRatio, R.genInfo.bigStart.kva / R.genCfg.dutyKva) : true);
   view = 'sizing'; render(); gchk('sizing view: duty sets + redundancy', /Duty sets/.test(document.querySelector('#main').innerHTML) && /Redundancy/.test(document.querySelector('#main').innerHTML));
   // BOQ
@@ -1029,9 +1029,9 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
 // ---------- role workspaces ----------
 { const rF = [], rchk = (n, ok, got) => { if (!ok) rF.push(n + (got !== undefined ? ' got ' + JSON.stringify(got) : '')); };
   const R0 = { ...ROLE }, V0 = view;
-  rchk('eight roles, lead edits everything', ROLES.length === 8 && ROLE.id === 'lead' && VIEWS.every(v => canEdit(v[0], 'lead') && roleShows(v[0], 'lead')));
+  rchk('nine roles, lead edits everything', ROLES.length === 9 && ROLE.id === 'lead' && VIEWS.every(v => canEdit(v[0], 'lead') && roleShows(v[0], 'lead')));
   rchk('every role stage is a real page and edit ⊂ view', ROLES.filter(r => r[3]).every(r => r[3].concat(r[4]).every(v => VIEWS.some(x => x[0] === v)) && r[4].every(v => r[3].includes(v))));
-  rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'tasks', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
+  rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'tasks', 'admin', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
   rchk('design engineer edits circuits, not FM', canEdit('circuits', 'design') && !canEdit('fm', 'design') && !roleShows('fm', 'design'));
   rchk('energy manager edits energy, views sizing', canEdit('energy', 'energy') && roleShows('sizing', 'energy') && !canEdit('sizing', 'energy'));
   rchk('home and dashboard open to all', ROLES.every(r => canEdit('home', r[0]) && canEdit('dashboard', r[0])));
@@ -1250,6 +1250,47 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   S.treat.water = 'ro'; mepAct('mep-suggest-w'); tchk('Use the suggestion selects it', S.treat.water === 'media-ro');
   S = S0; R = calcAll(); view = V0; render();
   out.treatChecks = tF.length ? tF : 'all passed'; }
+// Generators by public-supply availability, mechanical & plumbing maintenance, Admin centre
+{ const nF = [], nchk = (n, ok, v) => { if (!ok) nF.push(n + (v !== undefined ? ' ' + JSON.stringify(v) : '')); };
+  const S0 = S, V0 = view, RI = ROLE.id, RG = REG; S = exampleProject(); upgrade(S); R = calcAll();
+  // generators
+  S.project.country = 'United Kingdom'; R = calcAll(); let g = R.genCfg;
+  nchk('UK: reliable supply → one emergency standby set (N), essential loads', R.genInfo.GG.key === 'reliable' && g.rating === 'esp' && g.installed === 1 && R.genInfo.method === 'share' && /kVA standby \(N\)/.test(genText()), genText());
+  nchk('25% expansion on the generator design load', near(R.ess, R.genInfo.base * 1.25) && R.genInfo.margin === 1.25 && g.dutyKva >= R.genInfo.base * 1.25, [R.ess, R.genInfo.base]);
+  S.project.country = 'India'; R = calcAll(); g = R.genCfg;
+  nchk('moderate supply: > 200 h a year → prime rating', R.genInfo.GG.key === 'moderate' && g.rating === 'prp' && near(g.hrsYr, 730), [g.rating, g.hrsYr]);
+  S.project.country = 'Nigeria'; R = calcAll(); g = R.genCfg;
+  nchk('Nigeria: poor supply → prime sets for the whole site with a spare set', R.genInfo.GG.key === 'poor' && g.rating === 'prp' && R.genInfo.method === 'whole' && near(R.genInfo.base, R.md) && g.spare === 1 && g.installed === g.duty + 1 && /1 spare/.test(genText()), genText());
+  nchk('running hours, fuel and storage', near(g.hrsYr, 3650) && near(g.lh, R.md * S.sizing.genPf * 0.7 * 0.27) && near(g.fuelDay, g.lh * 10) && near(g.fuelL, Math.max(g.dutyKva * S.sizing.genPf * 0.27 * 24, g.fuelDay * 7)) && near(g.perSetHrs, 3650 * g.duty / g.installed), [g.lh, g.fuelL]);
+  const bq = boqItems().filter(i => i.sec === 'B');
+  nchk('BOQ: prime-rated sets incl. spare, duty-rotation controller and fuel management', bq.some(i => /kVA prime rating \(ISO 8528-1 PRP\)/.test(i.desc) && i.qty === g.installed && /1 spare/.test(i.note) && /25% expansion/.test(i.note)) && bq.some(i => /duty rotation/.test(i.desc)) && bq.some(i => /Fuel management/.test(i.desc)), bq.map(i => i.desc));
+  nchk('asset register: prime generator sets incl. spare', assetsFromDesign().some(a => a.cls === 'gen' && a.qty === g.installed && /Prime generator set \(incl\. 1 spare\)/.test(a.desc) && a.type === 'Diesel – prime'));
+  S.sizing.grid = 'offgrid'; S.sizing.genRed = 'N+2'; R = calcAll(); nchk('off-grid with two spare sets', R.genInfo.GG.key === 'offgrid' && R.genCfg.installed === R.genCfg.duty + 2 && near(R.genCfg.hrsYr, 8760));
+  S.sizing.genRating = 'esp'; R = calcAll(); nchk('standby sets on a weak supply fail the check', CHECKS.find(c => /public supply/.test(c[0]))[2](R)[1] === 'bad');
+  S.sizing.grid = 'auto'; S.sizing.genRed = 'auto'; S.sizing.genRating = 'auto'; S.sizing.outageH = 4; R = calcAll(); nchk('outage hours override', near(R.genCfg.hrsYr, 1460));
+  S.sizing.outageH = ''; view = 'sizing'; render(); let h = document.querySelector('#main').innerHTML;
+  nchk('supply page shows availability, rating, spare sets and fuel', /Public supply availability/.test(h) && /Generator duty rating/.test(h) && /N\+2 – two spare sets/.test(h) && /Running and servicing/.test(h) && !/NaN|undefined/.test(h.replace(/data-[a-z]+="[^"]*"/g, '')));
+  S.project.country = 'United Kingdom'; R = calcAll();
+  // mechanical & plumbing maintenance
+  const Q = calcMepFm();
+  nchk('MEP maintenance provision from the design', Q.plant >= 8 && !Q.fromReg && ['chiller', 'ahu', 'hvacpump', 'bms', 'cws', 'hws', 'sanit', 'drain', 'pool'].every(k => Q.missing.some(a => a.cls === k)) && Q.stat > 5 && Q.hrs > 0, Q.missing.map(a => a.cls));
+  const cws = Q.rows.filter(r => r.c.k === 'cws'), wk = cws.find(r => r.fq.n === 'Weekly');
+  nchk('visits and hours = frequency × quantity × hours', wk && near(wk.visits, 52) && near(wk.yrHrs, 26) && cws.some(r => r.stat && /L8/.test(r.ref)));
+  view = 'fm'; render(); h = document.querySelector('#main').innerHTML;
+  nchk('FM page: mechanical and plumbing maintenance section', /Mechanical and plumbing maintenance/.test(h) && /data-act="fm-mep-import"/.test(h) && /Labour by trade/.test(h));
+  nchk('helpdesk trades for mechanical and treatment / pools', JOB_LIB.some(c => c.k === 'hvac' && c.issues.some(j => j[0] === 'smokefan') && c.issues.some(j => j[0] === 'bmsalarm')) && JOB_LIB.some(c => c.k === 'wtreat' && c.issues.length >= 8) && new Set(JOB_LIB.map(c => c.k)).size === JOB_LIB.length);
+  const n0 = (S.assets || []).length; document.dispatchEvent && 0; S.assets = [...(S.assets || []), ...calcMepFm().missing];
+  nchk('after import the provision comes from the register and nothing is missing', calcMepFm().fromReg && !calcMepFm().missing.length && S.assets.length > n0);
+  // Admin centre
+  REG = { name: 'Pat', role: 'controller' }; ROLE.id = 'controller';
+  nchk('project controller: full access; admin hidden from other roles', ROLES.some(r => r[0] === 'controller') && VIEWS.every(v => canEdit(v[0], 'controller') && roleShows(v[0], 'controller')) && !roleShows('admin', 'design') && !roleShows('admin', 'fm'));
+  let LC = calcLife(); nchk('seven life-cycle stages, concept first', LC.ph.length === 7 && LC.ph[0].k === 'concept' && LC.ph[6].k === 'eol' && LC.cur.k === 'concept');
+  S.admin.gates.concept.st = 'Gate passed'; S.admin.start = '2020-01-01'; S.admin.end = '2030-01-01'; S.admin.budget = 100; S.admin.spent = 150; LC = calcLife();
+  nchk('gate passed moves the stage on; programme and budget tracked', LC.cur.k === 'design' && LC.passed === 1 && LC.prog && LC.cost.over && roleTasks('controller').some(t => t.v === 'admin' && t.s === 'bad'));
+  S.adminLog.push(BLANK.adminLog()); view = 'admin'; render(); h = document.querySelector('#main').innerHTML;
+  nchk('Admin centre renders gates, team, end of life and log', /Life cycle and stage gates/.test(h) && /Team and access/.test(h) && /Decommissioning and disposal checklist/.test(h) && /data-arr="adminLog"/.test(h) && /admin\.gates\.design\.st/.test(h) && !/NaN|undefined/.test(h.replace(/data-[a-z]+="[^"]*"/g, '')));
+  S = S0; R = calcAll(); view = V0; ROLE.id = RI; REG = RG; render();
+  out.genFmAdminChecks = nF.length ? nF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
