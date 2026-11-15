@@ -1306,6 +1306,18 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   gk('menu footer links to the guide; Advisor help mentions it', /href="#guide"/.test(railFoot()) && ADV_HELP.some(x => /video guide/.test(x[0])));
   INTRO.film = F0; INTRO.started = false; view = V0; render();
   out.guideFilmChecks = gF.length ? gF : 'all passed'; }
+// MP4 video guide and "Contact the developer"
+{ const cF = [], ck = (n, ok, v) => { if (!ok) cF.push(n + (v !== undefined ? ' ' + JSON.stringify(v) : '')); }, V0 = view, RG = REG;
+  REG = null; view = 'home'; render(); const h = document.querySelector('#main').innerHTML;
+  ck('Welcome page: video guide (MP4) with download', /id="vidGuide"/.test(h) && /how-to-use\.mp4/.test(h) && /Video guide with voice-over/.test(h) && /Download the MP4/.test(h));
+  ck('Welcome page: contact section with idea / problem emails', /id="contact"/.test(h) && /mailto:info@nexvorahubconnection\.com\?subject=/.test(h) && /Suggest an idea/.test(h) && /Report a problem/.test(h) && /href="#contact"/.test(h));
+  const m = decodeURIComponent(contactHref('problem'));
+  ck('problem email carries the page and role', /^mailto:info@nexvorahubconnection\.com\?subject=NexvoraHub Studio – problem report&body=/.test(m) && /Page: Welcome/.test(m) && /Role: not registered/.test(m), m.slice(0, 200));
+  REG = { name: 'Pat', role: 'design' }; ck('registered role appears in the email', decodeURIComponent(contactHref('idea')).includes('Role: ' + roleOf('design')[1]) && /idea \/ suggestion/.test(decodeURIComponent(contactHref('idea'))));
+  const rf = railFoot(); ck('menu footer: video guide and contact links', /href="#video"/.test(rf) && /Contact the developer/.test(rf) && /mailto:info@/.test(rf));
+  ck('Advisor help answers how to contact the developer', ADV_HELP.some(x => /contact the developer/i.test(x[0]) && x[1].includes('info@nexvorahubconnection.com')));
+  REG = RG; view = V0; render();
+  out.videoContactChecks = cF.length ? cF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
