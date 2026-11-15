@@ -1330,6 +1330,8 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const r2 = chatReply('how do I contact the developer'); qk('chat gives the contact email', r2.t.includes('info@nexvorahubconnection.com') && r2.ln.some(l => /^mailto:info@/.test(l[0])), r2.t);
   const r3 = chatReply('what should I do next?'); qk('chat gives next steps from the project', /^From your project/.test(r3.t) || /Register your role/.test(r3.t), r3.t);
   const r4 = chatReply('qwzx blorp'); qk('chat admits when it has no answer and offers the developer', /could not find/.test(r4.t) && r4.ln.some(l => /^mailto:/.test(l[0])));
+  qk('FAQ has 60+ unique questions, every answer links to a real page', ADV_HELP.length >= 60 && new Set(ADV_HELP.map(x => x[0])).size === ADV_HELP.length && ADV_HELP.every(x => VIEWS.some(v => v[0] === x[2]) || EXTRA_VIEWS.includes(x[2])), ADV_HELP.length);
+  qk('chat: newer answers found', chatReply('report in French').ln.some(l => l[0] === '#report') && chatReply('dark mode').t.includes('light or dark') && chatReply('what does PUE do').ln.some(l => l[0] === '#data-centre'), [chatReply('report in French').ln, chatReply('dark mode').t.slice(0, 40)]);
   qk('chat greets and thanks', /^Hello/.test(chatReply('hi').t) && /welcome/.test(chatReply('thanks').t));
   const r5 = chatReply('how do I save my project'); qk('chat: saving', /Save project/.test(r5.t), r5.t);
   const r6 = chatReply('how do I raise a maintenance ticket'); qk('chat: FM ticket', r6.ln.some(l => l[0] === '#fm'), r6);
