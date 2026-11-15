@@ -1292,6 +1292,20 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   nchk('Admin centre renders gates, team, end of life and log', /Life cycle and stage gates/.test(h) && /Team and access/.test(h) && /Decommissioning and disposal checklist/.test(h) && /data-arr="adminLog"/.test(h) && /admin\.gates\.design\.st/.test(h) && !/NaN|undefined/.test(h.replace(/data-[a-z]+="[^"]*"/g, '')));
   S = S0; R = calcAll(); view = V0; ROLE.id = RI; REG = RG; render();
   out.genFmAdminChecks = nF.length ? nF : 'all passed'; }
+// "How to use the app" guide film
+{ const gF = [], gk = (n, ok, v) => { if (!ok) gF.push(n + (v !== undefined ? ' ' + JSON.stringify(v) : '')); }, V0 = view, F0 = INTRO.film;
+  const g = guideScenes();
+  gk('eight scenes, about a minute, captions and drawings', g.length === 8 && g.reduce((a, s) => a + s.dur, 0) === 56000 && g.every(s => /<b>/.test(s.cap) && s.svg.length > 300 && !/NaN|undefined/.test(s.svg + s.cap)), g.map(s => s.k));
+  gk('covers register, menu, live figures, data entry, Advisor, export and saving', ['Register', 'Find your way', 'Live figures', 'Design flow', 'Enter data', 'Tasks & Advisor', 'Export', 'Save & share'].every((k, i) => g[i].k.includes(k)));
+  gk('uses the project figures', g[2].svg.includes(f0(R.md) + ' kVA') && g[0].svg.includes(ROLES.length + ' roles'));
+  view = 'home'; INTRO.started = false; INTRO.film = 'about'; render(); let h = document.querySelector('#main').innerHTML;
+  gk('Welcome page: guide on the poster and a hero button; about film still offered', /data-act="intro-guide"/.test(h) && /How to use the app – 1 minute/.test(h) && /Watch the 40-second intro/.test(h) && (h.match(/data-act="intro-guide"/g) || []).length >= 2);
+  introAct('intro-guide'); introStop(); gk('switches to the guide film', INTRO.film === 'guide' && INTRO.i === 0 && INTRO.started && introScenes().length === 8);
+  introAct('intro-next'); introStop(); gk('steps through the guide', INTRO.i === 1);
+  introAct('intro-about'); introStop(); gk('back to the about film', INTRO.film === 'about' && introScenes()[0].k === '01 · Design');
+  gk('menu footer links to the guide; Advisor help mentions it', /href="#guide"/.test(railFoot()) && ADV_HELP.some(x => /video guide/.test(x[0])));
+  INTRO.film = F0; INTRO.started = false; view = V0; render();
+  out.guideFilmChecks = gF.length ? gF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
