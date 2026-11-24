@@ -12,9 +12,21 @@ Electrical load assessment and design tools for buildings, usable across 94 coun
 |---|---|
 | `Electrical Load Design Report.xlsx` | Excel design template (27 sheets): regional load schedules, NEC/CEC code calculation, equipment loads with demand/diversity/simultaneity factors, lifts, pumps, data centre, BS 7671 cable and protection, transformers and switchrooms, energy management, compliance checklist, utility application data. |
 | `_build/` | Node.js scripts that generate the workbook. |
-| `app/load-designer.html` | Single-file web app (NexvoraHub Studio): load assessment, design report, AI data-centre planning, electrical drawing generator (DXF), drawing review with legend learning, panel-schedule import and design on submitted layouts. |
+| `app/load-designer.html` | Single-file web app (NexvoraHub Studio): load assessment, design report, AI data-centre planning, electrical drawing generator (DXF), drawing review with legend learning, panel-schedule import and design on submitted layouts, MEP, testing, FM operations, asset management, and the Progress and FM performance boards. |
 | `app/src/` | App source, AI data-centre library (`ai-dc-data.json`), data extractor, local preview server and headless tests. |
 | `site/index.html` | Standalone build of the app for web hosting. Only this folder is published. |
+
+## Progress and FM performance boards
+
+Two board stages give an at-a-glance view of the project. Both read the data the other stages already hold, so nothing is entered twice. Each board has three looks (Deep blue, Brilliant blue, Brilliant white; the choice is remembered per browser), saves to CSV and prints to PDF.
+
+| Stage | What it shows |
+|---|---|
+| **Progress board** | Six boards (electrical design, mechanical & plumbing, implementation & commissioning, energy management, asset management, facilities management), each measured against its own deliverables. Examples: load schedules, cable schedule and drawings for design; tests and LV certificates for implementation; energy model, measures and metered savings for energy; register, PPM, condition and replacement plan for assets. Each board shows a live percentage, red/amber/green status and its flagged actions (from the same rules as each role's My tasks). The overview shows progress across all boards plus a combined list of flagged actions. A deliverable not yet started counts as 0 %; one that does not apply is left out. |
+| **FM board inputs** | Targets; a service-contract register for hard and soft services (contractor, term, value, SLA target and achieved, PPM planned/completed, KPI audit score); SOP compliance; OPEX; customer satisfaction; energy and water actuals; safety and fire; optimisation strategies. **Load example FM data** fills a worked example, adding example tickets, assets, soft services and capital projects only where those stages are still empty. |
+| **FM performance board** | Executive summary; KPI progress to target (each parameter as a % of its target); gauges for SLA, PPM, MTTR, MTBF, asset availability and satisfaction; incidents by priority (P1–P4 tickets); contracts with renewal flags (≤ 90 days); SOP compliance; soft-services KPIs; MTTR and MTBF by equipment; energy, water and CO₂; CAPEX (capital projects) and OPEX; work orders; asset management; safety and fire. Filter to hard services, soft services or both. |
+
+Definitions used on the FM board: SLA = tickets fixed within their priority SLA ÷ tickets judged (contractor-reported SLA when there are no tickets); MTTR = mean hours from raising to completing a ticket; MTBF = units × 365 days ÷ failures in 12 months; availability = units not "Not operating" ÷ units; PPM compliance = planned tasks completed ÷ issued.
 
 ## Rebuild the workbook
 
@@ -37,7 +49,7 @@ node test-app.js
 node serve.js
 ```
 
-`build-app.js` writes both `app/load-designer.html` (claude.ai Artifact) and `site/index.html` (website). Commit and push `site/index.html` to redeploy the live site: the GitHub Actions workflow `.github/workflows/pages.yml` publishes `site/` to GitHub Pages at https://studio.nexvorahubconnection.com (custom domain on GitHub Pages; DNS: CNAME studio → kayglor.github.io, DNS only, in Cloudflare).
+`build-app.js` writes both `app/load-designer.html` (claude.ai Artifact) and `site/index.html` (website). Commit and push `site/index.html` to redeploy the live site: the GitHub Actions workflow `.github/workflows/pages.yml` publishes `site/` to GitHub Pages at https://studio.nexvorahubconnection.com (custom domain on GitHub Pages; DNS: CNAME studio → kayglor.github.io, DNS only, in Cloudflare). CI runs the headless tests and checks that `app/load-designer.html` and `site/index.html` match the source before it deploys, so commit all three together. The deploy job waits 30 s after uploading the Pages artifact, because `deploy-pages` otherwise sometimes reports "No artifacts named github-pages were found".
 
 `extract-data.js` reads the reference data (countries, densities, factors, cable tables) straight from the workbook generator, so the app and the workbook stay consistent. `serve.js` previews the app at http://localhost:5179/.
 
