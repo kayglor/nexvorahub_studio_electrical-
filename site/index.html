@@ -305,6 +305,18 @@ input,select,textarea,.adv .q{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
+/* Progress board */
+.pg-list{display:grid;gap:6px;margin-top:6px}
+.pg-row{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(120px,3fr) 64px minmax(110px,auto) minmax(150px,auto);gap:10px;align-items:center;padding:6px 8px;border-radius:6px;color:inherit;text-decoration:none}
+.pg-row:hover{background:var(--sunk)}.pg-n{font-weight:600}.pg-m{font-size:12.5px;color:var(--muted)}.pg-a{display:flex;gap:4px;flex-wrap:wrap}
+.pg-bar{display:block;height:12px;border-radius:6px;background:var(--sunk);overflow:hidden}.pg-bar i{display:block;height:100%;background:var(--muted)}
+.pg-bar i.ok{background:var(--ok)}.pg-bar i.warn{background:var(--warn)}.pg-bar i.bad{background:var(--bad)}
+.pg-head{display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:center}.pg-head .kpis{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.ring{width:88px;height:88px}.ring .r-bg{fill:none;stroke:var(--sunk);stroke-width:9}.ring .r-fg{fill:none;stroke:var(--muted);stroke-width:9;stroke-linecap:round}
+.ring.ok .r-fg{stroke:var(--ok)}.ring.warn .r-fg{stroke:var(--warn)}.ring.bad .r-fg{stroke:var(--bad)}.ring text{font:600 17px var(--f-mono);fill:var(--ink)}
+.fmb h4{margin:6px 0 0;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pg-acts{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:13.5px}.pg-acts a{color:inherit}
+@media (max-width:760px){.pg-row{grid-template-columns:1fr 60px;}.pg-row .pg-bar{grid-column:1/-1;grid-row:2}.pg-row .pg-m,.pg-row .pg-a{grid-column:1/-1}}
 /* FM performance board: 12-column tile grid */
 .fmb{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
 .fmb .tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:8px}
@@ -1843,7 +1855,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 
 /* ---------- views ---------- */
 const VIEWS = [
-  ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['tasks', 'My tasks'], ['admin', 'Admin centre'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
+  ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['progress', 'Progress board'], ['tasks', 'My tasks'], ['admin', 'Admin centre'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
   ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['treat', 'Water & sewage treatment'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['fmboardin', 'FM board inputs'], ['fmboard', 'FM performance board'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport', 'regreport', 'faq'];
@@ -1874,6 +1886,7 @@ function railStatus(id) {
   if (id === 'fm') { if (!(S.tickets || []).length && !(S.soft || []).length && !(S.capProj || []).length) return ''; const F = calcFM(); return F.overdue || F.soft.some(r => r.st === 'bad') || F.pr.some(r => r.rag === 'Red') ? 'bad' : F.open || F.soft.some(r => r.st === 'warn') || F.pr.some(r => r.rag === 'Amber') ? 'warn' : 'ok'; }
   if (id === 'assets') { if (!(S.assets || []).length) return ''; const A = calcAssets(); return A.nBad ? 'bad' : A.nWarn ? 'warn' : 'ok'; }
   if (id === 'fmboard') return fmbStatus();
+  if (id === 'progress') return progressStatus();
   if (id === 'drawings') return !R.W.rooms.length ? '' : R.W.nBad ? 'bad' : R.W.nWarn ? 'warn' : 'ok';
   return '';
 }
@@ -3637,6 +3650,7 @@ const ADV_PAGE = {
   handover: ['One printable handover document: cover, compliance, certificate, circuit schedule, tests, commissioning and assets.', ['Choose the sections, check the preview, save as PDF.'], ['Issue it only once LV and commissioning tests are complete.']],
   assets: ['Asset register with planned maintenance, depreciation, condition and the life-cycle replacement plan.', ['Add assets from the design, then set year, cost and condition.', 'Move end-of-life items into capital projects.'], ['Condition and criticality drive the risk – update them after each inspection.']],
   fm: ['Helpdesk for plant and everyday repairs with P1–P4 response times, soft services and capital projects.', ['Raise a ticket by trade and issue – priority and description fill in.', 'Record attended and completed times to measure the SLA.'], ['Accurate attend and complete times are what make the SLA and MTTR figures meaningful.']],
+  progress: ['Progress board: work progress across design, implementation, energy, assets and facilities, each measured against its own deliverables, with flagged actions.', ['Read the bars for progress at a glance; open a board for its deliverables and actions.', 'Click any deliverable or action to go to the stage that moves it forward.'], ['Not-started deliverables count as 0 % – start each stage early so the board shows real progress.']],
   fmboardin: ['Inputs for the FM performance board: targets, hard and soft service contracts with SLA and PPM, SOP compliance, OPEX, customer satisfaction, energy, safety and strategies.', ['Add a row per service contract – or load the example to see how it works.', 'Tickets, assets, soft services and capital projects are read from their own stages.'], ['Keep contract end dates current – the board flags renewals due within 90 days.']],
   fmboard: ['A one-page FM performance board: SLA, PPM, MTTR, MTBF, availability, satisfaction, incidents, contracts, CAPEX/OPEX, energy and safety.', ['Switch between hard services, soft services or both.', 'Save as CSV or print to PDF for the monthly review.'], ['Red and amber tiles show where targets are missed – fix the inputs in their own stage.']],
   fmreport: ['The facilities report: equipment state, tickets and SLA, soft services, capital projects and life cycle.', ['Review, then save as PDF, CSV or Excel.'], ['Use the Excel version for monthly trend tracking.']],
@@ -3825,25 +3839,25 @@ const ROLES = [
   ['lead', 'Project lead', 'Every stage, from first design to asset planning – full access.', null, null],
   ['controller', 'Project controller', 'Runs the Admin centre: the whole project life cycle from concept, design and procurement to deployment, handover, operation and end of life – stage gates, programme, budget, team access and the project log. Full access.', null, null],
   ['design', 'Design engineer', 'Loads, supply, cables and protection, compliance, drawings, BOQ and the design report.',
-    ['dashboard', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'mech', 'plumb', 'treat', 'mepcomp', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
+    ['dashboard', 'progress', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'mech', 'plumb', 'treat', 'mepcomp', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
     ['project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'compliance', 'checklist', 'drawings', 'review', 'boq', 'report']],
   ['mep', 'MEP engineer', 'Mechanical and plumbing services – heating, cooling, ventilation, water and drainage, their compliance, and the plant loads sent to the electrical design.',
-    ['dashboard', 'project', 'area', 'mech', 'plumb', 'treat', 'mepcomp', 'equipment', 'lifts-pumps', 'energy', 'compliance', 'tc', 'report'],
+    ['dashboard', 'progress', 'project', 'area', 'mech', 'plumb', 'treat', 'mepcomp', 'equipment', 'lifts-pumps', 'energy', 'compliance', 'tc', 'report'],
     ['mech', 'plumb', 'treat', 'mepcomp', 'lifts-pumps']],
   ['impl', 'Implementation & deployment', 'Construction and commissioning: drawings, BOQ, document and risk registers, LV tests, T&C and handover.',
-    ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'treat', 'mepcomp', 'report'],
+    ['dashboard', 'progress', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'treat', 'mepcomp', 'report'],
     ['drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover']],
   ['faceng', 'Facilities engineer', 'Building services planning, planned and reactive maintenance, plant condition and the facilities report.',
-    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'energy', 'mech', 'plumb', 'treat', 'lvcert', 'tc', 'handover'],
+    ['dashboard', 'progress', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'energy', 'mech', 'plumb', 'treat', 'lvcert', 'tc', 'handover'],
     ['facilities', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard']],
   ['fm', 'Facility manager', 'Helpdesk and SLA, soft services, capital projects and the monthly facilities report.',
-    ['dashboard', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities', 'assets', 'handover', 'energy'],
+    ['dashboard', 'progress', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities', 'assets', 'handover', 'energy'],
     ['fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities']],
   ['energy', 'Energy manager', 'Annual energy, cost and carbon, efficiency measures, solar PV and the demand behind them.',
-    ['dashboard', 'energy', 'sizing', 'data-centre', 'mech', 'fmreport', 'fmboard', 'assets', 'report'],
+    ['dashboard', 'progress', 'energy', 'sizing', 'data-centre', 'mech', 'fmreport', 'fmboard', 'assets', 'report'],
     ['energy']],
   ['asset', 'Asset manager', 'Asset register, condition and risk, depreciation, life cycle and the capital replacement forecast.',
-    ['dashboard', 'assets', 'fm', 'fmreport', 'fmboard', 'handover', 'registers', 'report'],
+    ['dashboard', 'progress', 'assets', 'fm', 'fmreport', 'fmboard', 'handover', 'registers', 'report'],
     ['assets', 'fm', 'fmreport']],
 ];
 const ROLE_KEY = 'nexvorahub-role', REG_KEY = 'nexvorahub-user';
@@ -5495,6 +5509,122 @@ function fmbCsv() {
   return L.join('\r\n');
 }
 
+/* ---------- Progress board: design and delivery progress across every discipline ---------- */
+// Each board (discipline) is measured against its own deliverables, calculated live from the stages.
+// A deliverable not yet started counts as 0 %; one that does not apply to this project is left out.
+// Actionable items come from the same rules as each role's My tasks list.
+const DPB_GROUPS = [
+  ['design', 'Electrical design', 'design'], ['mep', 'Mechanical & plumbing', 'mep'], ['impl', 'Implementation & commissioning', 'impl'],
+  ['energy', 'Energy management', 'energy'], ['asset', 'Asset management', 'asset'], ['fm', 'Facilities management', 'fm'],
+];
+const DPB_SEV = { bad: ['bad', 'Urgent'], warn: ['warn', 'Attention'], info: ['na', 'To do'] };
+function calcProgress() {
+  const D = calcDash(), G = calcRegs(), A = D.A, F = D.F, T = D.T, dv = id => { const x = D.k.find(o => o.id === id); return x ? x.v : undefined; };
+  const avg = a => { const v = a.filter(x => x != null && isFinite(x)); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  let M = null; try { M = calcMep(); } catch (e) { }
+  let FB = null; try { FB = calcFMB(); } catch (e) { }
+  const q = A.rows.reduce((a, r) => a + r.qty, 0), E = R.E || {}, e = S.energy || {}, mk = Object.keys(e.m || {});
+  const due = A.rows.filter(r => r.replYear <= A.yr + 1), planned = new Set((S.capProj || []).map(p => p.asset).filter(Boolean));
+  const fbSt = FB ? Object.values(FB.st).filter(s => s !== 'na') : [];
+  // [name, fraction 0–1 | null (not started) | undefined (not applicable), note, stage]
+  const DEL = {
+    design: [
+      ['Area & equipment load schedules', (S.zones || []).length + (S.loads || []).length ? 1 : null, (S.zones || []).length + ' areas · ' + (S.loads || []).length + ' equipment loads', 'area'],
+      ['Supply & transformer sizing', R.md > 0 ? (R.txKva ? 1 : 0.5) : null, R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA for ' + f0(R.md) + ' kVA' : 'Transformer not selected', 'sizing'],
+      ['Cables & protection schedule', dv('circuits'), R.C.length + ' circuits', 'circuits'],
+      ['Design compliance', dv('compliance'), 'Regulation checks', 'compliance'],
+      ['Design checklist', dv('checklist'), 'Checklist items done', 'checklist'],
+      ['Electrical drawings', (S.dwgRooms || []).length ? 1 : null, (S.dwgRooms || []).length + ' rooms laid out', 'drawings'],
+      ['Design documents approved', G.live.length ? G.docPct : null, G.live.length ? G.approved + ' of ' + G.live.length + ' approved' : 'No documents registered', 'registers'],
+    ],
+    mep: [
+      ['Heating & cooling plant sized', M ? (M.heatCap > 0 || M.coolCap > 0 ? 1 : null) : null, M ? 'Heating ' + f0(M.heatCap) + ' kW · cooling ' + f0(M.coolCap) + ' kW' : 'Not started', 'mech'],
+      ['Water & drainage (fixtures)', M ? (M.fx.length ? 1 : null) : null, M ? M.fx.length + ' fixture lines' : 'Not started', 'plumb'],
+      ['MEP compliance', dv('mep'), 'Mechanical and plumbing checks', 'mepcomp'],
+      ['MEP loads sent to electrical', dv('mep-elec'), 'Plant loads in the electrical design', 'mech'],
+    ],
+    impl: [
+      ['Testing & commissioning', T.total && T.done ? T.done / T.total : null, T.done + ' of ' + T.total + ' tests', 'tc'],
+      ['Domestic LV certification', dv('lv-dom'), 'Circuits tested and passing', 'lvcert'],
+      ['Commercial LV certification', dv('lv-com'), 'Circuits tested and passing', 'lvcert'],
+      ['Documents approved / issued', G.live.length ? G.docPct : null, G.live.length + ' documents · ' + G.overdue + ' overdue', 'registers'],
+      ['Risks under control', G.risks.length ? dv('risks') : undefined, G.risks.length + ' risks · ' + G.open + ' open', 'registers'],
+    ],
+    energy: [
+      ['Energy model', E.base > 0 ? 1 : null, E.base > 0 ? f0(E.imp) + ' kWh a year after measures' : 'No load to model', 'energy'],
+      ['Efficiency measures adopted', mk.length ? mk.filter(k => e.m[k]).length / mk.length : null, mk.filter(k => (e.m || {})[k]).length + ' of ' + mk.length + ' measures', 'energy'],
+      ['Within the energy benchmark', isFinite(E.eui) && +e.benchmark > 0 ? Math.min(1, +e.benchmark / Math.max(E.eui, 1e-9)) : undefined, isFinite(E.eui) ? f0(E.eui) + ' vs ' + e.benchmark + ' kWh/m²/yr' : 'Floor area not known', 'energy'],
+      ['Renewables specified (PV / battery)', +e.pv > 0 || +e.batt > 0 ? 1 : null, (+e.pv || 0) + ' kWp PV · ' + (+e.batt || 0) + ' kWh battery', 'energy'],
+      ['Metered consumption recorded', FB && FB.en.kwh > 0 ? 1 : null, FB && FB.en.kwh > 0 ? f0(FB.en.kwh) + ' kWh this period' : 'Enter actuals in FM board inputs', 'fmboardin'],
+      ['Consumption reduced vs last year', FB && FB.en.kwh > 0 && FB.en.kwhLY > 0 ? (FB.en.kwh <= FB.en.kwhLY ? 1 : Math.max(0, FB.en.kwhLY / FB.en.kwh)) : undefined, FB && isFinite(FB.en.kwhChg) ? (FB.en.kwhChg >= 0 ? '+' : '') + FB.en.kwhChg.toFixed(1) + '% vs last year' : '', 'fmboard'],
+    ],
+    asset: [
+      ['Asset register', q ? 1 : null, q + ' assets registered', 'assets'],
+      ['Costs & install years recorded', A.rows.length ? A.rows.filter(r => +r.a.cost > 0 && +r.a.year > 0).length / A.rows.length : null, A.rows.filter(r => +r.a.cost > 0).length + ' of ' + A.rows.length + ' lines costed', 'assets'],
+      ['Planned maintenance completed', q ? dv('ppm') : null, 'PPM completion recorded', 'assets'],
+      ['Asset condition', q ? dv('health') : null, A.nBad + ' to replace / repair · ' + A.nWarn + ' to plan', 'assets'],
+      ['Replacements planned (due ≤ 1 year)', due.length ? due.filter(r => planned.has(r.a.id)).length / due.length : q ? 1 : null, due.length ? due.filter(r => planned.has(r.a.id)).length + ' of ' + due.length + ' in capital projects' : 'None due', 'fm'],
+    ],
+    fm: [
+      ['Helpdesk SLA', F.tk.length ? dv('sla') : null, F.open + ' open · ' + F.overdue + ' overdue tickets', 'fm'],
+      ['Soft services performing', F.soft.length ? F.soft.filter(r => r.st === 'ok').length / F.soft.length : null, F.soft.length + ' soft services', 'fm'],
+      ['Capital projects on track', F.pr.length ? dv('capex') : undefined, F.pr.length + ' projects', 'fm'],
+      ['Service contracts registered', (S.fmbContracts || []).length ? 1 : null, (S.fmbContracts || []).length + ' contracts', 'fmboardin'],
+      ['FM KPIs on target', fbSt.length ? fbSt.filter(s => s === 'ok').length / fbSt.length : null, fbSt.filter(s => s === 'ok').length + ' of ' + fbSt.length + ' board KPIs', 'fmboard'],
+    ],
+  };
+  const groups = DPB_GROUPS.map(([id, name, role]) => {
+    const del = DEL[id].filter(d => d[1] !== undefined).map(([n, v, note, view]) => ({ n, v: v == null || !isFinite(v) ? null : Math.max(0, Math.min(1, v)), note, view }));
+    del.forEach(d => { d.st = d.v == null ? 'Not started' : d.v >= 0.999 ? 'Complete' : 'In progress'; d.rag = d.v == null ? 'na' : ragCls(ragOf(d.v)); });
+    const pc = del.length ? del.reduce((a, d) => a + (d.v || 0), 0) / del.length : 0, started = del.some(d => d.v != null);
+    let acts = []; try { acts = roleTasks(role).map(o => ({ ...o, grp: name, gid: id })); } catch (err) { acts = []; }
+    const urgent = acts.filter(o => o.s === 'bad').length, attn = acts.filter(o => o.s === 'warn').length;
+    const rag = !started ? 'N/A' : urgent ? (pc >= 0.6 ? 'Amber' : 'Red') : ragOf(pc);
+    let kpis = []; try { kpis = roleKpis(role); } catch (err) { kpis = []; }
+    return { id, name, role, del, pc, started, acts, urgent, attn, rag, kpis, done: del.filter(d => d.st === 'Complete').length };
+  });
+  const live = groups.filter(g => g.started), overall = live.length ? live.reduce((a, g) => a + g.pc, 0) / live.length : 0;
+  const seen = new Set(), acts = groups.flatMap(g => g.acts).filter(o => { const k = o.t + '|' + o.v; if (seen.has(k)) return false; seen.add(k); return true; });
+  const rank = { bad: 0, warn: 1, info: 2 }; acts.sort((a, b) => rank[a.s] - rank[b.s] || (a.due && b.due ? a.due.localeCompare(b.due) : a.due ? -1 : b.due ? 1 : 0));
+  const nDel = groups.reduce((a, g) => a + g.del.length, 0), nDone = groups.reduce((a, g) => a + g.done, 0);
+  return { groups, overall, acts, urgent: acts.filter(o => o.s === 'bad').length, attn: acts.filter(o => o.s === 'warn').length, nDel, nDone, rag: groups.some(g => g.rag === 'Red') ? 'Red' : groups.some(g => g.rag === 'Amber') ? 'Amber' : live.length ? 'Green' : 'N/A' };
+}
+function progressStatus() { try { const P = calcProgress(); return P.rag === 'N/A' ? '' : ragCls(P.rag); } catch (e) { return ''; } }
+const dpbRing = (frac, rag, label) => { const f = Math.max(0, Math.min(1, frac || 0)), r = 34, c = 2 * Math.PI * r; return `<svg class="ring ${rag}" viewBox="0 0 84 84" role="img" aria-label="${esc(label)} ${Math.round(f * 100)}%"><circle cx="42" cy="42" r="${r}" class="r-bg"/><circle cx="42" cy="42" r="${r}" class="r-fg" stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 42 42)"/><text x="42" y="47" text-anchor="middle">${Math.round(f * 100)}%</text></svg>`; };
+V.progress = () => {
+  const P = calcProgress(), F = DPB_SEV;
+  const overview = P.groups.map(g => `<a class="pg-row" href="#pg-${g.id}"><span class="pg-n">${esc(g.name)}</span><span class="pg-bar"><i class="${ragCls(g.rag)}" style="width:${(g.pc * 100).toFixed(1)}%"></i></span><b class="num">${g.started ? pct(g.pc) : '–'}</b><span class="pg-m">${g.done}/${g.del.length} deliverables</span><span class="pg-a">${g.urgent ? pill('bad', g.urgent + ' urgent') : ''}${g.attn ? pill('warn', g.attn + ' attention') : ''}${!g.urgent && !g.attn ? pill(g.started ? 'ok' : 'na', g.started ? 'No flags' : 'Not started') : ''}</span></a>`).join('');
+  const tiles = P.groups.map(g => {
+    const kp = g.kpis.slice(0, 3).map(([l, v, s]) => `<div class="kpi"><span>${esc(l)}</span><b>${v}</b><small>${s}</small></div>`).join('');
+    const del = g.del.map(d => `<tr><td><a href="#${d.view}">${esc(d.n)}</a><div class="note">${esc(d.note)}</div></td><td>${fbBar(d.v || 0, d.rag)}</td><td class="n">${d.v == null ? '–' : pct(d.v)}</td><td>${pill(d.rag, d.st)}</td></tr>`).join('');
+    const top = g.acts.filter(o => o.s !== 'info').slice(0, 4), more = g.acts.length - top.length;
+    const acts = top.length ? `<ul class="pg-acts">${top.map(o => `<li>${pill(F[o.s][0], F[o.s][1])} <a href="#${o.v}">${esc(o.t)}</a>${o.due ? ` <span class="note">due ${esc(o.due)}</span>` : ''}</li>`).join('')}</ul>${more > 0 ? `<p class="note">+ ${more} more in <a href="#tasks">My tasks</a> for this role.</p>` : ''}` : `<p class="note">${g.acts.length ? g.acts.length + ' to-do item(s), nothing flagged.' : 'No outstanding actions.'}</p>`;
+    return `<section class="tile t6" id="pg-${g.id}"><h3 class="tile-h">${esc(g.name)} <small>${pill(ragCls(g.rag), g.rag)}</small></h3>
+      <div class="pg-head">${dpbRing(g.pc, ragCls(g.rag), g.name)}<div class="kpis">${kp}</div></div>
+      <div class="tbl-wrap"><table class="fm-t"><thead><tr><th>Deliverable (yardstick)</th><th></th><th>Progress</th><th>Status</th></tr></thead><tbody>${del}</tbody></table></div>
+      <h4>Actionable items</h4>${acts}</section>`;
+  }).join('');
+  const list = P.acts.filter(o => o.s !== 'info'), shown = list.slice(0, 30);
+  const actT = `<section class="tile t12"><h3 class="tile-h">Flagged actions across all boards <small>${P.urgent} urgent · ${P.attn} need attention</small></h3>${fbTbl(['Flag', 'Board', 'Action', 'Detail', 'Due', 'Stage'], shown.map(o => `<tr><td>${pill(F[o.s][0], F[o.s][1])}</td><td>${esc(o.grp)}</td><td>${esc(o.t)}</td><td class="note">${esc(o.d)}</td><td>${esc(o.due || '–')}</td><td><a href="#${o.v}">${esc(vName(o.v))} →</a></td></tr>`).join(''), '', 'Nothing flagged – every board is clear.')}${list.length > shown.length ? `<p class="note">Showing the first ${shown.length} of ${list.length}. Each role sees its full list in My tasks.</p>` : ''}</section>`;
+  const head0 = [['Overall progress', pct(P.overall), 'average of the boards started', ragCls(P.rag)], ['Deliverables complete', P.nDone + ' / ' + P.nDel, 'across ' + P.groups.length + ' boards', 'na'], ['Urgent actions', String(P.urgent), 'flagged red', P.urgent ? 'bad' : 'ok'], ['Needs attention', String(P.attn), 'flagged amber', P.attn ? 'warn' : 'ok'], ['Boards behind', String(P.groups.filter(g => g.rag === 'Red').length), 'red boards', P.groups.some(g => g.rag === 'Red') ? 'bad' : 'ok']]
+    .map(([l, v, s, st]) => `<div class="kpi fm-k ${st}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`).join('');
+  return `<section class="sheet fm-board">${head('Dashboard', 'Progress board', 'Work progress across design, implementation, energy, assets and facilities at a glance. Each board is measured against its own deliverables, calculated live from the stages; actionable items are flagged from the same rules as each role’s My tasks. Green 90 % or better, amber 60–89 %, red below 60 % or with urgent actions.', `${pill(ragCls(P.rag), 'Overall: ' + P.rag)}<button class="btn small noprint" data-act="dpb-csv">Save progress (.csv)</button><button class="btn small noprint" data-act="dpb-print">Print / PDF</button>`)}
+  <div class="fmb"><section class="tile t12"><h3 class="tile-h">Progress across boards</h3><div class="kpis exec">${head0}</div><div class="pg-list">${overview}</div></section>${tiles}${actT}</div>
+  <p class="note">A deliverable not yet started counts as 0 %; one that does not apply to this project is left out of its board. Overall progress averages the boards that have started. Click a deliverable or action to open its stage.</p></section>`;
+};
+function dpbAct(act) {
+  if (act === 'dpb-csv') {
+    const P = calcProgress(), q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, L = [], row = (...a) => L.push(a.map(q).join(','));
+    row('PROGRESS BOARD', S.project.name, new Date().toISOString().slice(0, 10)); row('Overall progress %', (P.overall * 100).toFixed(1), P.rag); L.push('');
+    row('Board', 'Progress %', 'Status', 'Deliverables complete', 'Urgent', 'Attention'); P.groups.forEach(g => row(g.name, (g.pc * 100).toFixed(1), g.rag, g.done + '/' + g.del.length, g.urgent, g.attn)); L.push('');
+    row('Board', 'Deliverable', 'Progress %', 'Status', 'Note'); P.groups.forEach(g => g.del.forEach(d => row(g.name, d.n, d.v == null ? '' : (d.v * 100).toFixed(1), d.st, d.note))); L.push('');
+    row('Flag', 'Board', 'Action', 'Detail', 'Due', 'Stage'); P.acts.forEach(o => row(DPB_SEV[o.s][1], o.grp, o.t, o.d, o.due, vName(o.v)));
+    save(`${S.project.ref || 'project'}-progress-board.csv`, L.join('\r\n'), 'Progress board'); return true;
+  }
+  if (act === 'dpb-print') { try { print(); } catch (e) { toast('Printing is not available in this view'); } return true; }
+  return false;
+}
+
 /* ---------- render + events ---------- */
 function render(keepFocus) {
   R = calcAll();
@@ -5562,6 +5692,7 @@ document.addEventListener('click', async e => {
   if (b.dataset.del) { S[b.dataset.del].splice(+b.dataset.i, 1); persist(); render(); return; }
   const act = b.dataset.act;
   if (fmbAct(act, b)) return;
+  if (dpbAct(act)) return;
   if (act && act.startsWith('mep-')) { mepAct(act); return; }
   if (act && act.startsWith('intro-')) { introAct(act); return; }
   if (act && act.startsWith('adv-')) { advAct(act, b); return; }
