@@ -296,6 +296,18 @@ input,select,textarea,.adv .q{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
+/* Progress board */
+.pg-list{display:grid;gap:6px;margin-top:6px}
+.pg-row{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(120px,3fr) 64px minmax(110px,auto) minmax(150px,auto);gap:10px;align-items:center;padding:6px 8px;border-radius:6px;color:inherit;text-decoration:none}
+.pg-row:hover{background:var(--sunk)}.pg-n{font-weight:600}.pg-m{font-size:12.5px;color:var(--muted)}.pg-a{display:flex;gap:4px;flex-wrap:wrap}
+.pg-bar{display:block;height:12px;border-radius:6px;background:var(--sunk);overflow:hidden}.pg-bar i{display:block;height:100%;background:var(--muted)}
+.pg-bar i.ok{background:var(--ok)}.pg-bar i.warn{background:var(--warn)}.pg-bar i.bad{background:var(--bad)}
+.pg-head{display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:center}.pg-head .kpis{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.ring{width:88px;height:88px}.ring .r-bg{fill:none;stroke:var(--sunk);stroke-width:9}.ring .r-fg{fill:none;stroke:var(--muted);stroke-width:9;stroke-linecap:round}
+.ring.ok .r-fg{stroke:var(--ok)}.ring.warn .r-fg{stroke:var(--warn)}.ring.bad .r-fg{stroke:var(--bad)}.ring text{font:600 17px var(--f-mono);fill:var(--ink)}
+.fmb h4{margin:6px 0 0;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pg-acts{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:13.5px}.pg-acts a{color:inherit}
+@media (max-width:760px){.pg-row{grid-template-columns:1fr 60px;}.pg-row .pg-bar{grid-column:1/-1;grid-row:2}.pg-row .pg-m,.pg-row .pg-a{grid-column:1/-1}}
 /* FM performance board: 12-column tile grid */
 .fmb{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
 .fmb .tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:8px}
@@ -325,6 +337,63 @@ input,select,textarea,.adv .q{font-size:16px}
 @media (max-width:1280px){.fmb .t2{grid-column:span 4}.fmb .t3,.fmb .t4{grid-column:span 6}.fmb .t8{grid-column:span 12}}
 @media (max-width:760px){.fmb .t2{grid-column:span 6}.fmb .t3,.fmb .t4,.fmb .t6,.fmb .t8{grid-column:span 12}}
 @media print{.fm-board .noprint{display:none!important}.fmb .tile{break-inside:avoid}}
+/* Futuristic blue theme for the FM and Progress boards (screen); print falls back to plain light colours */
+.fm-board{--panel:rgba(14,40,82,.78);--sunk:rgba(32,78,140,.32);--ink:#e8f3ff;--muted:#93b8de;--line:rgba(96,165,250,.24);--line-strong:rgba(125,196,255,.5);--accent:#38bdf8;--accent-soft:rgba(56,189,248,.16);--on-accent:#04122b;--ok:#34d399;--ok-soft:rgba(52,211,153,.16);--warn:#fbbf24;--warn-soft:rgba(251,191,36,.16);--bad:#fb7185;--bad-soft:rgba(251,113,133,.17);--input:#0b2347;--input-line:rgba(125,196,255,.42);
+  position:relative;overflow:hidden;color:var(--ink);border-color:rgba(96,165,250,.38)!important;
+  background:radial-gradient(1100px 480px at 8% -12%,rgba(56,189,248,.28),transparent 62%),radial-gradient(900px 520px at 105% -5%,rgba(99,102,241,.3),transparent 60%),linear-gradient(160deg,#051733 0%,#0a2a5e 52%,#061a3d 100%)!important;
+  box-shadow:0 0 0 1px rgba(56,189,248,.14),0 24px 60px rgba(2,10,30,.45)}
+.fm-board::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(56,189,248,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.07) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(180deg,#000,transparent 85%);-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%)}
+.fm-board>*{position:relative}
+.fm-board h2{color:#fff;text-shadow:0 0 22px rgba(56,189,248,.55);letter-spacing:.02em}.fm-board .eyebrow{color:#7dd3fc;text-shadow:0 0 10px rgba(56,189,248,.6)}
+.fm-board .sheet-head p,.fm-board .note{color:var(--muted)}.fm-board a{color:#7dd3fc}.fm-board .pg-row{color:var(--ink)}
+.fm-board .fmb .tile{background:linear-gradient(180deg,rgba(22,60,115,.72),rgba(9,30,66,.78));border-color:rgba(96,165,250,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 26px rgba(0,8,26,.38);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.fm-board .fmb .tile-h{background:linear-gradient(90deg,rgba(56,189,248,.26),rgba(99,102,241,.14) 70%,transparent);color:#eaf6ff;border-bottom-color:rgba(56,189,248,.38);text-shadow:0 0 12px rgba(56,189,248,.55)}
+.fm-board .kpi{background:rgba(6,24,54,.62);border-color:rgba(96,165,250,.26)}.fm-board .kpi b{color:#fff}.fm-board .kpi span{color:#8ec5f2}
+.fm-board .fm-k.ok{box-shadow:inset 4px 0 12px -6px var(--ok)}.fm-board .fm-k.warn{box-shadow:inset 4px 0 12px -6px var(--warn)}.fm-board .fm-k.bad{box-shadow:inset 4px 0 12px -6px var(--bad)}
+.fm-board th{background:rgba(30,80,150,.45);color:#9fd0fb;border-bottom-color:rgba(96,165,250,.3)}.fm-board td{border-bottom-color:rgba(96,165,250,.16)}.fm-board tr.total td{background:rgba(56,189,248,.1)}
+.fm-board .btn{background:rgba(12,42,88,.85);color:#e8f3ff;border-color:rgba(125,196,255,.45)}.fm-board .btn:hover{border-color:#7dd3fc;box-shadow:0 0 12px rgba(56,189,248,.35)}
+.fm-board .btn.primary{background:linear-gradient(90deg,#0ea5e9,#6366f1);color:#fff;border-color:transparent;box-shadow:0 0 14px rgba(56,189,248,.45)}
+.fm-board .callout{background:rgba(251,191,36,.12);color:var(--ink)}
+.fm-board .g-fg,.fm-board .r-fg{filter:drop-shadow(0 0 5px rgba(56,189,248,.55))}.fm-board .gauge.ok .g-fg,.fm-board .ring.ok .r-fg{filter:drop-shadow(0 0 6px rgba(52,211,153,.7))}.fm-board .gauge.bad .g-fg,.fm-board .ring.bad .r-fg{filter:drop-shadow(0 0 6px rgba(251,113,133,.7))}.fm-board .gauge.warn .g-fg,.fm-board .ring.warn .r-fg{filter:drop-shadow(0 0 6px rgba(251,191,36,.7))}
+.fm-board .g-v,.fm-board .ring text{fill:#fff;color:#fff;text-shadow:0 0 12px rgba(56,189,248,.6)}
+.fm-board .mbar,.fm-board .pg-bar{background:rgba(148,197,255,.12);box-shadow:inset 0 0 0 1px rgba(96,165,250,.18)}
+.fm-board .mbar i,.fm-board .pg-bar i{background:linear-gradient(90deg,#0ea5e9,#38bdf8)}.fm-board .mbar i.ok,.fm-board .pg-bar i.ok{background:linear-gradient(90deg,#10b981,#34d399);box-shadow:0 0 10px rgba(52,211,153,.6)}
+.fm-board .mbar i.warn,.fm-board .pg-bar i.warn{background:linear-gradient(90deg,#f59e0b,#fbbf24);box-shadow:0 0 10px rgba(251,191,36,.55)}.fm-board .mbar i.bad,.fm-board .pg-bar i.bad{background:linear-gradient(90deg,#e11d48,#fb7185);box-shadow:0 0 10px rgba(251,113,133,.6)}
+.fm-board .donut>div{background:#0a2552;box-shadow:0 0 18px rgba(56,189,248,.25)}.fm-board .donut{box-shadow:0 0 22px rgba(56,189,248,.25)}
+.fm-board .pg-row:hover{background:rgba(56,189,248,.1)}
+/* Brilliant blue board background */
+.fm-board.bt-brilliant{--panel:rgba(0,46,160,.5);--sunk:rgba(255,255,255,.14);--ink:#ffffff;--muted:#dcebff;--line:rgba(255,255,255,.28);--line-strong:rgba(255,255,255,.55);--accent:#7df9ff;--accent-soft:rgba(125,249,255,.2);--ok:#4ade80;--ok-soft:rgba(74,222,128,.22);--warn:#fde047;--warn-soft:rgba(253,224,71,.22);--bad:#ff8fa3;--bad-soft:rgba(255,143,163,.24);
+  background:radial-gradient(900px 420px at 0% -10%,rgba(125,249,255,.45),transparent 60%),radial-gradient(800px 500px at 100% 0%,rgba(147,197,253,.35),transparent 60%),linear-gradient(135deg,#0038e0 0%,#0a6cff 48%,#00a8ff 100%)!important;border-color:rgba(255,255,255,.45)!important;box-shadow:0 0 0 1px rgba(125,249,255,.35),0 24px 60px rgba(0,40,140,.45)}
+.fm-board.bt-brilliant::before{background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px)}
+.fm-board.bt-brilliant .fmb .tile{background:linear-gradient(180deg,rgba(0,40,150,.55),rgba(0,28,110,.6));border-color:rgba(255,255,255,.3)}
+.fm-board.bt-brilliant .fmb .tile-h{background:linear-gradient(90deg,rgba(255,255,255,.22),rgba(125,249,255,.12) 70%,transparent);border-bottom-color:rgba(255,255,255,.35);text-shadow:0 0 12px rgba(125,249,255,.7)}
+.fm-board.bt-brilliant .kpi{background:rgba(0,30,110,.5);border-color:rgba(255,255,255,.28)}.fm-board.bt-brilliant .kpi span{color:#c7e3ff}
+.fm-board.bt-brilliant th{background:rgba(0,30,120,.55);color:#e0f0ff}.fm-board.bt-brilliant td{border-bottom-color:rgba(255,255,255,.16)}
+.fm-board.bt-brilliant a{color:#bff7ff}.fm-board.bt-brilliant .eyebrow{color:#bff7ff}
+.fm-board.bt-brilliant .btn{background:rgba(0,40,140,.55);border-color:rgba(255,255,255,.5)}.fm-board.bt-brilliant .btn.primary{background:linear-gradient(90deg,#00d4ff,#7df9ff);color:#00205e;box-shadow:0 0 16px rgba(125,249,255,.7)}
+.fm-board.bt-brilliant .mbar,.fm-board.bt-brilliant .pg-bar{background:rgba(255,255,255,.18)}.fm-board.bt-brilliant .donut>div{background:#0036b8}
+.fm-board.bt-brilliant .g-bg,.fm-board.bt-brilliant .ring .r-bg{stroke:rgba(255,255,255,.18)}
+.bt-switch .btn{display:inline-flex;align-items:center;gap:6px}.bt-dot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.6)}
+.bt-dot.bt-deep{background:linear-gradient(135deg,#051733,#0a2a5e)}.bt-dot.bt-brilliant{background:linear-gradient(135deg,#0038e0,#00a8ff)}
+/* Brilliant white board background */
+.fm-board.bt-white{--panel:#ffffff;--sunk:#eef4ff;--ink:#0b1f44;--muted:#4b6286;--line:#d6e2f5;--line-strong:#a9c0e6;--accent:#1d4ed8;--accent-soft:#e0eaff;--on-accent:#fff;--ok:#059669;--ok-soft:#d1fae5;--warn:#b45309;--warn-soft:#fef3c7;--bad:#e11d48;--bad-soft:#ffe4e6;--input:#fff;--input-line:#a9c0e6;
+  color:var(--ink);background:radial-gradient(900px 420px at 0% -10%,rgba(56,189,248,.14),transparent 60%),radial-gradient(800px 460px at 100% 0%,rgba(99,102,241,.1),transparent 60%),linear-gradient(180deg,#ffffff,#f5f9ff)!important;border-color:#cfdcf3!important;box-shadow:0 0 0 1px rgba(29,78,216,.06),0 20px 50px rgba(30,64,175,.12)}
+.fm-board.bt-white::before{background-image:linear-gradient(rgba(29,78,216,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.05) 1px,transparent 1px)}
+.fm-board.bt-white h2{color:#0b1f44;text-shadow:none}.fm-board.bt-white .eyebrow{color:#1d4ed8;text-shadow:none}.fm-board.bt-white a{color:#1d4ed8}
+.fm-board.bt-white .fmb .tile{background:#fff;border-color:#d6e2f5;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 8px 22px rgba(30,64,175,.08);backdrop-filter:none}
+.fm-board.bt-white .fmb .tile-h{background:linear-gradient(90deg,#e8f0ff,#f4f8ff 70%,#fff);color:#0b1f44;border-bottom-color:#d6e2f5;text-shadow:none}
+.fm-board.bt-white .kpi{background:#f7faff;border-color:#d6e2f5}.fm-board.bt-white .kpi b{color:#0b1f44}.fm-board.bt-white .kpi span{color:#4b6286}
+.fm-board.bt-white th{background:#eef4ff;color:#33507d;border-bottom-color:#d6e2f5}.fm-board.bt-white td{border-bottom-color:#e6eefb}.fm-board.bt-white tr.total td{background:#f0f6ff}
+.fm-board.bt-white .btn{background:#fff;color:#0b1f44;border-color:#a9c0e6}.fm-board.bt-white .btn:hover{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.12)}
+.fm-board.bt-white .btn.primary{background:linear-gradient(90deg,#1d4ed8,#0ea5e9);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(29,78,216,.3)}
+.fm-board.bt-white .g-v,.fm-board.bt-white .ring text{fill:#0b1f44;color:#0b1f44;text-shadow:none}
+.fm-board.bt-white .g-bg,.fm-board.bt-white .ring .r-bg{stroke:#e3ecfb}.fm-board.bt-white .g-fg,.fm-board.bt-white .r-fg{filter:none!important}
+.fm-board.bt-white .mbar,.fm-board.bt-white .pg-bar{background:#e8eefb;box-shadow:none}.fm-board.bt-white .mbar i,.fm-board.bt-white .pg-bar i{box-shadow:none!important}
+.fm-board.bt-white .donut>div{background:#fff;box-shadow:none}.fm-board.bt-white .donut{box-shadow:0 4px 16px rgba(30,64,175,.12)}
+.fm-board.bt-white .callout{background:#fef3c7;color:#0b1f44}.fm-board.bt-white .pg-row:hover{background:#f0f6ff}
+.fm-board.bt-white .fm-k.ok,.fm-board.bt-white .fm-k.warn,.fm-board.bt-white .fm-k.bad{box-shadow:none}
+.bt-dot.bt-white{background:#fff;border-color:#a9c0e6}
+@media print{.fm-board{--panel:#fff;--sunk:#f2f5f9;--ink:#111;--muted:#555;--line:#cfd6de;--line-strong:#9aa5b1;--ok:#2c7a4b;--ok-soft:#dcefe3;--warn:#9a6a0b;--warn-soft:#f6ecd2;--bad:#b0281f;--bad-soft:#f7dcd9;background:#fff!important;box-shadow:none;color:#111}.fm-board::before{display:none}.fm-board h2,.fm-board .eyebrow,.fm-board .tile-h,.fm-board .g-v{text-shadow:none!important;color:#111!important}.fm-board .fmb .tile,.fm-board .kpi{background:#fff!important;box-shadow:none!important}.fm-board .fmb .tile-h,.fm-board th{background:#eef2f7!important;color:#333!important}.fm-board a{color:#111}.fm-board .ring text{fill:#111}}
 
 </style>
 
@@ -1834,7 +1903,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 
 /* ---------- views ---------- */
 const VIEWS = [
-  ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['tasks', 'My tasks'], ['admin', 'Admin centre'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
+  ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['progress', 'Progress board'], ['tasks', 'My tasks'], ['admin', 'Admin centre'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
   ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['treat', 'Water & sewage treatment'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['fmboardin', 'FM board inputs'], ['fmboard', 'FM performance board'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport', 'regreport', 'faq'];
@@ -1865,6 +1934,7 @@ function railStatus(id) {
   if (id === 'fm') { if (!(S.tickets || []).length && !(S.soft || []).length && !(S.capProj || []).length) return ''; const F = calcFM(); return F.overdue || F.soft.some(r => r.st === 'bad') || F.pr.some(r => r.rag === 'Red') ? 'bad' : F.open || F.soft.some(r => r.st === 'warn') || F.pr.some(r => r.rag === 'Amber') ? 'warn' : 'ok'; }
   if (id === 'assets') { if (!(S.assets || []).length) return ''; const A = calcAssets(); return A.nBad ? 'bad' : A.nWarn ? 'warn' : 'ok'; }
   if (id === 'fmboard') return fmbStatus();
+  if (id === 'progress') return progressStatus();
   if (id === 'drawings') return !R.W.rooms.length ? '' : R.W.nBad ? 'bad' : R.W.nWarn ? 'warn' : 'ok';
   return '';
 }
@@ -3628,6 +3698,7 @@ const ADV_PAGE = {
   handover: ['One printable handover document: cover, compliance, certificate, circuit schedule, tests, commissioning and assets.', ['Choose the sections, check the preview, save as PDF.'], ['Issue it only once LV and commissioning tests are complete.']],
   assets: ['Asset register with planned maintenance, depreciation, condition and the life-cycle replacement plan.', ['Add assets from the design, then set year, cost and condition.', 'Move end-of-life items into capital projects.'], ['Condition and criticality drive the risk – update them after each inspection.']],
   fm: ['Helpdesk for plant and everyday repairs with P1–P4 response times, soft services and capital projects.', ['Raise a ticket by trade and issue – priority and description fill in.', 'Record attended and completed times to measure the SLA.'], ['Accurate attend and complete times are what make the SLA and MTTR figures meaningful.']],
+  progress: ['Progress board: work progress across design, implementation, energy, assets and facilities, each measured against its own deliverables, with flagged actions.', ['Read the bars for progress at a glance; open a board for its deliverables and actions.', 'Click any deliverable or action to go to the stage that moves it forward.'], ['Not-started deliverables count as 0 % – start each stage early so the board shows real progress.']],
   fmboardin: ['Inputs for the FM performance board: targets, hard and soft service contracts with SLA and PPM, SOP compliance, OPEX, customer satisfaction, energy, safety and strategies.', ['Add a row per service contract – or load the example to see how it works.', 'Tickets, assets, soft services and capital projects are read from their own stages.'], ['Keep contract end dates current – the board flags renewals due within 90 days.']],
   fmboard: ['A one-page FM performance board: SLA, PPM, MTTR, MTBF, availability, satisfaction, incidents, contracts, CAPEX/OPEX, energy and safety.', ['Switch between hard services, soft services or both.', 'Save as CSV or print to PDF for the monthly review.'], ['Red and amber tiles show where targets are missed – fix the inputs in their own stage.']],
   fmreport: ['The facilities report: equipment state, tickets and SLA, soft services, capital projects and life cycle.', ['Review, then save as PDF, CSV or Excel.'], ['Use the Excel version for monthly trend tracking.']],
@@ -3816,25 +3887,25 @@ const ROLES = [
   ['lead', 'Project lead', 'Every stage, from first design to asset planning – full access.', null, null],
   ['controller', 'Project controller', 'Runs the Admin centre: the whole project life cycle from concept, design and procurement to deployment, handover, operation and end of life – stage gates, programme, budget, team access and the project log. Full access.', null, null],
   ['design', 'Design engineer', 'Loads, supply, cables and protection, compliance, drawings, BOQ and the design report.',
-    ['dashboard', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'mech', 'plumb', 'treat', 'mepcomp', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
+    ['dashboard', 'progress', 'project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'mech', 'plumb', 'treat', 'mepcomp', 'compliance', 'checklist', 'drawings', 'review', 'coverage', 'boq', 'report'],
     ['project', 'area', 'equipment', 'lifts-pumps', 'data-centre', 'sizing', 'circuits', 'energy', 'compliance', 'checklist', 'drawings', 'review', 'boq', 'report']],
   ['mep', 'MEP engineer', 'Mechanical and plumbing services – heating, cooling, ventilation, water and drainage, their compliance, and the plant loads sent to the electrical design.',
-    ['dashboard', 'project', 'area', 'mech', 'plumb', 'treat', 'mepcomp', 'equipment', 'lifts-pumps', 'energy', 'compliance', 'tc', 'report'],
+    ['dashboard', 'progress', 'project', 'area', 'mech', 'plumb', 'treat', 'mepcomp', 'equipment', 'lifts-pumps', 'energy', 'compliance', 'tc', 'report'],
     ['mech', 'plumb', 'treat', 'mepcomp', 'lifts-pumps']],
   ['impl', 'Implementation & deployment', 'Construction and commissioning: drawings, BOQ, document and risk registers, LV tests, T&C and handover.',
-    ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'treat', 'mepcomp', 'report'],
+    ['dashboard', 'progress', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'treat', 'mepcomp', 'report'],
     ['drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover']],
   ['faceng', 'Facilities engineer', 'Building services planning, planned and reactive maintenance, plant condition and the facilities report.',
-    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'energy', 'mech', 'plumb', 'treat', 'lvcert', 'tc', 'handover'],
+    ['dashboard', 'progress', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'energy', 'mech', 'plumb', 'treat', 'lvcert', 'tc', 'handover'],
     ['facilities', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard']],
   ['fm', 'Facility manager', 'Helpdesk and SLA, soft services, capital projects and the monthly facilities report.',
-    ['dashboard', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities', 'assets', 'handover', 'energy'],
+    ['dashboard', 'progress', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities', 'assets', 'handover', 'energy'],
     ['fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities']],
   ['energy', 'Energy manager', 'Annual energy, cost and carbon, efficiency measures, solar PV and the demand behind them.',
-    ['dashboard', 'energy', 'sizing', 'data-centre', 'mech', 'fmreport', 'fmboard', 'assets', 'report'],
+    ['dashboard', 'progress', 'energy', 'sizing', 'data-centre', 'mech', 'fmreport', 'fmboard', 'assets', 'report'],
     ['energy']],
   ['asset', 'Asset manager', 'Asset register, condition and risk, depreciation, life cycle and the capital replacement forecast.',
-    ['dashboard', 'assets', 'fm', 'fmreport', 'fmboard', 'handover', 'registers', 'report'],
+    ['dashboard', 'progress', 'assets', 'fm', 'fmreport', 'fmboard', 'handover', 'registers', 'report'],
     ['assets', 'fm', 'fmreport']],
 ];
 const ROLE_KEY = 'nexvorahub-role', REG_KEY = 'nexvorahub-user';
@@ -5376,6 +5447,12 @@ V.fmboard = () => {
     ['Work orders completed', fbP(M.wo.pct), `${f0(M.wo.completed)} of ${f0(M.wo.total)}`, fbHi(M.wo.pct, T.ppm)], ['Customer satisfaction', fbP(M.csat), `Target ≥ ${T.csat}%`, M.st.csat],
     ['Critical incidents (P1)', String(M.sevs[0].n), `${M.critOpen} open`, M.critOpen ? 'bad' : 'ok'], ['CO₂ reduction', isFinite(M.en.co2Red) ? `${f1(M.en.co2Red)} t` : '–', 'vs last year', isFinite(M.en.co2Red) ? (M.en.co2Red >= 0 ? 'ok' : 'warn') : 'na'],
   ].map(([l, v, s, st]) => `<div class="kpi fm-k ${st}"><span>${l}</span><b>${v}</b><small>${esc(s)}</small></div>`).join('');
+  // progress of each parameter towards its target (higher-is-better values: value ÷ target; MTTR: target ÷ value)
+  const ach = (v, t, lo) => v === Infinity ? 1 : v == null || !isFinite(v) || !t ? null : Math.max(0, Math.min(1, lo ? (v > 0 ? t / v : 1) : v / t));
+  const unitTxt = (v, u) => v === Infinity ? 'no failures' : v == null || !isFinite(v) ? '–' : (u === '%' ? fbP(v) : f1(v) + u);
+  const progRows = [['SLA achievement', M.sla, T.sla, 0, '%', M.st.sla], ['PPM compliance', M.ppm, T.ppm, 0, '%', M.st.ppm], ['Mean time to repair', M.mttr, T.mttr, 1, ' h', M.st.mttr], ['Mean time between failures', M.noFail ? Infinity : M.mtbf, T.mtbf, 0, ' d', M.st.mtbf], ['Asset availability', M.avail, T.avail, 0, '%', M.st.avail], ['Customer satisfaction', M.csat, T.csat, 0, '%', M.st.csat], ['Contract audit score', M.contract, T.contract, 0, '%', M.st.contract], ['SOP compliance', M.sopAvg, T.sop, 0, '%', M.st.sop], ['Work orders completed', M.wo.pct, T.ppm, 0, '%', fbHi(M.wo.pct, T.ppm)]]
+    .map(([l, v, t, lo, u, st]) => { const a = ach(v, t, lo); return `<div class="pg-row"><span class="pg-n">${l}</span><span class="pg-bar"><i class="${st}" style="width:${((a || 0) * 100).toFixed(1)}%"></i></span><b class="num">${a == null ? '–' : pct(a)}</b><span class="pg-m">${unitTxt(v, u)} vs ${lo ? '≤' : '≥'} ${t}${u === '%' ? '%' : u}</span><span class="pg-a">${pill(st, FB_ST[st])}</span></div>`; });
+  const progT = fbTile('t12', 'KPI progress to target <small>each parameter as a percentage of its target</small>', `<div class="pg-list">${progRows.join('')}</div>`);
   const gauges = [
     fbGauge('SLA achievement', M.slaFromTk ? 'Tickets fixed within SLA' : 'Contractor-reported SLA', fbP(M.sla), M.sla / 100, M.st.sla, `Target ≥ ${T.sla}%`),
     fbGauge('PPM compliance', 'Planned maintenance completed', fbP(M.ppm), M.ppm / 100, M.st.ppm, `Target ≥ ${T.ppm}%`),
@@ -5416,9 +5493,9 @@ V.fmboard = () => {
   const sfT = fbTile('t4', 'Safety & fire compliance', fbTbl(['Measure', 'Value', ''], [sRow('Fire system availability', fbP(num(sf.fireAvail)), fbHi(num(sf.fireAvail), 99, 1)), sRow('Emergency lights operational', fbP(num(sf.emLights)), fbHi(num(sf.emLights), 98, 2)), sRow('Fire drills conducted', `${fbHas(sf.drills) ? +sf.drills : '–'} / ${fbN(sf.drillsT)}`, fbHas(sf.drills) ? (+sf.drills >= fbN(sf.drillsT) ? 'ok' : 'warn') : 'na'), sRow('Safety training completion', fbP(num(sf.training)), fbHi(num(sf.training), 95)), sRow('Lost time incidents', fbHas(sf.lti) ? f0(+sf.lti) : '–', fbHas(sf.lti) ? (+sf.lti ? 'bad' : 'ok') : 'na'), sRow('Fire alarm false alarms', fbHas(sf.falseAlarms) ? f0(+sf.falseAlarms) : '–', fbHas(sf.falseAlarms) ? (+sf.falseAlarms > 3 ? 'warn' : 'ok') : 'na')].join('')));
   const stT = fbTile('t4', 'Optimisation strategies', `<ul class="strat">${FMB_STRAT.map(([k, t]) => `<li class="${B.strat[k] ? 'on' : ''}">${pill(B.strat[k] ? 'ok' : 'na', B.strat[k] ? '✓' : '–')} ${t}</li>`).join('')}</ul>`);
   const period = `${esc(B.start || '…')} to ${esc(B.end || 'today')} (${M.days} days)`;
-  return `<section class="sheet fm-board">${head('FM', 'FM performance board', `${esc(B.site || S.project.name || 'Site')} · ${period} · showing <b>${scopeTxt}</b>. Calculated from the helpdesk tickets, asset register, soft services and capital projects in the FM stages, plus the FM board inputs.`, `<div class="row noprint" role="group" aria-label="Service scope">${btns}</div><a class="btn small noprint" href="#fmboardin">Edit board inputs</a><button class="btn small noprint" data-act="fmb-csv">Save board (.csv)</button><button class="btn small noprint" data-act="fmb-print">Print / PDF</button>`)}
+  return `<section class="sheet fm-board bt-${BOARD_THEME}">${head('FM', 'FM performance board', `${esc(B.site || S.project.name || 'Site')} · ${period} · showing <b>${scopeTxt}</b>. Calculated from the helpdesk tickets, asset register, soft services and capital projects in the FM stages, plus the FM board inputs.`, `${boardThemeBtns()}<div class="row noprint" role="group" aria-label="Service scope">${btns}</div><a class="btn small noprint" href="#fmboardin">Edit board inputs</a><button class="btn small noprint" data-act="fmb-csv">Save board (.csv)</button><button class="btn small noprint" data-act="fmb-print">Print / PDF</button>`)}
   ${empty ? `<p class="callout">No FM records yet. Enter tickets, assets and soft services in <a href="#fm">FM operations</a> and <a href="#assets">Assets &amp; maintenance</a>, add service contracts in <a href="#fmboardin">FM board inputs</a>, or <button class="btn small" data-act="fmb-example">load example FM data</button> to see a filled board.</p>` : ''}
-  <div class="fmb">${fbTile('t12', 'Executive summary', `<div class="kpis exec">${exec}</div>`)}${gauges}${incT}${sopT}${softT || ''}${enT}${conT}${mttrT}${mtbfT}${capT}${opT}${woT}${csT}${sfT}${amT}${stT}</div>
+  <div class="fmb">${fbTile('t12', 'Executive summary', `<div class="kpis exec">${exec}</div>`)}${progT}${gauges}${incT}${sopT}${softT || ''}${enT}${conT}${mttrT}${mtbfT}${capT}${opT}${woT}${csT}${sfT}${amT}${stT}</div>
   <p class="note">SLA = tickets fixed within their priority SLA ÷ tickets judged (when there are no tickets, the average contractor-reported SLA). MTTR = mean hours from raising to completing a ticket. MTBF = units × 365 days ÷ failures in 12 months (asset register). Availability = units not marked "Not operating" ÷ units. Health index = condition grade factor weighted by units. PPM compliance = planned tasks completed ÷ planned tasks issued (service contracts). Contracts ending within 90 days are flagged for renewal.</p></section>`;
 };
 
@@ -5484,6 +5561,127 @@ function fmbCsv() {
   M.eq.forEach(g => row(g.name, g.qty, g.fails, p(g.mtbf), p(g.mttr)));
   L.push(''); row('INCIDENTS BY PRIORITY'); M.sevs.forEach(s => row(`${s.name} (${s.p})`, s.n));
   return L.join('\r\n');
+}
+
+/* Board background: Deep blue or Brilliant blue, remembered per viewer in this browser */
+const BOARD_THEMES = [['deep', 'Deep blue'], ['brilliant', 'Brilliant blue'], ['white', 'Brilliant white']];
+let BOARD_THEME = (() => { try { const t = localStorage.getItem('nexvorahub-board-theme'); return BOARD_THEMES.some(x => x[0] === t) ? t : 'deep'; } catch (e) { return 'deep'; } })();
+const boardThemeBtns = () => `<div class="row noprint bt-switch" role="group" aria-label="Board background">${BOARD_THEMES.map(([k, t]) => `<button class="btn small ${BOARD_THEME === k ? 'primary' : ''}" data-act="board-theme" data-v="${k}" aria-pressed="${BOARD_THEME === k}"><i class="bt-dot bt-${k}"></i>${t}</button>`).join('')}</div>`;
+function boardThemeAct(act, b) { if (act !== 'board-theme') return false; BOARD_THEME = BOARD_THEMES.some(x => x[0] === b.dataset.v) ? b.dataset.v : 'deep'; try { localStorage.setItem('nexvorahub-board-theme', BOARD_THEME); } catch (e) { } render(); return true; }
+/* ---------- Progress board: design and delivery progress across every discipline ---------- */
+// Each board (discipline) is measured against its own deliverables, calculated live from the stages.
+// A deliverable not yet started counts as 0 %; one that does not apply to this project is left out.
+// Actionable items come from the same rules as each role's My tasks list.
+const DPB_GROUPS = [
+  ['design', 'Electrical design', 'design'], ['mep', 'Mechanical & plumbing', 'mep'], ['impl', 'Implementation & commissioning', 'impl'],
+  ['energy', 'Energy management', 'energy'], ['asset', 'Asset management', 'asset'], ['fm', 'Facilities management', 'fm'],
+];
+const DPB_SEV = { bad: ['bad', 'Urgent'], warn: ['warn', 'Attention'], info: ['na', 'To do'] };
+function calcProgress() {
+  const D = calcDash(), G = calcRegs(), A = D.A, F = D.F, T = D.T, dv = id => { const x = D.k.find(o => o.id === id); return x ? x.v : undefined; };
+  const avg = a => { const v = a.filter(x => x != null && isFinite(x)); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  let M = null; try { M = calcMep(); } catch (e) { }
+  let FB = null; try { FB = calcFMB(); } catch (e) { }
+  const q = A.rows.reduce((a, r) => a + r.qty, 0), E = R.E || {}, e = S.energy || {}, mk = Object.keys(e.m || {});
+  const due = A.rows.filter(r => r.replYear <= A.yr + 1), planned = new Set((S.capProj || []).map(p => p.asset).filter(Boolean));
+  const fbSt = FB ? Object.values(FB.st).filter(s => s !== 'na') : [];
+  // [name, fraction 0–1 | null (not started) | undefined (not applicable), note, stage]
+  const DEL = {
+    design: [
+      ['Area & equipment load schedules', (S.zones || []).length + (S.loads || []).length ? 1 : null, (S.zones || []).length + ' areas · ' + (S.loads || []).length + ' equipment loads', 'area'],
+      ['Supply & transformer sizing', R.md > 0 ? (R.txKva ? 1 : 0.5) : null, R.txKva ? R.nTx + ' × ' + f0(R.txKva) + ' kVA for ' + f0(R.md) + ' kVA' : 'Transformer not selected', 'sizing'],
+      ['Cables & protection schedule', dv('circuits'), R.C.length + ' circuits', 'circuits'],
+      ['Design compliance', dv('compliance'), 'Regulation checks', 'compliance'],
+      ['Design checklist', dv('checklist'), 'Checklist items done', 'checklist'],
+      ['Electrical drawings', (S.dwgRooms || []).length ? 1 : null, (S.dwgRooms || []).length + ' rooms laid out', 'drawings'],
+      ['Design documents approved', G.live.length ? G.docPct : null, G.live.length ? G.approved + ' of ' + G.live.length + ' approved' : 'No documents registered', 'registers'],
+    ],
+    mep: [
+      ['Heating & cooling plant sized', M ? (M.heatCap > 0 || M.coolCap > 0 ? 1 : null) : null, M ? 'Heating ' + f0(M.heatCap) + ' kW · cooling ' + f0(M.coolCap) + ' kW' : 'Not started', 'mech'],
+      ['Water & drainage (fixtures)', M ? (M.fx.length ? 1 : null) : null, M ? M.fx.length + ' fixture lines' : 'Not started', 'plumb'],
+      ['MEP compliance', dv('mep'), 'Mechanical and plumbing checks', 'mepcomp'],
+      ['MEP loads sent to electrical', dv('mep-elec'), 'Plant loads in the electrical design', 'mech'],
+    ],
+    impl: [
+      ['Testing & commissioning', T.total && T.done ? T.done / T.total : null, T.done + ' of ' + T.total + ' tests', 'tc'],
+      ['Domestic LV certification', dv('lv-dom'), 'Circuits tested and passing', 'lvcert'],
+      ['Commercial LV certification', dv('lv-com'), 'Circuits tested and passing', 'lvcert'],
+      ['Documents approved / issued', G.live.length ? G.docPct : null, G.live.length + ' documents · ' + G.overdue + ' overdue', 'registers'],
+      ['Risks under control', G.risks.length ? dv('risks') : undefined, G.risks.length + ' risks · ' + G.open + ' open', 'registers'],
+    ],
+    energy: [
+      ['Energy model', E.base > 0 ? 1 : null, E.base > 0 ? f0(E.imp) + ' kWh a year after measures' : 'No load to model', 'energy'],
+      ['Efficiency measures adopted', mk.length ? mk.filter(k => e.m[k]).length / mk.length : null, mk.filter(k => (e.m || {})[k]).length + ' of ' + mk.length + ' measures', 'energy'],
+      ['Within the energy benchmark', isFinite(E.eui) && +e.benchmark > 0 ? Math.min(1, +e.benchmark / Math.max(E.eui, 1e-9)) : undefined, isFinite(E.eui) ? f0(E.eui) + ' vs ' + e.benchmark + ' kWh/m²/yr' : 'Floor area not known', 'energy'],
+      ['Renewables specified (PV / battery)', +e.pv > 0 || +e.batt > 0 ? 1 : null, (+e.pv || 0) + ' kWp PV · ' + (+e.batt || 0) + ' kWh battery', 'energy'],
+      ['Metered consumption recorded', FB && FB.en.kwh > 0 ? 1 : null, FB && FB.en.kwh > 0 ? f0(FB.en.kwh) + ' kWh this period' : 'Enter actuals in FM board inputs', 'fmboardin'],
+      ['Consumption reduced vs last year', FB && FB.en.kwh > 0 && FB.en.kwhLY > 0 ? (FB.en.kwh <= FB.en.kwhLY ? 1 : Math.max(0, FB.en.kwhLY / FB.en.kwh)) : undefined, FB && isFinite(FB.en.kwhChg) ? (FB.en.kwhChg >= 0 ? '+' : '') + FB.en.kwhChg.toFixed(1) + '% vs last year' : '', 'fmboard'],
+    ],
+    asset: [
+      ['Asset register', q ? 1 : null, q + ' assets registered', 'assets'],
+      ['Costs & install years recorded', A.rows.length ? A.rows.filter(r => +r.a.cost > 0 && +r.a.year > 0).length / A.rows.length : null, A.rows.filter(r => +r.a.cost > 0).length + ' of ' + A.rows.length + ' lines costed', 'assets'],
+      ['Planned maintenance completed', q ? dv('ppm') : null, 'PPM completion recorded', 'assets'],
+      ['Asset condition', q ? dv('health') : null, A.nBad + ' to replace / repair · ' + A.nWarn + ' to plan', 'assets'],
+      ['Replacements planned (due ≤ 1 year)', due.length ? due.filter(r => planned.has(r.a.id)).length / due.length : q ? 1 : null, due.length ? due.filter(r => planned.has(r.a.id)).length + ' of ' + due.length + ' in capital projects' : 'None due', 'fm'],
+    ],
+    fm: [
+      ['Helpdesk SLA', F.tk.length ? dv('sla') : null, F.open + ' open · ' + F.overdue + ' overdue tickets', 'fm'],
+      ['Soft services performing', F.soft.length ? F.soft.filter(r => r.st === 'ok').length / F.soft.length : null, F.soft.length + ' soft services', 'fm'],
+      ['Capital projects on track', F.pr.length ? dv('capex') : undefined, F.pr.length + ' projects', 'fm'],
+      ['Service contracts registered', (S.fmbContracts || []).length ? 1 : null, (S.fmbContracts || []).length + ' contracts', 'fmboardin'],
+      ['FM KPIs on target', fbSt.length ? fbSt.filter(s => s === 'ok').length / fbSt.length : null, fbSt.filter(s => s === 'ok').length + ' of ' + fbSt.length + ' board KPIs', 'fmboard'],
+    ],
+  };
+  const groups = DPB_GROUPS.map(([id, name, role]) => {
+    const del = DEL[id].filter(d => d[1] !== undefined).map(([n, v, note, view]) => ({ n, v: v == null || !isFinite(v) ? null : Math.max(0, Math.min(1, v)), note, view }));
+    del.forEach(d => { d.st = d.v == null ? 'Not started' : d.v >= 0.999 ? 'Complete' : 'In progress'; d.rag = d.v == null ? 'na' : ragCls(ragOf(d.v)); });
+    const pc = del.length ? del.reduce((a, d) => a + (d.v || 0), 0) / del.length : 0, started = del.some(d => d.v != null);
+    let acts = []; try { acts = roleTasks(role).map(o => ({ ...o, grp: name, gid: id })); } catch (err) { acts = []; }
+    const urgent = acts.filter(o => o.s === 'bad').length, attn = acts.filter(o => o.s === 'warn').length;
+    const rag = !started ? 'N/A' : urgent ? (pc >= 0.6 ? 'Amber' : 'Red') : ragOf(pc);
+    let kpis = []; try { kpis = roleKpis(role); } catch (err) { kpis = []; }
+    return { id, name, role, del, pc, started, acts, urgent, attn, rag, kpis, done: del.filter(d => d.st === 'Complete').length };
+  });
+  const live = groups.filter(g => g.started), overall = live.length ? live.reduce((a, g) => a + g.pc, 0) / live.length : 0;
+  const seen = new Set(), acts = groups.flatMap(g => g.acts).filter(o => { const k = o.t + '|' + o.v; if (seen.has(k)) return false; seen.add(k); return true; });
+  const rank = { bad: 0, warn: 1, info: 2 }; acts.sort((a, b) => rank[a.s] - rank[b.s] || (a.due && b.due ? a.due.localeCompare(b.due) : a.due ? -1 : b.due ? 1 : 0));
+  const nDel = groups.reduce((a, g) => a + g.del.length, 0), nDone = groups.reduce((a, g) => a + g.done, 0);
+  return { groups, overall, acts, urgent: acts.filter(o => o.s === 'bad').length, attn: acts.filter(o => o.s === 'warn').length, nDel, nDone, rag: groups.some(g => g.rag === 'Red') ? 'Red' : groups.some(g => g.rag === 'Amber') ? 'Amber' : live.length ? 'Green' : 'N/A' };
+}
+function progressStatus() { try { const P = calcProgress(); return P.rag === 'N/A' ? '' : ragCls(P.rag); } catch (e) { return ''; } }
+const dpbRing = (frac, rag, label) => { const f = Math.max(0, Math.min(1, frac || 0)), r = 34, c = 2 * Math.PI * r; return `<svg class="ring ${rag}" viewBox="0 0 84 84" role="img" aria-label="${esc(label)} ${Math.round(f * 100)}%"><circle cx="42" cy="42" r="${r}" class="r-bg"/><circle cx="42" cy="42" r="${r}" class="r-fg" stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 42 42)"/><text x="42" y="47" text-anchor="middle">${Math.round(f * 100)}%</text></svg>`; };
+V.progress = () => {
+  const P = calcProgress(), F = DPB_SEV;
+  const overview = P.groups.map(g => `<a class="pg-row" href="#pg-${g.id}"><span class="pg-n">${esc(g.name)}</span><span class="pg-bar"><i class="${ragCls(g.rag)}" style="width:${(g.pc * 100).toFixed(1)}%"></i></span><b class="num">${g.started ? pct(g.pc) : '–'}</b><span class="pg-m">${g.done}/${g.del.length} deliverables</span><span class="pg-a">${g.urgent ? pill('bad', g.urgent + ' urgent') : ''}${g.attn ? pill('warn', g.attn + ' attention') : ''}${!g.urgent && !g.attn ? pill(g.started ? 'ok' : 'na', g.started ? 'No flags' : 'Not started') : ''}</span></a>`).join('');
+  const tiles = P.groups.map(g => {
+    const kp = g.kpis.slice(0, 3).map(([l, v, s]) => `<div class="kpi"><span>${esc(l)}</span><b>${v}</b><small>${s}</small></div>`).join('');
+    const del = g.del.map(d => `<tr><td><a href="#${d.view}">${esc(d.n)}</a><div class="note">${esc(d.note)}</div></td><td>${fbBar(d.v || 0, d.rag)}</td><td class="n">${d.v == null ? '–' : pct(d.v)}</td><td>${pill(d.rag, d.st)}</td></tr>`).join('');
+    const top = g.acts.filter(o => o.s !== 'info').slice(0, 4), more = g.acts.length - top.length;
+    const acts = top.length ? `<ul class="pg-acts">${top.map(o => `<li>${pill(F[o.s][0], F[o.s][1])} <a href="#${o.v}">${esc(o.t)}</a>${o.due ? ` <span class="note">due ${esc(o.due)}</span>` : ''}</li>`).join('')}</ul>${more > 0 ? `<p class="note">+ ${more} more in <a href="#tasks">My tasks</a> for this role.</p>` : ''}` : `<p class="note">${g.acts.length ? g.acts.length + ' to-do item(s), nothing flagged.' : 'No outstanding actions.'}</p>`;
+    return `<section class="tile t6" id="pg-${g.id}"><h3 class="tile-h">${esc(g.name)} <small>${pill(ragCls(g.rag), g.rag)}</small></h3>
+      <div class="pg-head">${dpbRing(g.pc, ragCls(g.rag), g.name)}<div class="kpis">${kp}</div></div>
+      <div class="tbl-wrap"><table class="fm-t"><thead><tr><th>Deliverable (yardstick)</th><th></th><th>Progress</th><th>Status</th></tr></thead><tbody>${del}</tbody></table></div>
+      <h4>Actionable items</h4>${acts}</section>`;
+  }).join('');
+  const list = P.acts.filter(o => o.s !== 'info'), shown = list.slice(0, 30);
+  const actT = `<section class="tile t12"><h3 class="tile-h">Flagged actions across all boards <small>${P.urgent} urgent · ${P.attn} need attention</small></h3>${fbTbl(['Flag', 'Board', 'Action', 'Detail', 'Due', 'Stage'], shown.map(o => `<tr><td>${pill(F[o.s][0], F[o.s][1])}</td><td>${esc(o.grp)}</td><td>${esc(o.t)}</td><td class="note">${esc(o.d)}</td><td>${esc(o.due || '–')}</td><td><a href="#${o.v}">${esc(vName(o.v))} →</a></td></tr>`).join(''), '', 'Nothing flagged – every board is clear.')}${list.length > shown.length ? `<p class="note">Showing the first ${shown.length} of ${list.length}. Each role sees its full list in My tasks.</p>` : ''}</section>`;
+  const head0 = [['Overall progress', pct(P.overall), 'average of the boards started', ragCls(P.rag)], ['Deliverables complete', P.nDone + ' / ' + P.nDel, 'across ' + P.groups.length + ' boards', 'na'], ['Urgent actions', String(P.urgent), 'flagged red', P.urgent ? 'bad' : 'ok'], ['Needs attention', String(P.attn), 'flagged amber', P.attn ? 'warn' : 'ok'], ['Boards behind', String(P.groups.filter(g => g.rag === 'Red').length), 'red boards', P.groups.some(g => g.rag === 'Red') ? 'bad' : 'ok']]
+    .map(([l, v, s, st]) => `<div class="kpi fm-k ${st}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`).join('');
+  return `<section class="sheet fm-board bt-${BOARD_THEME}">${head('Dashboard', 'Progress board', 'Work progress across design, implementation, energy, assets and facilities at a glance. Each board is measured against its own deliverables, calculated live from the stages; actionable items are flagged from the same rules as each role’s My tasks. Green 90 % or better, amber 60–89 %, red below 60 % or with urgent actions.', `${boardThemeBtns()}${pill(ragCls(P.rag), 'Overall: ' + P.rag)}<button class="btn small noprint" data-act="dpb-csv">Save progress (.csv)</button><button class="btn small noprint" data-act="dpb-print">Print / PDF</button>`)}
+  <div class="fmb"><section class="tile t12"><h3 class="tile-h">Progress across boards</h3><div class="kpis exec">${head0}</div><div class="pg-list">${overview}</div></section>${tiles}${actT}</div>
+  <p class="note">A deliverable not yet started counts as 0 %; one that does not apply to this project is left out of its board. Overall progress averages the boards that have started. Click a deliverable or action to open its stage.</p></section>`;
+};
+function dpbAct(act) {
+  if (act === 'dpb-csv') {
+    const P = calcProgress(), q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, L = [], row = (...a) => L.push(a.map(q).join(','));
+    row('PROGRESS BOARD', S.project.name, new Date().toISOString().slice(0, 10)); row('Overall progress %', (P.overall * 100).toFixed(1), P.rag); L.push('');
+    row('Board', 'Progress %', 'Status', 'Deliverables complete', 'Urgent', 'Attention'); P.groups.forEach(g => row(g.name, (g.pc * 100).toFixed(1), g.rag, g.done + '/' + g.del.length, g.urgent, g.attn)); L.push('');
+    row('Board', 'Deliverable', 'Progress %', 'Status', 'Note'); P.groups.forEach(g => g.del.forEach(d => row(g.name, d.n, d.v == null ? '' : (d.v * 100).toFixed(1), d.st, d.note))); L.push('');
+    row('Flag', 'Board', 'Action', 'Detail', 'Due', 'Stage'); P.acts.forEach(o => row(DPB_SEV[o.s][1], o.grp, o.t, o.d, o.due, vName(o.v)));
+    save(`${S.project.ref || 'project'}-progress-board.csv`, L.join('\r\n'), 'Progress board'); return true;
+  }
+  if (act === 'dpb-print') { try { print(); } catch (e) { toast('Printing is not available in this view'); } return true; }
+  return false;
 }
 
 /* ---------- render + events ---------- */
@@ -5553,6 +5751,8 @@ document.addEventListener('click', async e => {
   if (b.dataset.del) { S[b.dataset.del].splice(+b.dataset.i, 1); persist(); render(); return; }
   const act = b.dataset.act;
   if (fmbAct(act, b)) return;
+  if (dpbAct(act)) return;
+  if (boardThemeAct(act, b)) return;
   if (act && act.startsWith('mep-')) { mepAct(act); return; }
   if (act && act.startsWith('intro-')) { introAct(act); return; }
   if (act && act.startsWith('adv-')) { advAct(act, b); return; }
