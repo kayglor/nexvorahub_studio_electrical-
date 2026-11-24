@@ -304,6 +304,37 @@ input,select,textarea,.adv .q{font-size:16px}
 .btn.small{min-height:36px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* FM performance board: 12-column tile grid */
+.fmb{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
+.fmb .tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.fmb .t2{grid-column:span 2}.fmb .t3{grid-column:span 3}.fmb .t4{grid-column:span 4}.fmb .t6{grid-column:span 6}.fmb .t8{grid-column:span 8}.fmb .t12{grid-column:span 12}
+.fmb .tile-h{margin:-12px -14px 2px;padding:8px 14px;font-size:16px;border-bottom:1px solid var(--line);background:var(--sunk);border-radius:8px 8px 0 0;text-transform:uppercase;letter-spacing:.04em}
+.fmb .tile-h small{font-family:var(--f-body);text-transform:none;letter-spacing:0;color:var(--muted);font-size:12px;font-weight:500;margin-left:6px}
+.fm-board .fmb .tbl-wrap{border:0}.fm-t{font-size:12.5px}.fm-t td{padding:4px 6px}.fm-t td.neg{color:var(--bad)}
+.fmb .gauge{align-items:center;text-align:center;gap:2px}.fmb .gauge svg{width:100%;max-width:170px}
+.fmb .g-t{font-family:var(--f-display);font-weight:600;font-size:17px}.fmb .g-s,.fmb .g-tg{font-size:11.5px;color:var(--muted)}
+.fmb .g-v{font-size:24px;margin-top:-34px;margin-bottom:6px}
+.fmb .g-bg{fill:none;stroke:var(--sunk);stroke-width:12}.fmb .g-fg{fill:none;stroke-width:12;stroke:var(--muted)}
+.fmb .gauge.ok .g-fg{stroke:var(--ok)}.fmb .gauge.warn .g-fg{stroke:var(--warn)}.fmb .gauge.bad .g-fg{stroke:var(--bad)}
+.fm-k{border-left:4px solid var(--line-strong)}.fm-k.ok{border-left-color:var(--ok)}.fm-k.warn{border-left-color:var(--warn)}.fm-k.bad{border-left-color:var(--bad)}
+.fmb .kpis.exec{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.mbar{display:block;width:70px;height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}.mbar i{display:block;height:100%;background:var(--muted)}
+.mbar i.ok{background:var(--ok)}.mbar i.warn{background:var(--warn)}.mbar i.bad{background:var(--bad)}
+.fmb .donut-w{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.fmb .donut{width:130px;height:130px;border-radius:50%;display:grid;place-items:center;flex:none}
+.fmb .donut>div{width:84px;height:84px;border-radius:50%;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fmb .donut b{font-size:26px;font-weight:500}.fmb .donut span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.fmb .leg{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13px;flex:1;min-width:150px}
+.fmb .leg li{display:grid;grid-template-columns:12px 1fr auto 40px;gap:8px;align-items:center}.fmb .leg i{width:12px;height:12px;border-radius:3px}.fmb .leg span{color:var(--muted);text-align:right}
+.fmb .oc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fmb .strat{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13.5px}.fmb .strat li:not(.on){color:var(--muted)}
+.pill.hard{background:var(--accent-soft);color:var(--accent)}.pill.soft{background:var(--ok-soft);color:var(--ok)}
+.fmb-chk{display:flex;gap:8px;align-items:center;font-size:14px}.fmb-chk input{width:auto}
+@media (max-width:1280px){.fmb .t2{grid-column:span 4}.fmb .t3,.fmb .t4{grid-column:span 6}.fmb .t8{grid-column:span 12}}
+@media (max-width:760px){.fmb .t2{grid-column:span 6}.fmb .t3,.fmb .t4,.fmb .t6,.fmb .t8{grid-column:span 12}}
+@media print{.fm-board .noprint{display:none!important}.fmb .tile{break-inside:avoid}}
+
 </style>
 
 <div class="band gutter">
@@ -596,6 +627,68 @@ const PUMP_SVC = ['Domestic water booster', 'Chilled water', 'Condenser water', 
 const LIFT_TYPES = ['Passenger – traction MRL (VVVF)', 'Passenger – hydraulic', 'Goods / service – traction', 'Fire-fighting lift (EN 81-72)', 'Bed / passenger – traction'];
 const FAMILY_NAME = { IEC: 'BS 7671 / IEC 60364 family', NEC: 'NFPA 70 (NEC) family', CEC: 'CSA C22.1 (CEC)', ASNZS: 'AS/NZS 3000' };
 
+/* ---------- FM performance board: settings, contract register and example data ---------- */
+// Board-only inputs live in S.fmb (settings) and S.fmbContracts / fmbSop / fmbOpex / fmbCsat. Everything else
+// (tickets, assets, soft services, capital projects) is read from the FM operations and asset stages.
+const FMB_KINDS = ['Hard', 'Soft'], FMB_KINDS_B = ['Hard', 'Soft', 'Both'];
+const FMB_SEV = [['P1', 'Critical'], ['P2', 'Major'], ['P3', 'Minor'], ['P4', 'Low']];
+const FMB_STD = {
+  Hard: ['HVAC & mechanical', 'Electrical (HV/LV) & lighting', 'Standby generation & UPS', 'Plumbing & drainage', 'Fire & life safety systems', 'Lifts & escalators', 'BMS & controls', 'Building fabric & joinery'],
+  Soft: ['Cleaning & janitorial', 'Security & access control', 'Landscaping & grounds', 'Pest control', 'Waste management & recycling', 'Reception & helpdesk', 'Catering & hospitality', 'Water hygiene (Legionella)'],
+};
+const FMB_STRAT = [['lifecycle', 'Lifecycle asset management'], ['energy', 'Energy efficiency programme'], ['smart', 'Smart building technologies'], ['predictive', 'Predictive maintenance & IoT'], ['capital', 'Long-term capital investment planning'], ['supplier', 'Quarterly supplier performance reviews']];
+function fmbContract(kind, name, o = {}) { return Object.assign({ id: uid(), kind, name, contractor: '', cref: '', start: '', end: '', value: '', slaT: 95, slaAch: '', ppmPlan: '', ppmDone: '', audit: '' }, o); }
+function fmbSettings() {
+  const y = new Date().getFullYear();
+  return {
+    site: '', start: `${y}-01-01`, end: '', currency: '', scope: 'All',
+    targets: { sla: 95, ppm: 98, mttr: 24, mtbf: 200, avail: 98, csat: 90, contract: 90, sop: 95 },
+    energy: { kwh: '', kwhLY: '', water: '', waterLY: '', area: '', co2: '' },
+    safety: { fireAvail: '', emLights: '', drills: '', drillsT: 4, training: '', lti: '', falseAlarms: '' },
+    strat: { lifecycle: false, energy: false, smart: false, predictive: false, capital: false, supplier: false }, csatResp: '',
+  };
+}
+// Projects saved before the board existed get blank board inputs.
+function fmbUpgrade(o) {
+  const d = fmbSettings(); o.fmb = Object.assign({}, d, o.fmb || {}); ['targets', 'energy', 'safety', 'strat'].forEach(k => o.fmb[k] = Object.assign({}, d[k], o.fmb[k] || {}));
+  ['fmbContracts', 'fmbSop', 'fmbOpex', 'fmbCsat'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; });
+}
+// Example data so the board can be tried at once: board inputs, plus FM records where the stages are still empty.
+function fmbExample() {
+  const y = new Date().getFullYear(), n = (s) => `${y + 1}-${s}`, loc = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16), dt = (daysAgo, h = 9) => { const t = new Date(Date.now() - daysAgo * 864e5); t.setHours(h, 0, 0, 0); return loc(t.getTime()); };
+  const C = (k, i, o) => fmbContract(k, FMB_STD[k][i], Object.assign({ contractor: `${k === 'Hard' ? 'Technical' : 'Support'} contractor ${String.fromCharCode(65 + i)}`, cref: `FM-${k[0]}${String(i + 1).padStart(2, '0')}`, start: `${y - 1}-07-01`, end: n('06-30') }, o));
+  const settings = Object.assign(fmbSettings(), { site: S.project.name || '', currency: (S.energy && S.energy.currency) || 'GBP', csatResp: 78,
+    energy: { kwh: 1125000, kwhLY: 1180000, water: 14250, waterLY: 15000, area: '', co2: '' },
+    safety: { fireAvail: 99.7, emLights: 98.8, drills: 6, drillsT: 4, training: 97, lti: 0, falseAlarms: 2 },
+    strat: { lifecycle: true, energy: true, smart: true, predictive: true, capital: true, supplier: false } });
+  const contracts = [
+    C('Hard', 0, { value: 650000, slaAch: 96.6, ppmPlan: 480, ppmDone: 474, audit: 96 }), C('Hard', 1, { value: 380000, slaAch: 97.6, ppmPlan: 300, ppmDone: 300, audit: 97 }),
+    C('Hard', 2, { value: 140000, slaAch: 100, ppmPlan: 48, ppmDone: 48, audit: 98 }), C('Hard', 3, { value: 210000, slaAch: 94.7, ppmPlan: 150, ppmDone: 147, audit: 94 }),
+    C('Hard', 4, { end: `${y}-12-31`, value: 180000, slaT: 98, slaAch: 100, ppmPlan: 220, ppmDone: 220, audit: 99 }), C('Hard', 5, { value: 260000, slaAch: 92.5, ppmPlan: 96, ppmDone: 95, audit: 93 }),
+    C('Soft', 0, { end: n('03-31'), value: 300000, slaAch: 97.6, ppmPlan: 1200, ppmDone: 1180, audit: 96 }), C('Soft', 1, { end: n('03-31'), value: 280000, slaT: 98, slaAch: 96.9, ppmPlan: 365, ppmDone: 365, audit: 92 }),
+    C('Soft', 2, { end: n('03-31'), value: 90000, slaAch: 95, ppmPlan: 52, ppmDone: 50, audit: 95 }), C('Soft', 3, { end: n('03-31'), value: 30000, slaAch: 100, ppmPlan: 12, ppmDone: 12, audit: 97 }),
+    C('Soft', 4, { end: n('03-31'), value: 120000, slaAch: 89.7, ppmPlan: 104, ppmDone: 100, audit: 91 }),
+  ];
+  const sop = [['Planned preventive maintenance (PPM)', 'Hard', 100], ['Permit to work & safety procedures', 'Hard', 100], ['Energy management', 'Hard', 98], ['Security procedures', 'Soft', 100], ['Cleaning specification & audits', 'Soft', 98], ['Waste management', 'Soft', 100], ['Work order management', 'Both', 99], ['Emergency response procedure', 'Both', 95], ['Statutory compliance & audit', 'Both', 100]].map(([name, kind, pct]) => ({ id: uid(), name, kind, pct }));
+  const opex = [['Utilities', 'Both', 650000, 645000, 638000], ['Hard services maintenance', 'Hard', 580000, 560000, 550000], ['Cleaning services', 'Soft', 300000, 290000, 285000], ['Security services', 'Soft', 280000, 270000, 266000], ['Grounds & landscaping', 'Soft', 200000, 190000, 187000]].map(([name, kind, budget, actual, ly]) => ({ id: uid(), name, kind, budget, actual, ly }));
+  const csat = [['Timeliness', 95], ['Quality of service', 93], ['Professionalism', 95], ['Responsiveness', 92], ['Value for money', 93]].map(([name, score]) => ({ id: uid(), name, score }));
+  const assets = [['chiller', 'Chillers', 3, y - 8, 2, 4], ['ahu', 'Air handling units', 6, y - 6, 2, 3], ['gen', 'Standby generators', 2, y - 9, 2, 1], ['lift', 'Passenger lifts', 6, y - 12, 3, 6], ['lvsb', 'LV main switchboards', 2, y - 10, 2, 1], ['boost', 'Booster pump sets', 2, y - 7, 3, 2], ['firep', 'Fire pump set', 1, y - 5, 1, 0]]
+    .map(([cls, desc, qty, year, cond, fails]) => ({ id: uid(), src: 'example', cls, tag: '', desc, loc: '', qty, cap: '', type: '', year, cost: '', life: '', cond, crit: '', fails, maint: '', perf: 'Meets design duty', eff: 'Normal' }));
+  const soft = [['clean', 'Contractor', 'Daily', 96], ['security', 'Contractor', 'Daily', 92], ['land', 'Contractor', 'Weekly', 95], ['pest', 'Contractor', 'Monthly', 97], ['waste', 'Contractor', 'Weekly', 91]]
+    .map(([svc, prov, freq, kpi]) => ({ id: uid(), svc, scope: '', prov, who: '', freq, std: '', perf: kpi >= 95 ? 'Good' : 'Fair', func: 'Fully operational', last: dt(1).slice(0, 10), kpi, cost: '' }));
+  const tk = (no, pri, target, raisedAgo, hrs, st, desc) => ({ id: uid(), no, pri, prop: '', trade: '', issue: '', loc: '', target, desc, kind: 'Reactive breakdown', who: '', raised: dt(raisedAgo), attended: dt(raisedAgo, 10), done: st === 'Closed' ? loc(new Date(dt(raisedAgo)).getTime() + hrs * 3600e3) : '', st });
+  const tickets = [
+    tk('T-0001', 'P1', assets[3].id, 200, 3, 'Closed', 'Lift entrapment, L3'), tk('T-0002', 'P1', assets[0].id, 2, 0, 'Open', 'Chiller 2 trip'),
+    tk('T-0003', 'P2', assets[5].id, 150, 20, 'Closed', 'Booster set pressure loss'), tk('T-0004', 'P2', soft[1].id, 120, 30, 'Closed', 'Access control outage, east entrance'),
+    tk('T-0005', 'P2', assets[4].id, 10, 0, 'Open', 'Partial power loss, DB-L2'), tk('T-0006', 'P3', soft[0].id, 250, 40, 'Closed', 'Washroom consumables not replenished'),
+    tk('T-0007', 'P3', soft[4].id, 12, 0, 'Open', 'Missed waste collection'), tk('T-0008', 'P4', assets[6].id, 90, 60, 'Closed', 'Fire pump panel lamp fault'),
+    tk('T-0009', 'P4', soft[2].id, 60, 100, 'Closed', 'Irrigation valve fault'), tk('T-0010', 'P3', assets[1].id, 40, 30, 'Closed', 'AHU-3 belt replacement'),
+  ];
+  const capProj = [['Chiller plant upgrade', CAP_CAT[0], 100, 2400000, 2400000], ['LED retrofit programme', CAP_CAT[2], 100, 1100000, 1050000], ['Lift modernisation', CAP_CAT[1], 60, 950000, 600000], ['Fire alarm system upgrade', CAP_CAT[3], 0, 1000000, 0]]
+    .map(([name, cat, pct, budget, spent]) => ({ id: uid(), src: 'example', name, cat, asset: '', stage: pct >= 100 ? 'Handover / closed' : pct ? 'Construction' : 'Concept', pct, rag: '', budget, spent, start: '', end: '', summary: '', update: '' }));
+  return { settings, contracts, sop, opex, csat, assets, soft, tickets, capProj };
+}
+
 /* ---------- state ---------- */
 const STORE_KEY = 'eld-project-v1';
 function exampleProject() {
@@ -654,7 +747,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (e) { S = null; }
 if (!S || S.v !== 1) S = exampleProject();
 // Projects saved before the AI data centre fields existed: fill in the new defaults.
-function upgrade(o) { mepUpgrade(o); if (!Array.isArray(o.tasks)) o.tasks = []; if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); o.admin = Object.assign({ budget: '', spent: '', start: '', end: '', owner: '' }, o.admin || {}); o.admin.gates = Object.assign({}, o.admin.gates || {}); lifeKeys().forEach(k => { o.admin.gates[k] = Object.assign({ st: 'Not started', by: '', date: '', note: '' }, o.admin.gates[k] || {}); }); if (!Array.isArray(o.adminLog)) o.adminLog = []; if (!o.tc || typeof o.tc !== 'object' || Array.isArray(o.tc)) o.tc = {}; ['docs', 'risks'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); ['lvt', 'lvInsp', 'lvCert'].forEach(k => { if (!o[k] || typeof o[k] !== 'object' || Array.isArray(o[k])) o[k] = {}; }); o.handover = Object.assign({}, o.handover || {}); o.handover.inc = Object.assign({}, o.handover.inc || {}); o.tcCfg = Object.assign({ cat: '', open: '' }, o.tcCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
+function upgrade(o) { mepUpgrade(o); fmbUpgrade(o); if (!Array.isArray(o.tasks)) o.tasks = []; if (!o.boards || typeof o.boards !== 'object') o.boards = {}; if (!o.signoff || typeof o.signoff !== 'object') o.signoff = { items: {}, approver: '', approverQual: '', approverDate: '' }; if (!o.signoff.items) o.signoff.items = {}; const ex = exampleProject(); o.dc = Object.assign({}, ex.dc, o.dc || {}); o.sizing = Object.assign({}, ex.sizing, o.sizing || {}); if (!Array.isArray(o.essLoads)) o.essLoads = []; o.dwg = Object.assign({}, ex.dwg, o.dwg || {}); o.review = Object.assign({ sheets: [], map: {}, areas: {}, vaSock: '' }, o.review || {}); if (!Array.isArray(o.dwgRooms)) o.dwgRooms = []; if (!o.cl || typeof o.cl !== 'object') o.cl = {}; if (!Array.isArray(o.assets)) o.assets = []; ['tickets', 'soft', 'capProj', 'milestones'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); o.fmCfg = Object.assign({ sla: {} }, o.fmCfg || {}); o.admin = Object.assign({ budget: '', spent: '', start: '', end: '', owner: '' }, o.admin || {}); o.admin.gates = Object.assign({}, o.admin.gates || {}); lifeKeys().forEach(k => { o.admin.gates[k] = Object.assign({ st: 'Not started', by: '', date: '', note: '' }, o.admin.gates[k] || {}); }); if (!Array.isArray(o.adminLog)) o.adminLog = []; if (!o.tc || typeof o.tc !== 'object' || Array.isArray(o.tc)) o.tc = {}; ['docs', 'risks'].forEach(k => { if (!Array.isArray(o[k])) o[k] = []; }); ['lvt', 'lvInsp', 'lvCert'].forEach(k => { if (!o[k] || typeof o[k] !== 'object' || Array.isArray(o[k])) o[k] = {}; }); o.handover = Object.assign({}, o.handover || {}); o.handover.inc = Object.assign({}, o.handover.inc || {}); o.tcCfg = Object.assign({ cat: '', open: '' }, o.tcCfg || {}); o.fmUpdate = Object.assign({ period: '', by: '', summary: '', highlights: '', issues: '', next: '' }, o.fmUpdate || {}); o.assetCfg = Object.assign({ method: 'SL', residual: 0.1, year: new Date().getFullYear(), start: 1, horizon: 10, repairPct: 0.15 }, o.assetCfg || {}); o.energy = Object.assign({ bulkKwh: '', subKwh: '', lossLimit: 5, ptsTotal: '', ptsSmart: '' }, o.energy || {}); return o; }
 upgrade(S);
 let saveT;
 let saveWarned = false;
@@ -1751,7 +1844,7 @@ function cfail(R, key, extra = '') { const n = R.C.filter(c => c.fail === key).l
 /* ---------- views ---------- */
 const VIEWS = [
   ['home', 'Welcome'], ['dashboard', 'Project dashboard'], ['tasks', 'My tasks'], ['admin', 'Admin centre'], ['project', 'Project & region'], ['area', 'Area load schedule'], ['equipment', 'Equipment loads'], ['lifts-pumps', 'Lifts & pumps'], ['data-centre', 'Data centre'],
-  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['treat', 'Water & sewage treatment'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
+  ['sizing', 'Supply & equipment'], ['circuits', 'Cables & protection'], ['energy', 'Energy management'], ['mech', 'Mechanical services'], ['plumb', 'Plumbing & drainage'], ['treat', 'Water & sewage treatment'], ['mepcomp', 'MEP compliance'], ['compliance', 'Compliance'], ['checklist', 'Design checklist'], ['facilities', 'Facilities'], ['lvcert', 'LV certification & tests'], ['tc', 'Testing & commissioning'], ['registers', 'Documents & risks'], ['handover', 'Handover pack'], ['assets', 'Assets & maintenance'], ['fm', 'FM operations'], ['fmreport', 'Facilities report'], ['fmboardin', 'FM board inputs'], ['fmboard', 'FM performance board'], ['drawings', 'Electrical drawings'], ['review', 'Drawing review'], ['coverage', 'Regional coverage'], ['boq', 'Bill of quantities'], ['report', 'Design report'],
 ];
 const EXTRA_VIEWS = ['account', 'tcreport', 'regreport', 'faq'];
 let view = (location.hash || '').slice(1); if (!VIEWS.some(v => v[0] === view) && !EXTRA_VIEWS.includes(view)) view = 'home';
@@ -1780,6 +1873,7 @@ function railStatus(id) {
   if (id === 'tc') { const T = calcTC(); return T.fail ? 'bad' : !T.started ? '' : T.done < T.total ? 'warn' : 'ok'; }
   if (id === 'fm') { if (!(S.tickets || []).length && !(S.soft || []).length && !(S.capProj || []).length) return ''; const F = calcFM(); return F.overdue || F.soft.some(r => r.st === 'bad') || F.pr.some(r => r.rag === 'Red') ? 'bad' : F.open || F.soft.some(r => r.st === 'warn') || F.pr.some(r => r.rag === 'Amber') ? 'warn' : 'ok'; }
   if (id === 'assets') { if (!(S.assets || []).length) return ''; const A = calcAssets(); return A.nBad ? 'bad' : A.nWarn ? 'warn' : 'ok'; }
+  if (id === 'fmboard') return fmbStatus();
   if (id === 'drawings') return !R.W.rooms.length ? '' : R.W.nBad ? 'bad' : R.W.nWarn ? 'warn' : 'ok';
   return '';
 }
@@ -3543,6 +3637,8 @@ const ADV_PAGE = {
   handover: ['One printable handover document: cover, compliance, certificate, circuit schedule, tests, commissioning and assets.', ['Choose the sections, check the preview, save as PDF.'], ['Issue it only once LV and commissioning tests are complete.']],
   assets: ['Asset register with planned maintenance, depreciation, condition and the life-cycle replacement plan.', ['Add assets from the design, then set year, cost and condition.', 'Move end-of-life items into capital projects.'], ['Condition and criticality drive the risk – update them after each inspection.']],
   fm: ['Helpdesk for plant and everyday repairs with P1–P4 response times, soft services and capital projects.', ['Raise a ticket by trade and issue – priority and description fill in.', 'Record attended and completed times to measure the SLA.'], ['Accurate attend and complete times are what make the SLA and MTTR figures meaningful.']],
+  fmboardin: ['Inputs for the FM performance board: targets, hard and soft service contracts with SLA and PPM, SOP compliance, OPEX, customer satisfaction, energy, safety and strategies.', ['Add a row per service contract – or load the example to see how it works.', 'Tickets, assets, soft services and capital projects are read from their own stages.'], ['Keep contract end dates current – the board flags renewals due within 90 days.']],
+  fmboard: ['A one-page FM performance board: SLA, PPM, MTTR, MTBF, availability, satisfaction, incidents, contracts, CAPEX/OPEX, energy and safety.', ['Switch between hard services, soft services or both.', 'Save as CSV or print to PDF for the monthly review.'], ['Red and amber tiles show where targets are missed – fix the inputs in their own stage.']],
   fmreport: ['The facilities report: equipment state, tickets and SLA, soft services, capital projects and life cycle.', ['Review, then save as PDF, CSV or Excel.'], ['Use the Excel version for monthly trend tracking.']],
   drawings: ['Generates lighting and small-power layouts, board schedule and single-line diagram from room sizes.', ['Add rooms with size and type, check lux and socket counts.', 'Save as DXF to finish in AutoCAD.'], ['Treat the output as a first layout – coordinate with the architecture before issue.']],
   review: ['Reads AutoCAD DXF drawings, learns the legend and counts symbols room by room.', ['Import a DXF, check the legend mapping, then review the counts.'], ['A clean legend in the drawing gives the most reliable counts.']],
@@ -3738,16 +3834,16 @@ const ROLES = [
     ['dashboard', 'drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover', 'compliance', 'mech', 'plumb', 'treat', 'mepcomp', 'report'],
     ['drawings', 'review', 'boq', 'registers', 'lvcert', 'tc', 'handover']],
   ['faceng', 'Facilities engineer', 'Building services planning, planned and reactive maintenance, plant condition and the facilities report.',
-    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'energy', 'mech', 'plumb', 'treat', 'lvcert', 'tc', 'handover'],
-    ['facilities', 'assets', 'fm', 'fmreport']],
+    ['dashboard', 'facilities', 'checklist', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'energy', 'mech', 'plumb', 'treat', 'lvcert', 'tc', 'handover'],
+    ['facilities', 'assets', 'fm', 'fmreport', 'fmboardin', 'fmboard']],
   ['fm', 'Facility manager', 'Helpdesk and SLA, soft services, capital projects and the monthly facilities report.',
-    ['dashboard', 'fm', 'fmreport', 'facilities', 'assets', 'handover', 'energy'],
-    ['fm', 'fmreport', 'facilities']],
+    ['dashboard', 'fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities', 'assets', 'handover', 'energy'],
+    ['fm', 'fmreport', 'fmboardin', 'fmboard', 'facilities']],
   ['energy', 'Energy manager', 'Annual energy, cost and carbon, efficiency measures, solar PV and the demand behind them.',
-    ['dashboard', 'energy', 'sizing', 'data-centre', 'mech', 'fmreport', 'assets', 'report'],
+    ['dashboard', 'energy', 'sizing', 'data-centre', 'mech', 'fmreport', 'fmboard', 'assets', 'report'],
     ['energy']],
   ['asset', 'Asset manager', 'Asset register, condition and risk, depreciation, life cycle and the capital replacement forecast.',
-    ['dashboard', 'assets', 'fm', 'fmreport', 'handover', 'registers', 'report'],
+    ['dashboard', 'assets', 'fm', 'fmreport', 'fmboard', 'handover', 'registers', 'report'],
     ['assets', 'fm', 'fmreport']],
 ];
 const ROLE_KEY = 'nexvorahub-role', REG_KEY = 'nexvorahub-user';
@@ -5201,6 +5297,204 @@ function csvSchedules() {
   return L.join('\r\n');
 }
 
+/* ---------- FM performance board: calculations and views ---------- */
+// Percentages on the board are entered and shown on a 0–100 scale. Scope: hard services, soft services, or both.
+// Tickets → SLA, MTTR, incidents and work orders. Assets → MTBF, availability, health. Soft services and
+// contracts → contract compliance and PPM. Capital projects → CAPEX. Board inputs → OPEX, SOP, satisfaction, energy, safety.
+const fbN = (v) => +v || 0;
+const fbHas = (v) => v !== '' && v != null && isFinite(+v);
+const fbP = (v) => isFinite(v) && v != null ? (Math.round(v * 10) / 10).toFixed(1) + '%' : '–';
+const fbIn = (sc, kind) => sc === 'All' || !kind || kind === 'Both' || kind === sc;
+const fbHi = (v, t, band = 5) => v == null || !isFinite(v) ? 'na' : v >= t ? 'ok' : v >= t - band ? 'warn' : 'bad';
+const fbLo = (v, t) => v == null || !isFinite(v) ? 'na' : v <= t ? 'ok' : v <= t * 1.25 ? 'warn' : 'bad';
+const fbSum = (a, f) => a.reduce((x, y) => x + f(y), 0);
+const fbMean = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
+const FB_ST = { ok: 'On target', warn: 'Watch', bad: 'Off target', na: 'No data' };
+function calcFMB() {
+  if (!S.fmb || !Array.isArray(S.fmbContracts)) fmbUpgrade(S);
+  const B = S.fmb, T = B.targets, sc = B.scope || 'All', F = calcFM(), now = F.now;
+  const t0 = tDate(B.start), t1 = B.end ? tDate(B.end + 'T23:59') : now, days = t0 != null && t1 != null && t1 > t0 ? Math.round((t1 - t0) / 864e5) : 365;
+  const softIds = new Set((S.soft || []).map(x => x.id)), assetById = id => (S.assets || []).find(a => a.id === id);
+  const kindOfTk = r => softIds.has(r.t.target) ? 'Soft' : 'Hard';
+  const tk = F.tk.filter(r => fbIn(sc, kindOfTk(r)) && (r.raised == null || ((t0 == null || r.raised >= t0) && r.raised <= t1)));
+  const judged = tk.filter(r => r.fixMet != null), ttr = tk.filter(r => r.ttr != null);
+  const con = (S.fmbContracts || []).filter(c => fbIn(sc, c.kind)).map(c => {
+    const plan = fbN(c.ppmPlan), ppm = plan ? Math.min(fbN(c.ppmDone), plan) / plan * 100 : NaN, sla = fbHas(c.slaAch) ? +c.slaAch : NaN, audit = fbHas(c.audit) ? +c.audit : NaN;
+    const te = tDate(c.end), left = te != null ? Math.floor((te - now) / 864e5) : null;
+    const exp = left == null ? ['na', 'No end date'] : left < 0 ? ['bad', 'Expired'] : left <= 90 ? ['warn', `Renew – ${left} d left`] : ['ok', `${left} d left`];
+    return { c, ppm, sla, audit, exp, slaSt: fbHi(sla, fbHas(c.slaT) ? +c.slaT : T.sla), ppmSt: fbHi(ppm, T.ppm), auditSt: fbHi(audit, T.contract) };
+  });
+  const ppmPlan = fbSum(con, r => fbN(r.c.ppmPlan)), ppmDone = fbSum(con, r => Math.min(fbN(r.c.ppmDone), fbN(r.c.ppmPlan)));
+  const slaFromTk = judged.length > 0, sla = slaFromTk ? judged.filter(r => r.fixMet).length / judged.length * 100 : fbMean(con.filter(r => isFinite(r.sla)).map(r => r.sla));
+  const ppm = ppmPlan ? ppmDone / ppmPlan * 100 : NaN, contract = fbMean(con.filter(r => isFinite(r.audit)).map(r => r.audit));
+  const mttr = ttr.length ? fbMean(ttr.map(r => r.ttr)) : NaN;
+  // assets (hard services)
+  const assets = sc === 'Soft' ? [] : (S.assets || []);
+  const groups = {}; assets.forEach(a => { const c = assetCls(a.cls), g = groups[c.k] = groups[c.k] || { name: c.n, qty: 0, fails: 0, down: 0, cond: 0, ttr: [] }; const q = Math.max(1, +a.qty || 1); g.qty += q; g.fails += fbN(a.fails); g.down += a.perf === 'Not operating' ? q : 0; g.cond += q * (COND_F[Math.min(Math.max(+a.cond || 2, 1), 5)] || 0.9); });
+  tk.forEach(r => { const a = assetById(r.t.target); if (a && r.ttr != null && groups[assetCls(a.cls).k]) groups[assetCls(a.cls).k].ttr.push(r.ttr); });
+  const eq = Object.values(groups).map(g => ({ ...g, mtbf: g.fails ? g.qty * 365 / g.fails : NaN, mttr: g.ttr.length ? fbMean(g.ttr) : NaN }));
+  const qty = fbSum(eq, g => g.qty), fails = fbSum(eq, g => g.fails), noFail = qty > 0 && !fails;
+  const mtbf = fails ? qty * 365 / fails : NaN, avail = qty ? (1 - fbSum(eq, g => g.down) / qty) * 100 : NaN, health = qty ? fbSum(eq, g => g.cond) / qty * 100 : NaN;
+  const poor = assets.filter(a => +a.cond >= 4).length;
+  // soft services from the FM operations stage
+  const soft = sc === 'Hard' ? [] : F.soft;
+  const sevs = FMB_SEV.map(([p, name]) => ({ p, name, n: tk.filter(r => r.pri === p).length }));
+  const open = tk.filter(r => !r.closed).length, critOpen = tk.filter(r => r.pri === 'P1' && !r.closed).length;
+  const sop = (S.fmbSop || []).filter(r => fbIn(sc, r.kind)), sopAvg = fbMean(sop.map(r => fbN(r.pct)));
+  const pr = F.pr, cB = fbSum(pr, r => r.budget), cA = fbSum(pr, r => r.spent);
+  const opex = (S.fmbOpex || []).filter(r => fbIn(sc, r.kind)), oB = fbSum(opex, r => fbN(r.budget)), oA = fbSum(opex, r => fbN(r.actual)), oL = fbSum(opex, r => fbN(r.ly));
+  const cs = (S.fmbCsat || []).filter(r => fbHas(r.score)), csat = fbMean(cs.map(r => +r.score));
+  const E = B.energy, area = fbN(E.area) || (R.Z && R.Z.area) || 0, co2f = fbHas(E.co2) ? +E.co2 : (EREG[R.X.dreg] || [0.3])[0], kwh = fbN(E.kwh), kwhLY = fbN(E.kwhLY);
+  const en = { area, co2f, kwh, kwhLY, eui: area && kwh ? kwh / area : NaN, co2: kwh * co2f / 1000, co2Red: kwhLY ? (kwhLY - kwh) * co2f / 1000 : NaN, kwhChg: kwhLY ? (kwh - kwhLY) / kwhLY * 100 : NaN, water: fbN(E.water), waterLY: fbN(E.waterLY) };
+  en.waterChg = en.waterLY ? (en.water - en.waterLY) / en.waterLY * 100 : NaN;
+  const closed = tk.filter(r => r.closed).length, overdue = tk.filter(r => r.overdue).length;
+  const wo = { total: tk.length + ppmPlan, completed: closed + ppmDone, overdue, tk: tk.length, closed, ppmPlan, ppmDone, backlog: tk.filter(r => !r.closed && r.raised != null && now - r.raised > 7 * 864e5).length };
+  wo.prog = Math.max(0, wo.total - wo.completed - wo.overdue); wo.pct = wo.total ? wo.completed / wo.total * 100 : NaN; wo.onTime = wo.completed ? (judged.filter(r => r.fixMet).length + ppmDone) / wo.completed * 100 : NaN;
+  const st = { sla: fbHi(sla, T.sla), ppm: fbHi(ppm, T.ppm), mttr: fbLo(mttr, T.mttr), mtbf: noFail ? 'ok' : fbHi(mtbf, T.mtbf, T.mtbf * 0.1), avail: fbHi(avail, T.avail, 2), csat: fbHi(csat, T.csat), contract: fbHi(contract, T.contract), sop: fbHi(sopAvg, T.sop) };
+  const expiring = con.filter(r => r.exp[0] === 'warn' || r.exp[0] === 'bad').length;
+  return { sc, days, t0, t1, tk, slaFromTk, sla, ppm, contract, con, expiring, mttr, eq, qty, fails, noFail, mtbf, avail, health, poor, soft, sevs, open, critOpen, sop, sopAvg, pr, cB, cA, opex, oB, oA, oL, cs, csat, en, wo, st, value: fbSum(con, r => fbN(r.c.value)) };
+}
+function fmbStatus() {
+  const M = calcFMB(); if (!M.tk.length && !M.con.length && !M.qty) return '';
+  const v = Object.values(M.st); return v.includes('bad') || M.critOpen ? 'bad' : v.includes('warn') || M.expiring ? 'warn' : 'ok';
+}
+function fbGauge(title, sub, val, frac, st, target) {
+  const f = Math.max(0, Math.min(1, isFinite(frac) ? frac : 0)), a = Math.PI * (1 - f), x = (60 + 48 * Math.cos(a)).toFixed(2), y = (60 - 48 * Math.sin(a)).toFixed(2);
+  return `<div class="tile t2 gauge ${st}"><div class="g-t">${title}</div><div class="g-s">${sub}</div>
+  <svg viewBox="0 0 120 66" role="img" aria-label="${esc(title)}: ${esc(val)}"><path d="M12 60 A48 48 0 0 1 108 60" class="g-bg"/>${f > 0.002 ? `<path d="M12 60 A48 48 0 0 1 ${x} ${y}" class="g-fg"/>` : ''}</svg>
+  <div class="g-v num">${val}</div><div class="g-tg">${target}</div><div>${pill(st, FB_ST[st])}</div></div>`;
+}
+const fbBar = (frac, st) => `<span class="mbar"><i class="${st}" style="width:${Math.max(0, Math.min(100, (isFinite(frac) ? frac : 0) * 100)).toFixed(1)}%"></i></span>`;
+const fbVs = (v, t) => isFinite(v) && t ? `${v >= t ? '+' : ''}${((v - t) / t * 100).toFixed(1)}%` : '–';
+const fbSigned = (v) => isFinite(v) ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : '–';
+const fbTile = (cls, title, body) => `<section class="tile ${cls}"><h3 class="tile-h">${title}</h3>${body}</section>`;
+const fbTbl = (hd, rows, foot = '', empty = 'Nothing recorded for this scope yet.') => `<div class="tbl-wrap"><table class="fm-t"><thead><tr>${hd.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows || `<tr><td colspan="${hd.length}" class="note">${empty}</td></tr>`}${foot}</tbody></table></div>`;
+const fbTick = (s) => pill(s, s === 'ok' ? '✓' : s === 'na' ? '–' : '!');
+
+V.fmboard = () => {
+  const M = calcFMB(), B = S.fmb, T = B.targets, cur = esc(B.currency || (S.energy && S.energy.currency) || ''), scopeTxt = M.sc === 'All' ? 'Hard + soft services' : `${M.sc} services`;
+  const btns = [['All', 'Hard + soft'], ['Hard', 'Hard services'], ['Soft', 'Soft services']].map(([k, t]) => `<button class="btn small ${M.sc === k ? 'primary' : ''}" data-act="fmb-scope" data-v="${k}" aria-pressed="${M.sc === k}">${t}</button>`).join('');
+  const empty = !M.tk.length && !M.con.length && !M.qty && !(S.soft || []).length;
+  const cVar = M.cB ? (M.cA - M.cB) / M.cB * 100 : NaN, oVar = M.oB ? (M.oA - M.oB) / M.oB * 100 : NaN, oYoy = M.oL ? (M.oA - M.oL) / M.oL * 100 : NaN;
+  const mttrTxt = isFinite(M.mttr) ? `${f1(M.mttr)} h` : '–', mtbfTxt = M.noFail ? 'No failures' : isFinite(M.mtbf) ? `${f0(M.mtbf)} d` : '–';
+  const exec = [
+    ['SLA achievement', fbP(M.sla), `Target ≥ ${T.sla}%`, M.st.sla], ['PPM compliance', fbP(M.ppm), `Target ≥ ${T.ppm}%`, M.st.ppm],
+    ['MTTR', mttrTxt, `Target ≤ ${T.mttr} h`, M.st.mttr], ['MTBF', mtbfTxt, `Target ≥ ${T.mtbf} d`, M.st.mtbf],
+    ['CAPEX (YTD)', `${cur} ${f0(M.cA)}`, `Budget ${f0(M.cB)} (${fbVs(M.cA, M.cB)})`, M.cB && M.cA > M.cB ? 'bad' : M.cB ? 'ok' : 'na'],
+    ['OPEX (YTD)', `${cur} ${f0(M.oA)}`, `vs last year ${fbSigned(oYoy)}`, M.oB ? (M.oA > M.oB ? 'bad' : 'ok') : 'na'],
+    ['Work orders completed', fbP(M.wo.pct), `${f0(M.wo.completed)} of ${f0(M.wo.total)}`, fbHi(M.wo.pct, T.ppm)], ['Customer satisfaction', fbP(M.csat), `Target ≥ ${T.csat}%`, M.st.csat],
+    ['Critical incidents (P1)', String(M.sevs[0].n), `${M.critOpen} open`, M.critOpen ? 'bad' : 'ok'], ['CO₂ reduction', isFinite(M.en.co2Red) ? `${f1(M.en.co2Red)} t` : '–', 'vs last year', isFinite(M.en.co2Red) ? (M.en.co2Red >= 0 ? 'ok' : 'warn') : 'na'],
+  ].map(([l, v, s, st]) => `<div class="kpi fm-k ${st}"><span>${l}</span><b>${v}</b><small>${esc(s)}</small></div>`).join('');
+  const gauges = [
+    fbGauge('SLA achievement', M.slaFromTk ? 'Tickets fixed within SLA' : 'Contractor-reported SLA', fbP(M.sla), M.sla / 100, M.st.sla, `Target ≥ ${T.sla}%`),
+    fbGauge('PPM compliance', 'Planned maintenance completed', fbP(M.ppm), M.ppm / 100, M.st.ppm, `Target ≥ ${T.ppm}%`),
+    fbGauge('MTTR', 'Mean time to repair (tickets)', mttrTxt, isFinite(M.mttr) ? M.mttr / (2 * T.mttr) : 0, M.st.mttr, `Target ≤ ${T.mttr} h`),
+    fbGauge('MTBF', 'Mean time between failures', mtbfTxt, M.noFail ? 1 : M.mtbf / (1.5 * T.mtbf), M.st.mtbf, `Target ≥ ${T.mtbf} days`),
+    fbGauge('Asset availability', 'Assets in service', fbP(M.avail), M.avail / 100, M.st.avail, `Target ≥ ${T.avail}%`),
+    fbGauge('Customer satisfaction', `Survey response ${fbHas(B.csatResp) ? B.csatResp + '%' : '–'}`, fbP(M.csat), M.csat / 100, M.st.csat, `Target ≥ ${T.csat}%`),
+  ].join('');
+  const tot = M.tk.length, cols = ['var(--bad)', 'var(--accent)', 'var(--warn)', 'var(--ok)'];
+  let acc = 0; const stops = M.sevs.map((s, i) => { const a0 = acc; acc += tot ? s.n / tot * 100 : 0; return `${cols[i]} ${a0.toFixed(2)}% ${acc.toFixed(2)}%`; }).join(',');
+  const incT = fbTile('t4', 'Incident summary', `<div class="donut-w"><div class="donut" style="background:${tot ? `conic-gradient(${stops})` : 'var(--sunk)'}" role="img" aria-label="${tot} tickets"><div><b class="num">${tot}</b><span>Total</span></div></div>
+    <ul class="leg">${M.sevs.map((s, i) => `<li><i style="background:${cols[i]}"></i>${s.name} (${s.p})<b class="num">${s.n}</b><span>${tot ? Math.round(s.n / tot * 100) : 0}%</span></li>`).join('')}</ul></div>
+    <div class="oc"><div class="kpi ${M.open ? 'bad' : 'ok'} fm-k"><span>Open</span><b>${M.open}</b></div><div class="kpi ok fm-k"><span>Closed</span><b>${tot - M.open}</b></div></div><p class="note">From the helpdesk tickets in FM operations raised in the period.</p>`);
+  const conT = fbTile('t12', `Service contracts, SLA, PPM & compliance <small>${scopeTxt}</small>`, fbTbl(['Service', 'Type', 'Contractor / ref', 'Annual value', 'SLA', 'PPM', 'Audit score', 'Contract'],
+    M.con.map(r => `<tr><td>${esc(r.c.name)}</td><td>${pill(r.c.kind === 'Hard' ? 'hard' : 'soft', r.c.kind)}</td><td>${esc(r.c.contractor)}${r.c.cref ? ` <span class="note">${esc(r.c.cref)}</span>` : ''}</td><td class="n">${fbHas(r.c.value) ? f0(+r.c.value) : '–'}</td><td class="n">${fbP(r.sla)} ${fbTick(r.slaSt)}</td><td class="n">${fbP(r.ppm)} ${fbTick(r.ppmSt)}</td><td class="n">${fbP(r.audit)} ${fbTick(r.auditSt)}</td><td>${pill(r.exp[0], r.exp[1])}</td></tr>`).join(''),
+    M.con.length ? `<tr class="total"><td colspan="3">Total / average</td><td class="n">${f0(M.value)}</td><td class="n">${fbP(M.sla)}</td><td class="n">${fbP(M.ppm)}</td><td class="n">${fbP(M.contract)}</td><td>${M.expiring ? pill('warn', `${M.expiring} to renew`) : pill('ok', 'All current')}</td></tr>` : '', 'No service contracts yet – add them in FM board inputs.'));
+  const softT = M.sc === 'Hard' ? '' : fbTile('t4', 'Soft services KPI', fbTbl(['Service', 'KPI', 'Status'], M.soft.map(r => `<tr><td>${esc(r.c.n)}</td><td class="n">${fbHas(r.x.kpi) ? fbP(+r.x.kpi) : '–'}</td><td>${pill(r.st, r.st === 'ok' ? 'Performing' : r.st === 'warn' ? 'Watch' : 'Action')}</td></tr>`).join(''), '', 'No soft services recorded in FM operations.'));
+  const sopT = fbTile('t4', 'SOP compliance overview', fbTbl(['SOP category', 'Type', 'Compliance', ''], M.sop.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.kind)}</td><td class="n">${fbP(fbN(r.pct))}</td><td>${fbTick(fbHi(fbN(r.pct), T.sop))}</td></tr>`).join(''),
+    M.sop.length ? `<tr class="total"><td colspan="2">Average</td><td class="n">${fbP(M.sopAvg)}</td><td>${pill(M.st.sop, FB_ST[M.st.sop])}</td></tr>` : ''));
+  const mttrT = fbTile('t6', 'MTTR by equipment', fbTbl(['Equipment', 'Repairs', 'MTTR h', 'Target h', '', 'vs target'], M.eq.filter(g => g.ttr.length).map(g => { const s = fbLo(g.mttr, T.mttr); return `<tr><td>${esc(g.name)}</td><td class="n">${g.ttr.length}</td><td class="n">${f1(g.mttr)}</td><td class="n">${f1(T.mttr)}</td><td>${fbBar(g.mttr / (2 * T.mttr), s)}</td><td class="n">${fbVs(g.mttr, T.mttr)}</td></tr>`; }).join(''), '', 'No completed tickets against registered assets in the period.'));
+  const mtbfT = fbTile('t6', 'MTBF by equipment', fbTbl(['Equipment', 'Units', 'Failures (12 mo)', 'MTBF d', '', 'vs target'], M.eq.map(g => { const s = g.fails ? fbHi(g.mtbf, T.mtbf, T.mtbf * 0.1) : 'ok'; return `<tr><td>${esc(g.name)}</td><td class="n">${g.qty}</td><td class="n">${g.fails}</td><td class="n">${g.fails ? f0(g.mtbf) : '> 365'}</td><td>${fbBar(g.fails ? g.mtbf / (1.5 * T.mtbf) : 1, s)}</td><td class="n">${g.fails ? fbVs(g.mtbf, T.mtbf) : 'No failures'}</td></tr>`; }).join(''), '', 'No assets in the asset register.'));
+  const en = M.en, eRow = (l, v, good) => `<tr><td>${l}</td><td class="n">${v}</td><td>${good == null ? '' : pill(good ? 'ok' : 'warn', good ? '▼' : '▲')}</td></tr>`;
+  const enT = fbTile('t4', 'Energy & water KPI', fbTbl(['Indicator', 'Value', ''], [
+    eRow('Electricity (kWh)', f0(en.kwh), isFinite(en.kwhChg) ? en.kwhChg <= 0 : null), eRow('Change vs last year', fbSigned(en.kwhChg)),
+    eRow('Energy intensity (kWh/m²)', isFinite(en.eui) ? f1(en.eui) : '–'), eRow(`Floor area (m²)${fbHas(B.energy.area) ? '' : ' – area schedule'}`, f0(en.area)),
+    eRow(`CO₂ emitted (t) @ ${f2(en.co2f)} kg/kWh`, f1(en.co2)), eRow('CO₂ reduction (t)', isFinite(en.co2Red) ? f1(en.co2Red) : '–', isFinite(en.co2Red) ? en.co2Red >= 0 : null),
+    eRow('Water consumed (m³)', f0(en.water), isFinite(en.waterChg) ? en.waterChg <= 0 : null)].join('')));
+  const capT = fbTile('t6', 'CAPEX summary', fbTbl(['Project', 'Complete', 'Budget', 'Spent', 'Variance', 'RAG'], M.pr.map(r => { const v = r.budget ? (r.spent - r.budget) / r.budget * 100 : NaN; return `<tr><td>${esc(r.p.name)}</td><td class="n">${fbN(r.p.pct)}%</td><td class="n">${f0(r.budget)}</td><td class="n">${f0(r.spent)}</td><td class="n">${isFinite(v) ? v.toFixed(1) + '%' : '–'}</td><td>${pill(r.rag === 'Red' ? 'bad' : r.rag === 'Amber' ? 'warn' : 'ok', r.rag)}</td></tr>`; }).join(''),
+    M.pr.length ? `<tr class="total"><td colspan="2">Total (${cur})</td><td class="n">${f0(M.cB)}</td><td class="n">${f0(M.cA)}</td><td class="n">${isFinite(cVar) ? cVar.toFixed(1) + '%' : '–'}</td><td></td></tr>` : '', 'No capital projects in FM operations.'));
+  const opT = fbTile('t6', 'OPEX summary (YTD)', fbTbl(['Category', 'Type', 'Budget', 'Actual', 'Variance', 'Y/Y'], M.opex.map(r => { const b = fbN(r.budget), a = fbN(r.actual), l = fbN(r.ly), v = b ? (a - b) / b * 100 : NaN, yy = l ? (a - l) / l * 100 : NaN; return `<tr><td>${esc(r.name)}</td><td>${esc(r.kind)}</td><td class="n">${f0(b)}</td><td class="n">${f0(a)}</td><td class="n ${v > 0 ? 'neg' : ''}">${isFinite(v) ? v.toFixed(1) + '%' : '–'}</td><td class="n">${fbSigned(yy)}</td></tr>`; }).join(''),
+    M.opex.length ? `<tr class="total"><td colspan="2">Total (${cur})</td><td class="n">${f0(M.oB)}</td><td class="n">${f0(M.oA)}</td><td class="n">${isFinite(oVar) ? oVar.toFixed(1) + '%' : '–'}</td><td class="n">${fbSigned(oYoy)}</td></tr>` : ''));
+  const w = M.wo, woRow = (l, v, s) => `<tr><td>${l}</td><td class="n"><b>${v}</b></td><td>${s ? fbTick(s) : ''}</td></tr>`;
+  const woT = fbTile('t4', 'Work order KPI', fbTbl(['Measure', 'Value', ''], [woRow('Total work orders (PPM + reactive)', f0(w.total)), woRow('Planned (PPM) issued / completed', `${f0(w.ppmPlan)} / ${f0(w.ppmDone)}`), woRow('Reactive tickets raised / closed', `${f0(w.tk)} / ${f0(w.closed)}`), woRow('Completed', f0(w.completed), fbHi(w.pct, T.ppm)), woRow('In progress', f0(w.prog)), woRow('Overdue', f0(w.overdue), w.overdue ? 'bad' : 'ok'), woRow('On-time completion', fbP(w.onTime), fbHi(w.onTime, T.sla)), woRow('Backlog older than 7 days', f0(w.backlog), w.backlog ? 'warn' : 'ok')].join('')));
+  const csT = fbTile('t4', 'Customer satisfaction', fbTbl(['Dimension', 'Score', ''], M.cs.map(r => `<tr><td>${esc(r.name)}</td><td class="n">${fbP(+r.score)}</td><td>${fbTick(fbHi(+r.score, T.csat))}</td></tr>`).join(''),
+    `<tr class="total"><td>Overall satisfaction</td><td class="n">${fbP(M.csat)}</td><td>${pill(M.st.csat, FB_ST[M.st.csat])}</td></tr><tr><td>Survey response rate</td><td class="n">${fbHas(B.csatResp) ? fbP(+B.csatResp) : '–'}</td><td></td></tr>`));
+  const amT = fbTile('t8', 'Asset management KPI', `<div class="kpis">${[['Asset availability', fbP(M.avail), M.st.avail], ['PPM / renewal compliance', fbP(M.ppm), M.st.ppm], ['Asset health index', fbP(M.health), fbHi(M.health, 85, 10)], ['Mean time to failure', M.noFail ? 'No failures' : isFinite(M.mtbf) ? `${f1(M.mtbf / 365)} yrs` : '–', M.st.mtbf], ['SOP compliance rate', fbP(M.sopAvg), M.st.sop], ['Assets in poor condition', String(M.poor), M.poor ? 'warn' : M.qty ? 'ok' : 'na']].map(([l, v, s]) => `<div class="kpi fm-k ${s}"><span>${l}</span><b>${v}</b></div>`).join('')}</div>`);
+  const sf = B.safety, num = (v) => fbHas(v) ? +v : NaN, sRow = (l, v, s) => `<tr><td>${l}</td><td class="n">${v}</td><td>${fbTick(s)}</td></tr>`;
+  const sfT = fbTile('t4', 'Safety & fire compliance', fbTbl(['Measure', 'Value', ''], [sRow('Fire system availability', fbP(num(sf.fireAvail)), fbHi(num(sf.fireAvail), 99, 1)), sRow('Emergency lights operational', fbP(num(sf.emLights)), fbHi(num(sf.emLights), 98, 2)), sRow('Fire drills conducted', `${fbHas(sf.drills) ? +sf.drills : '–'} / ${fbN(sf.drillsT)}`, fbHas(sf.drills) ? (+sf.drills >= fbN(sf.drillsT) ? 'ok' : 'warn') : 'na'), sRow('Safety training completion', fbP(num(sf.training)), fbHi(num(sf.training), 95)), sRow('Lost time incidents', fbHas(sf.lti) ? f0(+sf.lti) : '–', fbHas(sf.lti) ? (+sf.lti ? 'bad' : 'ok') : 'na'), sRow('Fire alarm false alarms', fbHas(sf.falseAlarms) ? f0(+sf.falseAlarms) : '–', fbHas(sf.falseAlarms) ? (+sf.falseAlarms > 3 ? 'warn' : 'ok') : 'na')].join('')));
+  const stT = fbTile('t4', 'Optimisation strategies', `<ul class="strat">${FMB_STRAT.map(([k, t]) => `<li class="${B.strat[k] ? 'on' : ''}">${pill(B.strat[k] ? 'ok' : 'na', B.strat[k] ? '✓' : '–')} ${t}</li>`).join('')}</ul>`);
+  const period = `${esc(B.start || '…')} to ${esc(B.end || 'today')} (${M.days} days)`;
+  return `<section class="sheet fm-board">${head('FM', 'FM performance board', `${esc(B.site || S.project.name || 'Site')} · ${period} · showing <b>${scopeTxt}</b>. Calculated from the helpdesk tickets, asset register, soft services and capital projects in the FM stages, plus the FM board inputs.`, `<div class="row noprint" role="group" aria-label="Service scope">${btns}</div><a class="btn small noprint" href="#fmboardin">Edit board inputs</a><button class="btn small noprint" data-act="fmb-csv">Save board (.csv)</button><button class="btn small noprint" data-act="fmb-print">Print / PDF</button>`)}
+  ${empty ? `<p class="callout">No FM records yet. Enter tickets, assets and soft services in <a href="#fm">FM operations</a> and <a href="#assets">Assets &amp; maintenance</a>, add service contracts in <a href="#fmboardin">FM board inputs</a>, or <button class="btn small" data-act="fmb-example">load example FM data</button> to see a filled board.</p>` : ''}
+  <div class="fmb">${fbTile('t12', 'Executive summary', `<div class="kpis exec">${exec}</div>`)}${gauges}${incT}${sopT}${softT || ''}${enT}${conT}${mttrT}${mtbfT}${capT}${opT}${woT}${csT}${sfT}${amT}${stT}</div>
+  <p class="note">SLA = tickets fixed within their priority SLA ÷ tickets judged (when there are no tickets, the average contractor-reported SLA). MTTR = mean hours from raising to completing a ticket. MTBF = units × 365 days ÷ failures in 12 months (asset register). Availability = units not marked "Not operating" ÷ units. Health index = condition grade factor weighted by units. PPM compliance = planned tasks completed ÷ planned tasks issued (service contracts). Contracts ending within 90 days are flagged for renewal.</p></section>`;
+};
+
+function fbTable(arr, cols, result) {
+  const cell = (r, i, [k, h, t, o]) => t === 'sel' ? `<select data-arr="${arr}" data-i="${i}" data-k="${k}" aria-label="${esc(h)}" style="min-width:86px">${opt(o, r[k])}</select>`
+    : `<input data-arr="${arr}" data-i="${i}" data-k="${k}" type="${t || 'text'}" ${t === 'number' ? 'step="any"' : ''} value="${esc(r[k] ?? '')}" aria-label="${esc(h)}"${o ? ` style="min-width:${o}"` : (!t || t === 'text') ? ' style="min-width:170px"' : ''}>`;
+  const rows = (S[arr] || []).map((r, i) => `<tr>${cols.map(c => `<td>${cell(r, i, c)}</td>`).join('')}${result ? `<td class="n">${result(r, i)}</td>` : ''}<td><button class="btn small ghost" data-del="${arr}" data-i="${i}" aria-label="Remove row">Remove</button></td></tr>`).join('');
+  return `<div class="tbl-wrap"><table><thead><tr>${cols.map(c => `<th>${c[1]}</th>`).join('')}${result ? '<th>Result</th>' : ''}<th></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="note">No rows yet.</td></tr>`}</tbody></table></div>`;
+}
+V.fmboardin = () => {
+  if (!S.fmb || !Array.isArray(S.fmbContracts)) fmbUpgrade(S);
+  const B = S.fmb, T = B.targets, num = (p, v, h, hint) => fld(h, inp(p, v, 'number'), hint);
+  const tg = [['sla', 'SLA achievement target %'], ['ppm', 'PPM compliance target %'], ['mttr', 'MTTR target (hours)'], ['mtbf', 'MTBF target (days)'], ['avail', 'Asset availability target %'], ['csat', 'Customer satisfaction target %'], ['contract', 'Contract audit score target %'], ['sop', 'SOP compliance target %']];
+  const cCols = [['kind', 'Type', 'sel', FMB_KINDS], ['name', 'Service', 'text', '210px'], ['contractor', 'Contractor', 'text', '180px'], ['cref', 'Contract ref', 'text', '90px'], ['start', 'Contract start', 'date'], ['end', 'Contract end', 'date'], ['value', 'Annual value', 'number'], ['slaT', 'SLA target %', 'number'], ['slaAch', 'SLA achieved % (contractor report)', 'number'], ['ppmPlan', 'PPM tasks planned', 'number'], ['ppmDone', 'PPM tasks completed', 'number'], ['audit', 'KPI audit score %', 'number']];
+  return `<section class="sheet">${head('FM', 'FM board inputs', 'Targets, service contracts and the figures the FM stages do not already hold. Tickets, assets, soft services and capital projects come from FM operations and Assets & maintenance.', `<a class="btn primary" href="#fmboard">View performance board</a><button class="btn" data-act="fmb-example">Load example FM data</button>`)}
+  <h3>Board settings</h3><div class="grid">${fld('Site / portfolio', inp('fmb.site', B.site, 'text', `placeholder="${esc(S.project.name || '')}"`))}${fld('Period start', inp('fmb.start', B.start, 'date'))}${fld('Period end', inp('fmb.end', B.end, 'date'), 'Blank = today')}${fld('Currency', inp('fmb.currency', B.currency, 'text', `placeholder="${esc((S.energy && S.energy.currency) || '')}"`))}${fld('Board shows', sel('fmb.scope', [{ v: 'All', t: 'Hard + soft services' }, { v: 'Hard', t: 'Hard services only' }, { v: 'Soft', t: 'Soft services only' }], B.scope))}</div>
+  <h3>Targets</h3><div class="grid">${tg.map(([k, h]) => num(`fmb.targets.${k}`, T[k], h)).join('')}</div></section>
+  <section class="sheet">${head('FM', 'Service contracts, SLA & PPM', 'One row per hard or soft service contract: contractor, term, value, SLA and planned maintenance (PPM) completion, and the KPI audit score.', `<button class="btn" data-act="fmb-add" data-v="Hard">Add hard service</button><button class="btn" data-act="fmb-add" data-v="Soft">Add soft service</button><button class="btn small" data-act="fmb-std" data-v="Hard">Add standard hard services</button><button class="btn small" data-act="fmb-std" data-v="Soft">Add standard soft services</button>`)}
+  ${fbTable('fmbContracts', cCols, (r) => { const p = fbN(r.ppmPlan); return `PPM ${p ? fbP(Math.min(fbN(r.ppmDone), p) / p * 100) : '–'}`; })}</section>
+  <section class="sheet">${head('FM', 'SOP compliance', 'Compliance % per standard operating procedure category (procedures followed ÷ procedures audited).', `<button class="btn" data-add="fmbSop">Add SOP category</button>`)}
+  ${fbTable('fmbSop', [['name', 'SOP category'], ['kind', 'Applies to', 'sel', FMB_KINDS_B], ['pct', 'Compliance %', 'number']])}</section>
+  <section class="sheet">${head('FM', 'OPEX', 'Year-to-date operating budgets and actuals. CAPEX comes from the capital projects in FM operations.', `<button class="btn" data-add="fmbOpex">Add OPEX category</button>`)}
+  ${fbTable('fmbOpex', [['name', 'Category'], ['kind', 'Type', 'sel', FMB_KINDS_B], ['budget', 'Budget', 'number'], ['actual', 'Actual', 'number'], ['ly', 'Last year (same period)', 'number']])}</section>
+  <section class="sheet">${head('FM', 'Customer satisfaction', 'Survey scores per dimension (0–100). The overall score is their average.', `<button class="btn" data-add="fmbCsat">Add dimension</button>`)}
+  <div class="grid" style="margin-bottom:10px">${num('fmb.csatResp', B.csatResp, 'Survey response rate %')}</div>${fbTable('fmbCsat', [['name', 'Dimension'], ['score', 'Score %', 'number']])}</section>
+  <section class="sheet">${head('FM', 'Energy, water, safety & strategy', '')}
+  <h3>Energy & water (period actuals)</h3><div class="grid">${num('fmb.energy.kwh', B.energy.kwh, 'Electricity this period (kWh)')}${num('fmb.energy.kwhLY', B.energy.kwhLY, 'Electricity same period last year (kWh)')}${num('fmb.energy.water', B.energy.water, 'Water this period (m³)')}${num('fmb.energy.waterLY', B.energy.waterLY, 'Water last year (m³)')}${fld('Floor area m²', inp('fmb.energy.area', B.energy.area, 'number', `placeholder="${f0((R.Z && R.Z.area) || 0)}"`), 'Blank = area load schedule')}${fld('CO₂ factor kg/kWh', inp('fmb.energy.co2', B.energy.co2, 'number', `placeholder="${f2((EREG[R.X.dreg] || [0.3])[0])}"`), 'Blank = regional default')}</div>
+  <h3>Safety & fire</h3><div class="grid">${num('fmb.safety.fireAvail', B.safety.fireAvail, 'Fire system availability %')}${num('fmb.safety.emLights', B.safety.emLights, 'Emergency lights operational %')}${num('fmb.safety.drills', B.safety.drills, 'Fire drills conducted')}${num('fmb.safety.drillsT', B.safety.drillsT, 'Fire drills required')}${num('fmb.safety.training', B.safety.training, 'Safety training completion %')}${num('fmb.safety.lti', B.safety.lti, 'Lost time incidents')}${num('fmb.safety.falseAlarms', B.safety.falseAlarms, 'Fire alarm false alarms')}</div>
+  <h3>Optimisation strategies in place</h3><div class="grid">${FMB_STRAT.map(([k, t]) => `<label class="fmb-chk"><input type="checkbox" data-p="fmb.strat.${k}" ${B.strat[k] ? 'checked' : ''}> ${t}</label>`).join('')}</div></section>`;
+};
+const FMB_BLANK = {
+  fmbContracts: () => fmbContract('Hard', 'New service'),
+  fmbSop: () => ({ id: uid(), name: 'New SOP category', kind: 'Both', pct: 100 }),
+  fmbOpex: () => ({ id: uid(), name: 'New category', kind: 'Both', budget: '', actual: '', ly: '' }),
+  fmbCsat: () => ({ id: uid(), name: 'New dimension', score: '' }),
+};
+function fmbAct(act, b) {
+  if (act === 'fmb-scope') { S.fmb.scope = b.dataset.v; persist(); render(); return true; }
+  if (act === 'fmb-add') { S.fmbContracts.push(fmbContract(b.dataset.v, `New ${b.dataset.v.toLowerCase()} service`)); persist(); render(); return true; }
+  if (act === 'fmb-std') { const have = new Set(S.fmbContracts.map(s => s.name)), add = FMB_STD[b.dataset.v].filter(n => !have.has(n)); add.forEach(n => S.fmbContracts.push(fmbContract(b.dataset.v, n))); persist(); render(); toast(add.length ? `Added ${add.length} ${b.dataset.v.toLowerCase()} services` : 'All standard services are already listed'); return true; }
+  if (act === 'fmb-example') {
+    const X = fmbExample(), added = [];
+    S.fmb = Object.assign(S.fmb, X.settings); S.fmbContracts = X.contracts; S.fmbSop = X.sop; S.fmbOpex = X.opex; S.fmbCsat = X.csat;
+    // FM records are only added to stages that are still empty, so real data is never overwritten.
+    if (!(S.assets || []).length && !(S.tickets || []).length && !(S.soft || []).length) { S.assets = X.assets; S.soft = X.soft; S.tickets = X.tickets; added.push('assets, soft services and tickets'); }
+    if (!(S.capProj || []).length) { S.capProj = X.capProj; added.push('capital projects'); }
+    persist(); render(); toast(`Example board inputs loaded${added.length ? ' with example ' + added.join(', ') : ' (your FM records were kept)'}`); return true;
+  }
+  if (act === 'fmb-csv') { save(`${S.project.ref || 'project'}-fm-performance-board.csv`, fmbCsv(), 'FM board'); return true; }
+  if (act === 'fmb-print') { try { print(); } catch (e) { toast('Printing is not available in this view'); } return true; }
+  return false;
+}
+function fmbCsv() {
+  const M = calcFMB(), B = S.fmb, T = B.targets, q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`, L = [], row = (...a) => L.push(a.map(q).join(','));
+  const p = (v) => v != null && isFinite(v) ? v.toFixed(1) : '';
+  row('FM PERFORMANCE BOARD', B.site || S.project.name, `${B.start} to ${B.end || 'today'}`, M.sc === 'All' ? 'Hard + soft services' : M.sc + ' services'); L.push('');
+  row('KPI', 'Value', 'Target', 'Status');
+  [['SLA achievement %', p(M.sla), T.sla, M.st.sla], ['PPM compliance %', p(M.ppm), T.ppm, M.st.ppm], ['MTTR h', p(M.mttr), T.mttr, M.st.mttr], ['MTBF days', M.noFail ? 'no failures' : p(M.mtbf), T.mtbf, M.st.mtbf], ['Asset availability %', p(M.avail), T.avail, M.st.avail], ['Customer satisfaction %', p(M.csat), T.csat, M.st.csat], ['Contract audit score %', p(M.contract), T.contract, M.st.contract], ['SOP compliance %', p(M.sopAvg), T.sop, M.st.sop],
+    ['Work orders total', M.wo.total], ['Work orders completed', M.wo.completed], ['Work orders overdue', M.wo.overdue], ['Tickets', M.tk.length], ['Tickets open', M.open], ['CAPEX budget', M.cB], ['CAPEX spent', M.cA], ['OPEX budget', M.oB], ['OPEX actual', M.oA], ['Electricity kWh', M.en.kwh], ['CO2 reduction t', p(M.en.co2Red)]].forEach(r => row(...r.map(x => FB_ST[x] || x)));
+  L.push(''); row('SERVICE CONTRACTS'); row('Service', 'Type', 'Contractor', 'Contract ref', 'Start', 'End', 'Annual value', 'SLA %', 'PPM %', 'Audit %', 'Contract status');
+  M.con.forEach(r => row(r.c.name, r.c.kind, r.c.contractor, r.c.cref, r.c.start, r.c.end, r.c.value, p(r.sla), p(r.ppm), p(r.audit), r.exp[1]));
+  L.push(''); row('EQUIPMENT'); row('Equipment', 'Units', 'Failures (12 mo)', 'MTBF d', 'MTTR h');
+  M.eq.forEach(g => row(g.name, g.qty, g.fails, p(g.mtbf), p(g.mttr)));
+  L.push(''); row('INCIDENTS BY PRIORITY'); M.sevs.forEach(s => row(`${s.name} (${s.p})`, s.n));
+  return L.join('\r\n');
+}
+
 /* ---------- render + events ---------- */
 function render(keepFocus) {
   R = calcAll();
@@ -5230,7 +5524,7 @@ function render(keepFocus) {
 function applyPlatform(name) { const p = aiPlatform(name); if (p.name === AI_CUSTOM || p.kw[1] == null) return; Object.assign(S.dc, { density: p.kw[1], liquid: p.liquid, arch: archName(p.arch) }); }
 function setPath(path, val) { const ks = path.split('.'); let o = S; ks.slice(0, -1).forEach(k => o = o[k]); o[ks[ks.length - 1]] = val; }
 function castVal(el) { if (el.type === 'checkbox') return el.checked; if (el.type === 'number') return el.value === '' ? '' : +el.value; return el.value; }
-const NUM_PATHS = /^(project\.(pf|spare)|mainSF|sizing\.|dc\.(area|m2rack|racks|itkw|density|upsEff|upsModule|autonomy|genKva|fuelH|txKva|pue|support|liquid|cduKw|swing|ramp|bessRed|bessMin)|dwg\.(ways|lightFill|uf|mf|grp)$|energy\.(tariff|demand|lf|benchmark|pv|batt|shed|pfUn|pfTg)|assetCfg\.(residual|year|start|horizon|repairPct)|fmCfg\.sla\.)/;
+const NUM_PATHS = /^(project\.(pf|spare)|mainSF|sizing\.|dc\.(area|m2rack|racks|itkw|density|upsEff|upsModule|autonomy|genKva|fuelH|txKva|pue|support|liquid|cduKw|swing|ramp|bessRed|bessMin)|dwg\.(ways|lightFill|uf|mf|grp)$|energy\.(tariff|demand|lf|benchmark|pv|batt|shed|pfUn|pfTg)|assetCfg\.(residual|year|start|horizon|repairPct)|fmCfg\.sla\.|fmb\.targets\.)/;
 let rT;
 function onEdit(e, immediate) {
   const el = e.target;
@@ -5256,6 +5550,7 @@ function onEdit(e, immediate) {
 document.addEventListener('input', e => { if (e.target.matches('input:not([type=checkbox]),textarea')) onEdit(e, false); });
 document.addEventListener('change', e => { if (e.target.matches('select,input[type=checkbox],input[type=date]')) onEdit(e, true); });
 const BLANK = { docs: () => ({ id: uid(), src: '', no: docPre() + '-' + String((S.docs || []).length + 1).padStart(3, '0'), title: '', type: 'Drawing', disc: 'Electrical – general', rev: 'P01', st: 'Work in progress', date: '', to: '', due: '', code: '', by: '', note: '' }), risks: () => ({ id: uid(), src: '', no: 'R-' + String((S.risks || []).length + 1).padStart(3, '0'), cat: 'Design', title: '', cause: '', l: 3, i: 3, mit: '', owner: '', rl: '', ri: '', st: 'Open', due: '' }), tickets: () => ({ id: uid(), no: 'T-' + String((S.tickets || []).length + 1).padStart(4, '0'), pri: 'P3', prop: '', trade: '', issue: '', loc: '', target: '', desc: '', kind: 'Reactive breakdown', who: '', raised: new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), attended: '', done: '', st: 'Open' }), soft: () => ({ id: uid(), svc: 'clean', scope: '', prov: 'Contractor', who: '', freq: '', std: '', perf: 'Good', func: 'Fully operational', last: '', kpi: '', cost: '' }), capProj: () => ({ id: uid(), src: '', name: 'New capital project', cat: CAP_CAT[0], asset: '', stage: 'Concept', pct: 0, rag: '', budget: '', spent: '', start: '', end: '', summary: '', update: '' }), milestones: () => ({ id: uid(), pid: '', name: 'Milestone', due: '', st: 'Not started' }), assets: () => ({ id: uid(), src: '', cls: 'wtp', tag: '', desc: '', loc: '', qty: 1, cap: '', type: '', year: new Date().getFullYear(), cost: '', life: '', cond: 1, crit: '', fails: '', maint: '' }), essLoads: () => ({ id: uid(), desc: 'Essential load', kw: 10, ks: 1, motor: false }), dwgRooms: () => ({ id: uid(), name: 'New room', type: DWG_ROOMS[0].n, L: 6, W: 5, lum: '', lux: '', nLum: '', nSock: '', nEm: '', dist: 15 }), zones: () => ({ id: uid(), desc: 'New zone', type: TYPES[2].name, area: 1000, ovr: '' }), loads: () => ({ id: uid(), db: (R && R.DBR && R.DBR.rows[0] && R.DBR.rows[0].name) || 'DB-01', desc: 'New item', cat: 'Other / unclassified', qty: 1, kw: 10, pf: '', uf: '', ku: '', df: '', lf: '' }), lifts: () => ({ id: uid(), desc: 'Lift group', type: LIFT_TYPES[0], n: 2, persons: 13, floors: 6, fh: 3.5, pop: 300 }), pumps: () => ({ id: uid(), desc: 'Pump', svc: 'Chilled water', q: 10, h: 25, eff: 0.75, duty: 1, stby: 1 }), circuits: () => ({ id: uid(), ref: 'C' + String(S.circuits.length + 1).padStart(2, '0'), from: 'DB-01', desc: 'New circuit', type: 'Other', kw: 3, pf: '', ph: 1, dev: 'MCB Type B', cable: 0, len: 20, amb: 30, grp: 1, arr: 'Bunched / enclosed', ci: 1, zdb: '', pfc: '', icn: 10, rcd: 'None', idn: '', cont: 'No' }) };
+Object.assign(BLANK, FMB_BLANK);
 let armedNew = false;
 BLANK.pools = () => ({ id: uid(), name: 'Pool ' + ((S.pools || []).length + 1), use: 'hotel', size: 'hotel', L: '', W: '', dep: '', turn: '', temp: '', treat: 'auto', heat: 'ashp', cover: 'no', ctrl: 'plc' });
 BLANK.adminLog = () => ({ id: uid(), date: new Date().toISOString().slice(0, 10), by: REG ? REG.name : '', type: 'Decision', text: '' });
@@ -5266,6 +5561,7 @@ document.addEventListener('click', async e => {
   if (b.dataset.add) { S[b.dataset.add].push(BLANK[b.dataset.add]()); persist(); render(); return; }
   if (b.dataset.del) { S[b.dataset.del].splice(+b.dataset.i, 1); persist(); render(); return; }
   const act = b.dataset.act;
+  if (fmbAct(act, b)) return;
   if (act && act.startsWith('mep-')) { mepAct(act); return; }
   if (act && act.startsWith('intro-')) { introAct(act); return; }
   if (act && act.startsWith('adv-')) { advAct(act, b); return; }
@@ -5295,7 +5591,7 @@ document.addEventListener('click', async e => {
   if (act === 'lift-import') { const add = assetsFromDesign().filter(a => a.cls === 'lift' || a.cls === 'esc'); S.assets = [...(S.assets || []), ...add]; persist(); render(); toast('Added ' + add.length + ' lifts / escalators from the design'); return; }
   if (act === 'asset-import') { const add = assetsFromDesign(); S.assets = [...(S.assets || []), ...add]; persist(); render(); toast('Added ' + add.length + ' assets from the design'); return; }
   if (act === 'add-db') { const el = document.getElementById('newDb'), n = String(el && el.value || '').trim().slice(0, 40); if (!n) { toast('Type a board name first'); return; } S.boards = S.boards || {}; S.boards[n] = Object.assign(S.boards[n] || {}, { reg: true }); persist(); render(); toast('Added board ' + n); return; }
-  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {}, cl: {}, fixtures: [], mechEnv: {}, mepComp: {}, plumb: mepDefaults().plumb, pools: [], treat: treatDefaults() }; persist(); render(); toast('Started a blank project'); }
+  if (act === 'new') { if (!armedNew) { armedNew = true; b.textContent = 'Click again to clear everything'; b.classList.remove('ghost'); setTimeout(() => { armedNew = false; renderRail(); }, 4000); return; } armedNew = false; const ex = exampleProject(); S = { ...ex, project: { ...ex.project, name: '', ref: '', client: '', site: '', example: false }, zones: [], loads: [], lifts: [], pumps: [], circuits: [], dwgRooms: [], essLoads: [], review: { sheets: [], map: {}, areas: {}, vaSock: '' }, compliance: {}, cl: {}, fixtures: [], mechEnv: {}, mepComp: {}, plumb: mepDefaults().plumb, pools: [], treat: treatDefaults() }; fmbUpgrade(S); persist(); render(); toast('Started a blank project'); }
   if (act === 'save-json') await saveProjectFiles();
   if (act === 'save-json-only') save(projectFileName('json'), JSON.stringify(S, null, 1), 'Project file');
   if (act === 'load-json') $('#fileIn').click();
