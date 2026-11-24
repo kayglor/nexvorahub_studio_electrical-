@@ -1031,7 +1031,7 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   const R0 = { ...ROLE }, V0 = view;
   rchk('nine roles, lead edits everything', ROLES.length === 9 && ROLE.id === 'lead' && VIEWS.every(v => canEdit(v[0], 'lead') && roleShows(v[0], 'lead')));
   rchk('every role stage is a real page and edit ⊂ view', ROLES.filter(r => r[3]).every(r => r[3].concat(r[4]).every(v => VIEWS.some(x => x[0] === v)) && r[4].every(v => r[3].includes(v))));
-  rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'tasks', 'admin', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
+  rchk('every editable stage has an owner besides the lead', VIEWS.filter(v => !['home', 'dashboard', 'progress', 'tasks', 'admin', 'coverage', 'fmreport'].includes(v[0])).every(v => roleOwners(v[0]).length), VIEWS.filter(v => !roleOwners(v[0]).length).map(v => v[0]));
   rchk('design engineer edits circuits, not FM', canEdit('circuits', 'design') && !canEdit('fm', 'design') && !roleShows('fm', 'design'));
   rchk('energy manager edits energy, views sizing', canEdit('energy', 'energy') && roleShows('sizing', 'energy') && !canEdit('sizing', 'energy'));
   rchk('home and dashboard open to all', ROLES.every(r => canEdit('home', r[0]) && canEdit('dashboard', r[0])));
@@ -1377,6 +1377,30 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   bchk('old projects upgraded', old.fmb && old.fmb.targets.sla === 95 && Array.isArray(old.fmbContracts) && old.fmbContracts.length === 0);
   S = JSON.parse(keep); upgrade(S); view = V0; render();
   out.fmBoardChecks = bF.length ? bF : 'all passed'; }
+// ---- Progress board (design and delivery progress across boards) ----
+{ const pF = [], pchk2 = (n, ok, info) => { if (!ok) pF.push(n + (info !== undefined ? ' ' + JSON.stringify(info) : '')); };
+  const keep = JSON.stringify(S), V0 = view;
+  let P = calcProgress();
+  pchk2('six boards', P.groups.length === 6 && P.groups.map(g => g.id).join() === 'design,mep,impl,energy,asset,fm', P.groups.map(g => g.id));
+  pchk2('percentages in range', P.groups.every(g => g.pc >= 0 && g.pc <= 1 && g.del.every(d => d.v == null || (d.v >= 0 && d.v <= 1))) && P.overall >= 0 && P.overall <= 1);
+  pchk2('example design board started', P.groups[0].started && P.groups[0].pc > 0, P.groups[0].pc);
+  const dsg = P.groups[0]; pchk2('board progress = mean of deliverables', Math.abs(dsg.pc - dsg.del.reduce((a, d) => a + (d.v || 0), 0) / dsg.del.length) < 1e-9);
+  pchk2('deliverable counts', P.nDel === P.groups.reduce((a, g) => a + g.del.length, 0) && P.nDone <= P.nDel);
+  pchk2('actions flagged and sorted', P.acts.every((o, i, a) => i === 0 || ({ bad: 0, warn: 1, info: 2 })[a[i - 1].s] <= ({ bad: 0, warn: 1, info: 2 })[o.s]));
+  pchk2('urgent counts match', P.urgent === P.acts.filter(o => o.s === 'bad').length);
+  const asset0 = P.groups.find(g => g.id === 'asset');
+  S.assets = []; S.tickets = []; S.soft = []; S.capProj = []; fmbAct('fmb-example', { dataset: {} }); P = calcProgress();
+  const asset1 = P.groups.find(g => g.id === 'asset'), fm1 = P.groups.find(g => g.id === 'fm'), en1 = P.groups.find(g => g.id === 'energy');
+  pchk2('asset board moves with the register', asset1.started && asset1.pc > (asset0.started ? 0 : -1) && asset1.del.find(d => d.n === 'Asset register').v === 1);
+  pchk2('fm board reads contracts and KPIs', fm1.del.find(d => d.n === 'Service contracts registered').v === 1 && fm1.del.find(d => d.n === 'FM KPIs on target').v != null);
+  pchk2('energy board reads metered actuals', en1.del.find(d => d.n === 'Metered consumption recorded').v === 1 && en1.del.some(d => d.n === 'Consumption reduced vs last year'));
+  view = 'progress'; render(); const h = document.querySelector('#main').innerHTML;
+  pchk2('view renders', /Progress across boards/.test(h) && /Flagged actions across all boards/.test(h) && P.groups.every(g => h.includes('id="pg-' + g.id + '"')));
+  pchk2('rail status', ['ok', 'warn', 'bad', ''].includes(progressStatus()));
+  let csv = ''; const sv = save; save = (n, d) => { csv = d; }; dpbAct('dpb-csv'); save = sv;
+  pchk2('csv', /PROGRESS BOARD/.test(csv) && /Deliverable/.test(csv) && /Flag,"?Board/.test(csv.replace(/"/g, '')));
+  S = JSON.parse(keep); upgrade(S); view = V0; render();
+  out.progressChecks = pF.length ? pF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
