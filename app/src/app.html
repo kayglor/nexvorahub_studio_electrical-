@@ -337,6 +337,31 @@ input,select,textarea,.adv .q{font-size:16px}
 @media (max-width:1280px){.fmb .t2{grid-column:span 4}.fmb .t3,.fmb .t4{grid-column:span 6}.fmb .t8{grid-column:span 12}}
 @media (max-width:760px){.fmb .t2{grid-column:span 6}.fmb .t3,.fmb .t4,.fmb .t6,.fmb .t8{grid-column:span 12}}
 @media print{.fm-board .noprint{display:none!important}.fmb .tile{break-inside:avoid}}
+/* Futuristic blue theme for the FM and Progress boards (screen); print falls back to plain light colours */
+.fm-board{--panel:rgba(14,40,82,.78);--sunk:rgba(32,78,140,.32);--ink:#e8f3ff;--muted:#93b8de;--line:rgba(96,165,250,.24);--line-strong:rgba(125,196,255,.5);--accent:#38bdf8;--accent-soft:rgba(56,189,248,.16);--on-accent:#04122b;--ok:#34d399;--ok-soft:rgba(52,211,153,.16);--warn:#fbbf24;--warn-soft:rgba(251,191,36,.16);--bad:#fb7185;--bad-soft:rgba(251,113,133,.17);--input:#0b2347;--input-line:rgba(125,196,255,.42);
+  position:relative;overflow:hidden;color:var(--ink);border-color:rgba(96,165,250,.38)!important;
+  background:radial-gradient(1100px 480px at 8% -12%,rgba(56,189,248,.28),transparent 62%),radial-gradient(900px 520px at 105% -5%,rgba(99,102,241,.3),transparent 60%),linear-gradient(160deg,#051733 0%,#0a2a5e 52%,#061a3d 100%)!important;
+  box-shadow:0 0 0 1px rgba(56,189,248,.14),0 24px 60px rgba(2,10,30,.45)}
+.fm-board::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(56,189,248,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.07) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(180deg,#000,transparent 85%);-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%)}
+.fm-board>*{position:relative}
+.fm-board h2{color:#fff;text-shadow:0 0 22px rgba(56,189,248,.55);letter-spacing:.02em}.fm-board .eyebrow{color:#7dd3fc;text-shadow:0 0 10px rgba(56,189,248,.6)}
+.fm-board .sheet-head p,.fm-board .note{color:var(--muted)}.fm-board a{color:#7dd3fc}.fm-board .pg-row{color:var(--ink)}
+.fm-board .fmb .tile{background:linear-gradient(180deg,rgba(22,60,115,.72),rgba(9,30,66,.78));border-color:rgba(96,165,250,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 26px rgba(0,8,26,.38);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.fm-board .fmb .tile-h{background:linear-gradient(90deg,rgba(56,189,248,.26),rgba(99,102,241,.14) 70%,transparent);color:#eaf6ff;border-bottom-color:rgba(56,189,248,.38);text-shadow:0 0 12px rgba(56,189,248,.55)}
+.fm-board .kpi{background:rgba(6,24,54,.62);border-color:rgba(96,165,250,.26)}.fm-board .kpi b{color:#fff}.fm-board .kpi span{color:#8ec5f2}
+.fm-board .fm-k.ok{box-shadow:inset 4px 0 12px -6px var(--ok)}.fm-board .fm-k.warn{box-shadow:inset 4px 0 12px -6px var(--warn)}.fm-board .fm-k.bad{box-shadow:inset 4px 0 12px -6px var(--bad)}
+.fm-board th{background:rgba(30,80,150,.45);color:#9fd0fb;border-bottom-color:rgba(96,165,250,.3)}.fm-board td{border-bottom-color:rgba(96,165,250,.16)}.fm-board tr.total td{background:rgba(56,189,248,.1)}
+.fm-board .btn{background:rgba(12,42,88,.85);color:#e8f3ff;border-color:rgba(125,196,255,.45)}.fm-board .btn:hover{border-color:#7dd3fc;box-shadow:0 0 12px rgba(56,189,248,.35)}
+.fm-board .btn.primary{background:linear-gradient(90deg,#0ea5e9,#6366f1);color:#fff;border-color:transparent;box-shadow:0 0 14px rgba(56,189,248,.45)}
+.fm-board .callout{background:rgba(251,191,36,.12);color:var(--ink)}
+.fm-board .g-fg,.fm-board .r-fg{filter:drop-shadow(0 0 5px rgba(56,189,248,.55))}.fm-board .gauge.ok .g-fg,.fm-board .ring.ok .r-fg{filter:drop-shadow(0 0 6px rgba(52,211,153,.7))}.fm-board .gauge.bad .g-fg,.fm-board .ring.bad .r-fg{filter:drop-shadow(0 0 6px rgba(251,113,133,.7))}.fm-board .gauge.warn .g-fg,.fm-board .ring.warn .r-fg{filter:drop-shadow(0 0 6px rgba(251,191,36,.7))}
+.fm-board .g-v,.fm-board .ring text{fill:#fff;color:#fff;text-shadow:0 0 12px rgba(56,189,248,.6)}
+.fm-board .mbar,.fm-board .pg-bar{background:rgba(148,197,255,.12);box-shadow:inset 0 0 0 1px rgba(96,165,250,.18)}
+.fm-board .mbar i,.fm-board .pg-bar i{background:linear-gradient(90deg,#0ea5e9,#38bdf8)}.fm-board .mbar i.ok,.fm-board .pg-bar i.ok{background:linear-gradient(90deg,#10b981,#34d399);box-shadow:0 0 10px rgba(52,211,153,.6)}
+.fm-board .mbar i.warn,.fm-board .pg-bar i.warn{background:linear-gradient(90deg,#f59e0b,#fbbf24);box-shadow:0 0 10px rgba(251,191,36,.55)}.fm-board .mbar i.bad,.fm-board .pg-bar i.bad{background:linear-gradient(90deg,#e11d48,#fb7185);box-shadow:0 0 10px rgba(251,113,133,.6)}
+.fm-board .donut>div{background:#0a2552;box-shadow:0 0 18px rgba(56,189,248,.25)}.fm-board .donut{box-shadow:0 0 22px rgba(56,189,248,.25)}
+.fm-board .pg-row:hover{background:rgba(56,189,248,.1)}
+@media print{.fm-board{--panel:#fff;--sunk:#f2f5f9;--ink:#111;--muted:#555;--line:#cfd6de;--line-strong:#9aa5b1;--ok:#2c7a4b;--ok-soft:#dcefe3;--warn:#9a6a0b;--warn-soft:#f6ecd2;--bad:#b0281f;--bad-soft:#f7dcd9;background:#fff!important;box-shadow:none;color:#111}.fm-board::before{display:none}.fm-board h2,.fm-board .eyebrow,.fm-board .tile-h,.fm-board .g-v{text-shadow:none!important;color:#111!important}.fm-board .fmb .tile,.fm-board .kpi{background:#fff!important;box-shadow:none!important}.fm-board .fmb .tile-h,.fm-board th{background:#eef2f7!important;color:#333!important}.fm-board a{color:#111}.fm-board .ring text{fill:#111}}
 
 </style>
 
@@ -5314,6 +5339,12 @@ V.fmboard = () => {
     ['Work orders completed', fbP(M.wo.pct), `${f0(M.wo.completed)} of ${f0(M.wo.total)}`, fbHi(M.wo.pct, T.ppm)], ['Customer satisfaction', fbP(M.csat), `Target ≥ ${T.csat}%`, M.st.csat],
     ['Critical incidents (P1)', String(M.sevs[0].n), `${M.critOpen} open`, M.critOpen ? 'bad' : 'ok'], ['CO₂ reduction', isFinite(M.en.co2Red) ? `${f1(M.en.co2Red)} t` : '–', 'vs last year', isFinite(M.en.co2Red) ? (M.en.co2Red >= 0 ? 'ok' : 'warn') : 'na'],
   ].map(([l, v, s, st]) => `<div class="kpi fm-k ${st}"><span>${l}</span><b>${v}</b><small>${esc(s)}</small></div>`).join('');
+  // progress of each parameter towards its target (higher-is-better values: value ÷ target; MTTR: target ÷ value)
+  const ach = (v, t, lo) => v === Infinity ? 1 : v == null || !isFinite(v) || !t ? null : Math.max(0, Math.min(1, lo ? (v > 0 ? t / v : 1) : v / t));
+  const unitTxt = (v, u) => v === Infinity ? 'no failures' : v == null || !isFinite(v) ? '–' : (u === '%' ? fbP(v) : f1(v) + u);
+  const progRows = [['SLA achievement', M.sla, T.sla, 0, '%', M.st.sla], ['PPM compliance', M.ppm, T.ppm, 0, '%', M.st.ppm], ['Mean time to repair', M.mttr, T.mttr, 1, ' h', M.st.mttr], ['Mean time between failures', M.noFail ? Infinity : M.mtbf, T.mtbf, 0, ' d', M.st.mtbf], ['Asset availability', M.avail, T.avail, 0, '%', M.st.avail], ['Customer satisfaction', M.csat, T.csat, 0, '%', M.st.csat], ['Contract audit score', M.contract, T.contract, 0, '%', M.st.contract], ['SOP compliance', M.sopAvg, T.sop, 0, '%', M.st.sop], ['Work orders completed', M.wo.pct, T.ppm, 0, '%', fbHi(M.wo.pct, T.ppm)]]
+    .map(([l, v, t, lo, u, st]) => { const a = ach(v, t, lo); return `<div class="pg-row"><span class="pg-n">${l}</span><span class="pg-bar"><i class="${st}" style="width:${((a || 0) * 100).toFixed(1)}%"></i></span><b class="num">${a == null ? '–' : pct(a)}</b><span class="pg-m">${unitTxt(v, u)} vs ${lo ? '≤' : '≥'} ${t}${u === '%' ? '%' : u}</span><span class="pg-a">${pill(st, FB_ST[st])}</span></div>`; });
+  const progT = fbTile('t12', 'KPI progress to target <small>each parameter as a percentage of its target</small>', `<div class="pg-list">${progRows.join('')}</div>`);
   const gauges = [
     fbGauge('SLA achievement', M.slaFromTk ? 'Tickets fixed within SLA' : 'Contractor-reported SLA', fbP(M.sla), M.sla / 100, M.st.sla, `Target ≥ ${T.sla}%`),
     fbGauge('PPM compliance', 'Planned maintenance completed', fbP(M.ppm), M.ppm / 100, M.st.ppm, `Target ≥ ${T.ppm}%`),
@@ -5356,7 +5387,7 @@ V.fmboard = () => {
   const period = `${esc(B.start || '…')} to ${esc(B.end || 'today')} (${M.days} days)`;
   return `<section class="sheet fm-board">${head('FM', 'FM performance board', `${esc(B.site || S.project.name || 'Site')} · ${period} · showing <b>${scopeTxt}</b>. Calculated from the helpdesk tickets, asset register, soft services and capital projects in the FM stages, plus the FM board inputs.`, `<div class="row noprint" role="group" aria-label="Service scope">${btns}</div><a class="btn small noprint" href="#fmboardin">Edit board inputs</a><button class="btn small noprint" data-act="fmb-csv">Save board (.csv)</button><button class="btn small noprint" data-act="fmb-print">Print / PDF</button>`)}
   ${empty ? `<p class="callout">No FM records yet. Enter tickets, assets and soft services in <a href="#fm">FM operations</a> and <a href="#assets">Assets &amp; maintenance</a>, add service contracts in <a href="#fmboardin">FM board inputs</a>, or <button class="btn small" data-act="fmb-example">load example FM data</button> to see a filled board.</p>` : ''}
-  <div class="fmb">${fbTile('t12', 'Executive summary', `<div class="kpis exec">${exec}</div>`)}${gauges}${incT}${sopT}${softT || ''}${enT}${conT}${mttrT}${mtbfT}${capT}${opT}${woT}${csT}${sfT}${amT}${stT}</div>
+  <div class="fmb">${fbTile('t12', 'Executive summary', `<div class="kpis exec">${exec}</div>`)}${progT}${gauges}${incT}${sopT}${softT || ''}${enT}${conT}${mttrT}${mtbfT}${capT}${opT}${woT}${csT}${sfT}${amT}${stT}</div>
   <p class="note">SLA = tickets fixed within their priority SLA ÷ tickets judged (when there are no tickets, the average contractor-reported SLA). MTTR = mean hours from raising to completing a ticket. MTBF = units × 365 days ÷ failures in 12 months (asset register). Availability = units not marked "Not operating" ÷ units. Health index = condition grade factor weighted by units. PPM compliance = planned tasks completed ÷ planned tasks issued (service contracts). Contracts ending within 90 days are flagged for renewal.</p></section>`;
 };
 
