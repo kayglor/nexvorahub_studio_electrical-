@@ -384,6 +384,24 @@ input,select,textarea,.adv .q{font-size:16px}
 .fm-board.bt-brilliant .g-bg,.fm-board.bt-brilliant .ring .r-bg{stroke:rgba(255,255,255,.18)}
 .bt-switch .btn{display:inline-flex;align-items:center;gap:6px}.bt-dot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.6)}
 .bt-dot.bt-deep{background:linear-gradient(135deg,#051733,#0a2a5e)}.bt-dot.bt-brilliant{background:linear-gradient(135deg,#0038e0,#00a8ff)}
+/* Brilliant white board background */
+.fm-board.bt-white{--panel:#ffffff;--sunk:#eef4ff;--ink:#0b1f44;--muted:#4b6286;--line:#d6e2f5;--line-strong:#a9c0e6;--accent:#1d4ed8;--accent-soft:#e0eaff;--on-accent:#fff;--ok:#059669;--ok-soft:#d1fae5;--warn:#b45309;--warn-soft:#fef3c7;--bad:#e11d48;--bad-soft:#ffe4e6;--input:#fff;--input-line:#a9c0e6;
+  color:var(--ink);background:radial-gradient(900px 420px at 0% -10%,rgba(56,189,248,.14),transparent 60%),radial-gradient(800px 460px at 100% 0%,rgba(99,102,241,.1),transparent 60%),linear-gradient(180deg,#ffffff,#f5f9ff)!important;border-color:#cfdcf3!important;box-shadow:0 0 0 1px rgba(29,78,216,.06),0 20px 50px rgba(30,64,175,.12)}
+.fm-board.bt-white::before{background-image:linear-gradient(rgba(29,78,216,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.05) 1px,transparent 1px)}
+.fm-board.bt-white h2{color:#0b1f44;text-shadow:none}.fm-board.bt-white .eyebrow{color:#1d4ed8;text-shadow:none}.fm-board.bt-white a{color:#1d4ed8}
+.fm-board.bt-white .fmb .tile{background:#fff;border-color:#d6e2f5;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 8px 22px rgba(30,64,175,.08);backdrop-filter:none}
+.fm-board.bt-white .fmb .tile-h{background:linear-gradient(90deg,#e8f0ff,#f4f8ff 70%,#fff);color:#0b1f44;border-bottom-color:#d6e2f5;text-shadow:none}
+.fm-board.bt-white .kpi{background:#f7faff;border-color:#d6e2f5}.fm-board.bt-white .kpi b{color:#0b1f44}.fm-board.bt-white .kpi span{color:#4b6286}
+.fm-board.bt-white th{background:#eef4ff;color:#33507d;border-bottom-color:#d6e2f5}.fm-board.bt-white td{border-bottom-color:#e6eefb}.fm-board.bt-white tr.total td{background:#f0f6ff}
+.fm-board.bt-white .btn{background:#fff;color:#0b1f44;border-color:#a9c0e6}.fm-board.bt-white .btn:hover{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.12)}
+.fm-board.bt-white .btn.primary{background:linear-gradient(90deg,#1d4ed8,#0ea5e9);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(29,78,216,.3)}
+.fm-board.bt-white .g-v,.fm-board.bt-white .ring text{fill:#0b1f44;color:#0b1f44;text-shadow:none}
+.fm-board.bt-white .g-bg,.fm-board.bt-white .ring .r-bg{stroke:#e3ecfb}.fm-board.bt-white .g-fg,.fm-board.bt-white .r-fg{filter:none!important}
+.fm-board.bt-white .mbar,.fm-board.bt-white .pg-bar{background:#e8eefb;box-shadow:none}.fm-board.bt-white .mbar i,.fm-board.bt-white .pg-bar i{box-shadow:none!important}
+.fm-board.bt-white .donut>div{background:#fff;box-shadow:none}.fm-board.bt-white .donut{box-shadow:0 4px 16px rgba(30,64,175,.12)}
+.fm-board.bt-white .callout{background:#fef3c7;color:#0b1f44}.fm-board.bt-white .pg-row:hover{background:#f0f6ff}
+.fm-board.bt-white .fm-k.ok,.fm-board.bt-white .fm-k.warn,.fm-board.bt-white .fm-k.bad{box-shadow:none}
+.bt-dot.bt-white{background:#fff;border-color:#a9c0e6}
 @media print{.fm-board{--panel:#fff;--sunk:#f2f5f9;--ink:#111;--muted:#555;--line:#cfd6de;--line-strong:#9aa5b1;--ok:#2c7a4b;--ok-soft:#dcefe3;--warn:#9a6a0b;--warn-soft:#f6ecd2;--bad:#b0281f;--bad-soft:#f7dcd9;background:#fff!important;box-shadow:none;color:#111}.fm-board::before{display:none}.fm-board h2,.fm-board .eyebrow,.fm-board .tile-h,.fm-board .g-v{text-shadow:none!important;color:#111!important}.fm-board .fmb .tile,.fm-board .kpi{background:#fff!important;box-shadow:none!important}.fm-board .fmb .tile-h,.fm-board th{background:#eef2f7!important;color:#333!important}.fm-board a{color:#111}.fm-board .ring text{fill:#111}}
 
 </style>
@@ -5555,9 +5573,10 @@ function fmbCsv() {
 }
 
 /* Board background: Deep blue or Brilliant blue, remembered per viewer in this browser */
-let BOARD_THEME = (() => { try { return localStorage.getItem('nexvorahub-board-theme') === 'brilliant' ? 'brilliant' : 'deep'; } catch (e) { return 'deep'; } })();
-const boardThemeBtns = () => `<div class="row noprint bt-switch" role="group" aria-label="Board background">${[['deep', 'Deep blue'], ['brilliant', 'Brilliant blue']].map(([k, t]) => `<button class="btn small ${BOARD_THEME === k ? 'primary' : ''}" data-act="board-theme" data-v="${k}" aria-pressed="${BOARD_THEME === k}"><i class="bt-dot bt-${k}"></i>${t}</button>`).join('')}</div>`;
-function boardThemeAct(act, b) { if (act !== 'board-theme') return false; BOARD_THEME = b.dataset.v === 'brilliant' ? 'brilliant' : 'deep'; try { localStorage.setItem('nexvorahub-board-theme', BOARD_THEME); } catch (e) { } render(); return true; }
+const BOARD_THEMES = [['deep', 'Deep blue'], ['brilliant', 'Brilliant blue'], ['white', 'Brilliant white']];
+let BOARD_THEME = (() => { try { const t = localStorage.getItem('nexvorahub-board-theme'); return BOARD_THEMES.some(x => x[0] === t) ? t : 'deep'; } catch (e) { return 'deep'; } })();
+const boardThemeBtns = () => `<div class="row noprint bt-switch" role="group" aria-label="Board background">${BOARD_THEMES.map(([k, t]) => `<button class="btn small ${BOARD_THEME === k ? 'primary' : ''}" data-act="board-theme" data-v="${k}" aria-pressed="${BOARD_THEME === k}"><i class="bt-dot bt-${k}"></i>${t}</button>`).join('')}</div>`;
+function boardThemeAct(act, b) { if (act !== 'board-theme') return false; BOARD_THEME = BOARD_THEMES.some(x => x[0] === b.dataset.v) ? b.dataset.v : 'deep'; try { localStorage.setItem('nexvorahub-board-theme', BOARD_THEME); } catch (e) { } render(); return true; }
 /* ---------- Progress board: design and delivery progress across every discipline ---------- */
 // Each board (discipline) is measured against its own deliverables, calculated live from the stages.
 // A deliverable not yet started counts as 0 %; one that does not apply to this project is left out.
