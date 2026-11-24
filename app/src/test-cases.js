@@ -1399,6 +1399,8 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   pchk2('rail status', ['ok', 'warn', 'bad', ''].includes(progressStatus()));
   boardThemeAct('board-theme', { dataset: { v: 'brilliant' } }); view = 'progress'; render(); pchk2('brilliant blue switch', /fm-board bt-brilliant/.test(document.querySelector('#main').innerHTML) && /Brilliant blue/.test(document.querySelector('#main').innerHTML));
   view = 'fmboard'; render(); pchk2('switch on FM board', /fm-board bt-brilliant/.test(document.querySelector('#main').innerHTML));
+  boardThemeAct('board-theme', { dataset: { v: 'white' } }); render(); pchk2('brilliant white switch', /fm-board bt-white/.test(document.querySelector('#main').innerHTML) && /Brilliant white/.test(document.querySelector('#main').innerHTML));
+  boardThemeAct('board-theme', { dataset: { v: 'bogus' } }); render(); pchk2('unknown theme falls back', BOARD_THEME === 'deep');
   boardThemeAct('board-theme', { dataset: { v: 'deep' } }); render(); pchk2('deep blue switch', /fm-board bt-deep/.test(document.querySelector('#main').innerHTML));
   let csv = ''; const sv = save; save = (n, d) => { csv = d; }; dpbAct('dpb-csv'); save = sv;
   pchk2('csv', /PROGRESS BOARD/.test(csv) && /Deliverable/.test(csv) && /Flag,"?Board/.test(csv.replace(/"/g, '')));
