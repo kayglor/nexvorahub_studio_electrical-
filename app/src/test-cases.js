@@ -1345,6 +1345,38 @@ out.layoutChecks = lyFail.length ? lyFail : 'all passed';
   qk('Advisor help mentions the chatbot and FAQ', ADV_HELP.some(x => /chatbot or an FAQ/.test(x[0])));
   REG = RG; view = V0; render();
   out.faqChatChecks = qF.length ? qF : 'all passed'; }
+// ---- FM performance board (hard + soft services, SLA, contracts, PPM) ----
+{ const bF = [], bchk = (n, ok, info) => { if (!ok) bF.push(n + (info !== undefined ? ' ' + JSON.stringify(info) : '')); };
+  const bnear = (a, b, tol = 0.05) => Math.abs(a - b) <= tol, keep = JSON.stringify(S), V0 = view, b = (v) => ({ dataset: { v } });
+  S.assets = []; S.tickets = []; S.soft = []; S.capProj = []; delete S.fmb; delete S.fmbContracts; fmbUpgrade(S);
+  bchk('blank board', calcFMB().con.length === 0 && fmbStatus() === '');
+  view = 'fmboard'; render(); bchk('empty board invites example', /load example FM data/.test(document.querySelector('#main').innerHTML));
+  fmbAct('fmb-example', b()); S.fmb.start = ''; let M = calcFMB();
+  bchk('example loaded', M.con.length === 11 && M.tk.length === 10 && S.assets.length === 7 && S.soft.length === 5 && M.pr.length === 4, [M.con.length, M.tk.length]);
+  bchk('incidents by priority', M.sevs.map(x => x.n).join() === '2,3,3,2' && M.open === 3 && M.critOpen === 1, [M.sevs.map(x => x.n), M.open]);
+  bchk('SLA from tickets', M.slaFromTk && bnear(M.sla, 70), M.sla);
+  bchk('MTTR from tickets', bnear(M.mttr, 283 / 7, 0.1), M.mttr);
+  bchk('PPM', bnear(M.ppm, 2991 / 3027 * 100), M.ppm);
+  bchk('MTBF', bnear(M.mtbf, 22 * 365 / 17, 0.1) && M.eq.length === 7, M.mtbf);
+  bchk('CAPEX', M.cB === 5450000 && M.cA === 4050000, [M.cB, M.cA]);
+  S.fmb.scope = 'Soft'; M = calcFMB();
+  bchk('soft scope', M.con.length === 5 && M.tk.length === 4 && M.eq.length === 0 && M.soft.length === 5 && M.opex.length === 4, [M.con.length, M.tk.length, M.opex.length]);
+  S.fmb.scope = 'Hard'; M = calcFMB();
+  bchk('hard scope', M.con.length === 6 && M.tk.length === 6 && M.eq.length === 7 && M.soft.length === 0 && M.sop.length === 6, [M.con.length, M.tk.length, M.sop.length]);
+  S.fmb.scope = 'All'; S.tickets = []; M = calcFMB();
+  bchk('SLA falls back to contractor reports', !M.slaFromTk && isFinite(M.sla) && M.sla > 90, M.sla);
+  bchk('contract renewal flag', M.con.some(r => r.exp[0] === 'warn' || r.exp[0] === 'bad'));
+  view = 'fmboard'; render(); const bh = document.querySelector('#main').innerHTML;
+  bchk('board tiles', ['Executive summary', 'Incident summary', 'MTTR by equipment', 'MTBF by equipment', 'CAPEX summary', 'OPEX summary', 'Work order KPI', 'Customer satisfaction', 'Asset management KPI', 'Optimisation strategies', 'Soft services KPI'].every(t => bh.includes(t)));
+  view = 'fmboardin'; render(); const ih = document.querySelector('#main').innerHTML;
+  bchk('inputs render', /data-arr="fmbContracts"/.test(ih) && /fmb\.targets\.sla/.test(ih) && /data-p="fmb\.strat\.energy"/.test(ih));
+  bchk('csv', /FM PERFORMANCE BOARD/.test(fmbCsv()) && /SERVICE CONTRACTS/.test(fmbCsv()));
+  const t1 = BLANK.tickets(); S.tickets = [t1]; fmbAct('fmb-example', b()); bchk('example keeps real records', S.tickets.length === 1 && S.tickets[0].id === t1.id);
+  const n0 = S.fmbContracts.length; fmbAct('fmb-std', b('Soft')); bchk('standard services not duplicated', S.fmbContracts.length === n0 + 3, S.fmbContracts.length - n0);
+  const old = JSON.parse(keep); delete old.fmb; delete old.fmbContracts; delete old.fmbSop; delete old.fmbOpex; delete old.fmbCsat; upgrade(old);
+  bchk('old projects upgraded', old.fmb && old.fmb.targets.sla === 95 && Array.isArray(old.fmbContracts) && old.fmbContracts.length === 0);
+  S = JSON.parse(keep); upgrade(S); view = V0; render();
+  out.fmBoardChecks = bF.length ? bF : 'all passed'; }
 for (const [k, v] of Object.entries(out)) console.log(k, '=', JSON.stringify(v));
 // make failures visible to scripts and CI (test-app.js sets the exit code)
 globalThis.__TEST_FAILURES = Object.entries(out).filter(([k, v]) => (/Checks$/.test(k) && v !== 'all passed') || (k === 'viewErrors' && v.length) || (k === 'countriesTested' && v !== 94) || (k === 'sweep' && JSON.stringify(v).includes('ERR'))).map(([k]) => k);
